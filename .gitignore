@@ -2,3 +2,4 @@ mod_wasm.la
 mod_wasm.lo
 mod_wasm.slo
 mod_wasm/.libs
+wasm_runtime/.vscode

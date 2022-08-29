@@ -1,0 +1,6 @@
+language = "C"
+
+header = "/* See doc at: https://github.com/eqrion/cbindgen/blob/master/docs.md#cbindgentoml"
+include_version = true
+no_includes = true
+
