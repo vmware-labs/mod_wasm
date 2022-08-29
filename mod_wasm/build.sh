@@ -37,3 +37,4 @@ echo "[mod_wasm: linking]"
 
 echo "[Installing module]"
 cp -v .libs/mod_wasm.so ../httpd/dist/modules/
+cp -v httpd.conf ../httpd/dist/conf
