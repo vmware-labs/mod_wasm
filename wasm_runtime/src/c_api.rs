@@ -2,6 +2,8 @@ use crate::WASM_RUNTIME_CONFIG_ROOT;
 use crate::WASM_RUNTIME_CONFIG_MODULE;
 use crate::WASM_RUNTIME_CONFIG_WASI_ARGS;
 use crate::WASM_RUNTIME_CONFIG_WASI_ENVS;
+use crate::WASM_RUNTIME_CONFIG_WASI_DIRS;
+use crate::WASM_RUNTIME_CONFIG_WASI_MAPDIRS;
 
 use crate::ffi_utils::*;
 use std::os::raw::c_char;
@@ -87,6 +89,51 @@ pub extern "C" fn wasm_set_env(env: *const c_char, value: *const c_char) {
     let value_str = const_c_char_to_str(value);
     WASM_RUNTIME_CONFIG_WASI_ENVS.lock().unwrap()
         .push((env_str.to_string(), value_str.to_string()));
+}
+
+
+/// Add a WASI preopen dir for the Wasm module
+///
+/// Due to String management differences between C and Rust, this funciton uses `unsafe {}` code.
+/// So `dir` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+/// 
+/// In addition, `dir` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+/// Otherwise, the root directory will be an empty string.
+/// 
+/// # Examples (C Code)
+///
+/// ```
+/// wasm_set_dir("/tmp");
+/// ```
+#[no_mangle]
+pub extern "C" fn wasm_set_dir(dir: *const c_char) {
+    let dir_str   = const_c_char_to_str(dir);
+    WASM_RUNTIME_CONFIG_WASI_DIRS.lock().unwrap()
+        .push(dir_str.to_string());
+}
+
+
+/// Add a WASI preopen dir with mapping for the Wasm module
+///
+/// Due to String management differences between C and Rust, this funciton uses `unsafe {}` code.
+/// So `map` and `dir` must be valid pointers to a null-terminated C char array. Otherwise, code might panic.
+/// 
+/// In addition, `map` and `dir` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+/// Otherwise, they will trimmed to empty strings.
+/// 
+/// # Examples (C Code)
+///
+/// ```
+/// wasm_set_mapdir("./", ".");
+/// wasm_set_mapdir("/wasmhome", "/home/wasm_user");
+/// wasm_set_mapdir("/wasmlogs", "/var/log");
+/// ```
+#[no_mangle]
+pub extern "C" fn wasm_set_mapdir(map: *const c_char, dir: *const c_char) {
+    let map_str = const_c_char_to_str(map);
+    let dir_str = const_c_char_to_str(dir);
+    WASM_RUNTIME_CONFIG_WASI_MAPDIRS.lock().unwrap()
+        .push((map_str.to_string(), dir_str.to_string()));
 }
 
 

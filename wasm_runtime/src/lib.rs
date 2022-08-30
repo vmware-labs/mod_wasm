@@ -40,5 +40,17 @@ static WASM_RUNTIME_CONFIG_WASI_ENVS: Lazy<Mutex<Vec<(String, String)>>> = Lazy:
     Mutex::new(data)
 });
 
+// Stores the WASI preopen dirs for the Wasm module.
+static WASM_RUNTIME_CONFIG_WASI_DIRS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| {
+    let data: Vec<String> = Vec::new();
+    Mutex::new(data)
+});
+
+// Stores the WASI preopen dirs with mapping for the Wasm module.
+static WASM_RUNTIME_CONFIG_WASI_MAPDIRS: Lazy<Mutex<Vec<(String, String)>>> = Lazy::new(|| {
+    let data: Vec<(String, String)> = Vec::new();
+    Mutex::new(data)
+});
+
 
 

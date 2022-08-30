@@ -396,6 +396,9 @@ static void register_hooks(apr_pool_t *p)
 #define WASM_DIRECTIVE_WASMMODULE "WasmModule"
 #define WASM_DIRECTIVE_WASMARG    "WasmArg"
 #define WASM_DIRECTIVE_WASMENV    "WasmEnv"
+#define WASM_DIRECTIVE_WASMDIR    "WasmDir"
+#define WASM_DIRECTIVE_WASMMAPDIR "WasmMapDir"
+
 
 static const char *wasm_directive_WasmRoot(cmd_parms *cmd, void *mconfig, const char *word1)
 {
@@ -445,6 +448,30 @@ static const char *wasm_directive_WasmEnv(cmd_parms *cmd, void *mconfig, const c
 }
 
 
+static const char *wasm_directive_WasmDir(cmd_parms *cmd, void *mconfig, const char *word1)
+{
+    x_cfg *cfg = (x_cfg *) mconfig;
+
+    char message[128];
+    snprintf(message, 128, "[mod_wasm]: '%s' directive set to '%s'", WASM_DIRECTIVE_WASMDIR, word1);
+    trace_nocontext(NULL, __FILE__, __LINE__, message);
+    wasm_set_dir(word1);
+    return NULL;
+}
+
+
+static const char *wasm_directive_WasmMapDir(cmd_parms *cmd, void *mconfig, const char *word1, const char *word2)
+{
+    x_cfg *cfg = (x_cfg *) mconfig;
+
+    char message[128];
+    snprintf(message, 128, "[mod_wasm]: '%s' directive set to '%s' = '%s'", WASM_DIRECTIVE_WASMMAPDIR, word1, word2);
+    trace_nocontext(NULL, __FILE__, __LINE__, message);
+    wasm_set_mapdir(word1, word2);
+    return NULL;
+}
+
+
 /*
  * List of directives specific to our module.
  */
@@ -477,6 +504,20 @@ static const command_rec directives[] =
         NULL,
         OR_OPTIONS,
         "Set environtment variable for the Wasm Module"
+    ),
+    AP_INIT_TAKE1(
+        WASM_DIRECTIVE_WASMDIR,
+        wasm_directive_WasmDir,
+        NULL,
+        OR_OPTIONS,      
+        "Preopen Dir for the Wasm Module"
+    ),
+    AP_INIT_TAKE2(
+        WASM_DIRECTIVE_WASMMAPDIR,
+        wasm_directive_WasmMapDir,
+        NULL,
+        OR_OPTIONS,
+        "Preopen Dir with Mapping for the Wasm Module"
     ),
     {NULL}
 };

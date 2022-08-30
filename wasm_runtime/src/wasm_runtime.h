@@ -71,6 +71,42 @@ void wasm_set_arg(const char *arg);
 void wasm_set_env(const char *env,
                   const char *value);
 
+/**
+ * Add a WASI preopen dir for the Wasm module
+ *
+ * Due to String management differences between C and Rust, this funciton uses `unsafe {}` code.
+ * So `dir` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ *
+ * In addition, `dir` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+ * Otherwise, the root directory will be an empty string.
+ *
+ * # Examples (C Code)
+ *
+ * ```
+ * wasm_set_dir("/tmp");
+ * ```
+ */
+void wasm_set_dir(const char *dir);
+
+/**
+ * Add a WASI preopen dir with mapping for the Wasm module
+ *
+ * Due to String management differences between C and Rust, this funciton uses `unsafe {}` code.
+ * So `map` and `dir` must be valid pointers to a null-terminated C char array. Otherwise, code might panic.
+ *
+ * In addition, `map` and `dir` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+ * Otherwise, they will trimmed to empty strings.
+ *
+ * # Examples (C Code)
+ *
+ * ```
+ * wasm_set_mapdir("/wasmhome", "/home/wasm_user");
+ * wasm_set_mapdir("/wasmlogs", "/var/log");
+ * ```
+ */
+void wasm_set_mapdir(const char *map,
+                     const char *dir);
+
 const char *load_and_run(void);
 
 void return_const_char_ownership(const char *ptr);

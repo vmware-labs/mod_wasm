@@ -13,6 +13,8 @@ use crate::WASM_RUNTIME_CONFIG_ROOT;
 use crate::WASM_RUNTIME_CONFIG_MODULE;
 use crate::WASM_RUNTIME_CONFIG_WASI_ARGS;
 use crate::WASM_RUNTIME_CONFIG_WASI_ENVS;
+use crate::WASM_RUNTIME_CONFIG_WASI_DIRS;
+use crate::WASM_RUNTIME_CONFIG_WASI_MAPDIRS;
 
 
 pub fn run_module() -> Result<String> {
@@ -31,20 +33,19 @@ pub fn run_module() -> Result<String> {
     
     let envs = WASM_RUNTIME_CONFIG_WASI_ENVS.lock().unwrap();
     
-    let wasi = WasiCtxBuilder::new()
+    let mut wasi_builder = WasiCtxBuilder::new()
         .stdout(Box::new(stdout))
         .inherit_stderr()
         .args(&args).expect("ERROR! Wrong WASI args array Vector!")
-        .envs(&envs).expect("ERROR! Wrong WASI envs array of duples Vector!")
-        .preopened_dir(
-            Dir::open_ambient_dir(".", ambient_authority()).expect("ERROR! Can't access to host directory for preopen!"),
-            "./")
-            .expect("ERROR! Wrong WASI preopened directory!")
-        .preopened_dir(
-            Dir::open_ambient_dir("/home/ubuntu/Home/Workspace/VMware", ambient_authority()).expect("ERROR! Can't access to host directory for preopen!"),
-            "/VMware")
-            .expect("ERROR! Wrong WASI preopened directory!")
-        .build();
+        .envs(&envs).expect("ERROR! Wrong WASI envs array of duples Vector!");
+
+    for (map, dir) in collect_preopen_dirs().unwrap().into_iter() {
+        wasi_builder = wasi_builder.preopened_dir(
+            dir,
+            map).expect("ERROR! Can't build WASI context due to preopen directories!");
+    } 
+
+    let wasi = wasi_builder.build();
 
     // Wasmtime Engine & Store (with WASI context)
     let engine = Engine::default();
@@ -78,3 +79,32 @@ pub fn run_module() -> Result<String> {
     Ok(out_string)
 }
 
+
+fn collect_preopen_dirs() -> Result<Vec<(String, Dir)>> {
+    let mut preopen_dirs = Vec::new();
+
+    let dirs = WASM_RUNTIME_CONFIG_WASI_DIRS.lock().unwrap();
+    let map_dirs = WASM_RUNTIME_CONFIG_WASI_MAPDIRS.lock().unwrap();
+
+    for dir in dirs.iter() {
+        preopen_dirs.push(
+            (
+                dir.clone(),
+                Dir::open_ambient_dir(dir, ambient_authority())
+                        .expect(format! ("ERROR! Failed to open host directory '{}' for preopen!", dir).as_str())
+            )
+        );
+    }
+
+    for (map, host) in map_dirs.iter() {
+        preopen_dirs.push(
+            (
+                map.clone(),
+                Dir::open_ambient_dir(host, ambient_authority())
+                    .expect(format! ("ERROR! Failed to open host directory '{}' for preopen!", host).as_str())
+            )
+        );
+    }
+
+    Ok(preopen_dirs)
+}
