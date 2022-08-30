@@ -17,8 +17,8 @@ use crate::WASM_RUNTIME_CONFIG_WASI_ENVS;
 
 pub fn run_module() -> Result<String> {
     // Wasm module path
-    let filepath= WASM_RUNTIME_CONFIG_ROOT.lock().unwrap().clone();
-    let filename= WASM_RUNTIME_CONFIG_MODULE.lock().unwrap().clone();
+    let filepath= WASM_RUNTIME_CONFIG_ROOT.lock().unwrap();
+    let filename= WASM_RUNTIME_CONFIG_MODULE.lock().unwrap();
     let modulepath = format!("{}/{}", filepath, filename);
 
     // WASI context
