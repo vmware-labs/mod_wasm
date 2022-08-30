@@ -53,6 +53,24 @@ void wasm_set_module(const char *filename);
  */
 void wasm_set_arg(const char *arg);
 
+/**
+ * Set a WASI environment variable for the Wasm module
+ *
+ * Due to String management differences between C and Rust, this funciton uses `unsafe {}` code.
+ * So `env` and `value` must be valid pointers to a null-terminated C char array. Otherwise, code might panic.
+ *
+ * In addition, `env` and `value` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+ * Otherwise, they will trimmed to empty strings.
+ *
+ * # Examples (C Code)
+ *
+ * ```
+ * wasm_set_env("TMP", "/tmp");
+ * ```
+ */
+void wasm_set_env(const char *env,
+                  const char *value);
+
 const char *load_and_run(void);
 
 void return_const_char_ownership(const char *ptr);

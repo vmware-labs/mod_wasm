@@ -395,6 +395,7 @@ static void register_hooks(apr_pool_t *p)
 #define WASM_DIRECTIVE_WASMROOT   "WasmRoot"
 #define WASM_DIRECTIVE_WASMMODULE "WasmModule"
 #define WASM_DIRECTIVE_WASMARG    "WasmArg"
+#define WASM_DIRECTIVE_WASMENV    "WasmEnv"
 
 static const char *wasm_directive_WasmRoot(cmd_parms *cmd, void *mconfig, const char *word1)
 {
@@ -432,6 +433,18 @@ static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const c
 }
 
 
+static const char *wasm_directive_WasmEnv(cmd_parms *cmd, void *mconfig, const char *word1, const char *word2)
+{
+    x_cfg *cfg = (x_cfg *) mconfig;
+
+    char message[128];
+    snprintf(message, 128, "[mod_wasm]: '%s' directive set to '%s' = '%s'", WASM_DIRECTIVE_WASMENV, word1, word2);
+    trace_nocontext(NULL, __FILE__, __LINE__, message);
+    wasm_set_env(word1, word2);
+    return NULL;
+}
+
+
 /*
  * List of directives specific to our module.
  */
@@ -458,6 +471,12 @@ static const command_rec directives[] =
         OR_OPTIONS,      
         "Add arg context for the Wasm Module"
     ),
+    AP_INIT_TAKE2(
+        WASM_DIRECTIVE_WASMENV,
+        wasm_directive_WasmEnv,
+        NULL,
+        OR_OPTIONS,
+        "Set environtment variable for the Wasm Module"
     ),
     {NULL}
 };

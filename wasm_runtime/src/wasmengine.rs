@@ -12,6 +12,7 @@ use std::sync::{Arc, RwLock};
 use crate::WASM_RUNTIME_CONFIG_ROOT;
 use crate::WASM_RUNTIME_CONFIG_MODULE;
 use crate::WASM_RUNTIME_CONFIG_WASI_ARGS;
+use crate::WASM_RUNTIME_CONFIG_WASI_ENVS;
 
 
 pub fn run_module() -> Result<String> {
@@ -24,14 +25,11 @@ pub fn run_module() -> Result<String> {
     let stdout_buf: Vec<u8> = vec![];
     let stdout_mutex = Arc::new(RwLock::new(stdout_buf));
     let stdout = WritePipe::from_shared(stdout_mutex.clone());
-    let envs: Vec<(String, String)> = vec![
-        ("PYTHONHOME".to_string(), "/VMware/mod_wasm_ext/wagi-python/opt/wasi-python/lib/python3.11".to_string()),
-        ("PYTHONPATH".to_string(), "/VMware/mod_wasm_ext/wagi-python/opt/wasi-python/lib/python3.11".to_string())
-    ];
 
     let mut args = WASM_RUNTIME_CONFIG_WASI_ARGS.lock().unwrap().clone();
     args.insert(0, filename.clone()); // adding wasm filename as args[0]
     
+    let envs = WASM_RUNTIME_CONFIG_WASI_ENVS.lock().unwrap();
     
     let wasi = WasiCtxBuilder::new()
         .stdout(Box::new(stdout))

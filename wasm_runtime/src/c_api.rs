@@ -1,6 +1,7 @@
 use crate::WASM_RUNTIME_CONFIG_ROOT;
 use crate::WASM_RUNTIME_CONFIG_MODULE;
 use crate::WASM_RUNTIME_CONFIG_WASI_ARGS;
+use crate::WASM_RUNTIME_CONFIG_WASI_ENVS;
 
 use crate::ffi_utils::*;
 use std::os::raw::c_char;
@@ -64,6 +65,28 @@ pub extern "C" fn wasm_set_arg(arg: *const c_char) {
     let arg_str   = const_c_char_to_str(arg);
     WASM_RUNTIME_CONFIG_WASI_ARGS.lock().unwrap()
         .push(arg_str.to_string());
+}
+
+
+/// Set a WASI environment variable for the Wasm module
+///
+/// Due to String management differences between C and Rust, this funciton uses `unsafe {}` code.
+/// So `env` and `value` must be valid pointers to a null-terminated C char array. Otherwise, code might panic.
+/// 
+/// In addition, `env` and `value` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+/// Otherwise, they will trimmed to empty strings.
+/// 
+/// # Examples (C Code)
+///
+/// ```
+/// wasm_set_env("TMP", "/tmp");
+/// ```
+#[no_mangle]
+pub extern "C" fn wasm_set_env(env: *const c_char, value: *const c_char) {
+    let env_str   = const_c_char_to_str(env);
+    let value_str = const_c_char_to_str(value);
+    WASM_RUNTIME_CONFIG_WASI_ENVS.lock().unwrap()
+        .push((env_str.to_string(), value_str.to_string()));
 }
 
 

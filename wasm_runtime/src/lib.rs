@@ -34,5 +34,11 @@ static WASM_RUNTIME_CONFIG_WASI_ARGS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| {
     Mutex::new(data)
 });
 
+// Stores the WASI env variables for the Wasm module.
+static WASM_RUNTIME_CONFIG_WASI_ENVS: Lazy<Mutex<Vec<(String, String)>>> = Lazy::new(|| {
+    let data: Vec<(String, String)> = Vec::new();
+    Mutex::new(data)
+});
+
 
 
