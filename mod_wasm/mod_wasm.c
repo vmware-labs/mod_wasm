@@ -394,6 +394,7 @@ static void register_hooks(apr_pool_t *p)
 
 #define WASM_DIRECTIVE_WASMROOT   "WasmRoot"
 #define WASM_DIRECTIVE_WASMMODULE "WasmModule"
+#define WASM_DIRECTIVE_WASMARG    "WasmArg"
 
 static const char *wasm_directive_WasmRoot(cmd_parms *cmd, void *mconfig, const char *word1)
 {
@@ -419,6 +420,18 @@ static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, cons
 }
 
 
+static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const char *word1)
+{
+    x_cfg *cfg = (x_cfg *) mconfig;
+
+    char message[128];
+    snprintf(message, 128, "[mod_wasm]: '%s' directive set to '%s'", WASM_DIRECTIVE_WASMARG, word1);
+    trace_nocontext(NULL, __FILE__, __LINE__, message);
+    wasm_set_arg(word1);
+    return NULL;
+}
+
+
 /*
  * List of directives specific to our module.
  */
@@ -429,14 +442,22 @@ static const command_rec directives[] =
         wasm_directive_WasmRoot,                 /* config action routine */
         NULL,                                    /* argument to include in call */
         OR_OPTIONS,                              /* where available */
-        "Set root directory for the Wasm Module" /* directive description */
+        "Set root directory for the Wasm file"   /* directive description */
     ),
     AP_INIT_TAKE1(
-        WASM_DIRECTIVE_WASMMODULE,              /* directive name */
-        wasm_directive_WasmModule,              /* config action routine */
-        NULL,                                   /* argument to include in call */
-        OR_OPTIONS,                             /* where available */
-        "Set filename for the Wasm Module"      /* directive description */
+        WASM_DIRECTIVE_WASMMODULE,
+        wasm_directive_WasmModule,
+        NULL,
+        OR_OPTIONS,      
+        "Set filename for the Wasm Module"
+    ),
+    AP_INIT_TAKE1(
+        WASM_DIRECTIVE_WASMARG,
+        wasm_directive_WasmArg,
+        NULL,
+        OR_OPTIONS,      
+        "Add arg context for the Wasm Module"
+    ),
     ),
     {NULL}
 };

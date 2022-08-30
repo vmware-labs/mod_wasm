@@ -20,7 +20,7 @@
 void wasm_set_root(const char *path);
 
 /**
- * Set the Wasm module name
+ * Set the Wasm module filename
  *
  * Due to String management differences between C and Rust, this funciton uses `unsafe {}` code.
  * So `filename` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
@@ -35,6 +35,23 @@ void wasm_set_root(const char *path);
  * ```
  */
 void wasm_set_module(const char *filename);
+
+/**
+ * Add a WASI arg for the Wasm module
+ *
+ * Due to String management differences between C and Rust, this funciton uses `unsafe {}` code.
+ * So `arg` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ *
+ * In addition, `arg` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+ * Otherwise, the root directory will be an empty string.
+ *
+ * # Examples (C Code)
+ *
+ * ```
+ * wasm_set_arg("--help");
+ * ```
+ */
+void wasm_set_arg(const char *arg);
 
 const char *load_and_run(void);
 

@@ -2,9 +2,8 @@
 //! * Integrate with Wasm engines (such as [Wasmtime](https://github.com/bytecodealliance/wasmtime)). 
 //! * Provide a thin C API for instantiating, running, and managing Wasm modules.
 
-// used by OnceCell https://crates.io/crates/once_cell
 use std::sync::Mutex;
-use once_cell::sync::Lazy;
+use once_cell::sync::Lazy; // https://crates.io/crates/once_cell
 
 // modules
 mod wasmengine;
@@ -26,6 +25,12 @@ static WASM_RUNTIME_CONFIG_ROOT: Lazy<Mutex<String>> = Lazy::new(|| {
 // Stores the Wasm module filename.
 static WASM_RUNTIME_CONFIG_MODULE: Lazy<Mutex<String>> = Lazy::new(|| {
     let data = String::new();
+    Mutex::new(data)
+});
+
+// Stores the WASI args for the Wasm module.
+static WASM_RUNTIME_CONFIG_WASI_ARGS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| {
+    let data: Vec<String> = Vec::new();
     Mutex::new(data)
 });
 
