@@ -26,7 +26,7 @@ use crate::wasmengine::run_module;
 #[no_mangle]
 pub extern "C" fn wasm_set_root(path: *const c_char) {
     let path_str = const_c_char_to_str(path);
-    WASM_RUNTIME_CONFIG_ROOT.lock()
+    WASM_RUNTIME_CONFIG_ROOT.write()
         .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_ROOT")
         .replace_range(.., path_str);    
 }
@@ -47,7 +47,7 @@ pub extern "C" fn wasm_set_root(path: *const c_char) {
 #[no_mangle]
 pub extern "C" fn wasm_set_module(filename: *const c_char) {
     let filename_str = const_c_char_to_str(filename);
-    WASM_RUNTIME_CONFIG_MODULE.lock()
+    WASM_RUNTIME_CONFIG_MODULE.write()
         .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_MODULE")
         .replace_range(.., filename_str);    
 }
@@ -69,7 +69,7 @@ pub extern "C" fn wasm_set_module(filename: *const c_char) {
 #[no_mangle]
 pub extern "C" fn wasm_set_arg(arg: *const c_char) {
     let arg_str   = const_c_char_to_str(arg);
-    WASM_RUNTIME_CONFIG_WASI_ARGS.lock()
+    WASM_RUNTIME_CONFIG_WASI_ARGS.write()
         .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_WASI_ARGS")
         .push(arg_str.to_string());
 }
@@ -92,7 +92,7 @@ pub extern "C" fn wasm_set_arg(arg: *const c_char) {
 pub extern "C" fn wasm_set_env(env: *const c_char, value: *const c_char) {
     let env_str   = const_c_char_to_str(env);
     let value_str = const_c_char_to_str(value);
-    WASM_RUNTIME_CONFIG_WASI_ENVS.lock()
+    WASM_RUNTIME_CONFIG_WASI_ENVS.write()
         .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_WASI_ENVS")
         .push((env_str.to_string(), value_str.to_string()));
 }
@@ -114,7 +114,7 @@ pub extern "C" fn wasm_set_env(env: *const c_char, value: *const c_char) {
 #[no_mangle]
 pub extern "C" fn wasm_set_dir(dir: *const c_char) {
     let dir_str   = const_c_char_to_str(dir);
-    WASM_RUNTIME_CONFIG_WASI_DIRS.lock()
+    WASM_RUNTIME_CONFIG_WASI_DIRS.write()
         .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_WASI_DIRS")
         .push(dir_str.to_string());
 }
@@ -139,7 +139,7 @@ pub extern "C" fn wasm_set_dir(dir: *const c_char) {
 pub extern "C" fn wasm_set_mapdir(map: *const c_char, dir: *const c_char) {
     let map_str = const_c_char_to_str(map);
     let dir_str = const_c_char_to_str(dir);
-    WASM_RUNTIME_CONFIG_WASI_MAPDIRS.lock()
+    WASM_RUNTIME_CONFIG_WASI_MAPDIRS.write()
         .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_WASI_MAPDIRS")
         .push((map_str.to_string(), dir_str.to_string()));
 }
