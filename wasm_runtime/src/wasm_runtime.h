@@ -100,6 +100,7 @@ void wasm_set_dir(const char *dir);
  * # Examples (C Code)
  *
  * ```
+ * wasm_set_mapdir("./", ".");
  * wasm_set_mapdir("/wasmhome", "/home/wasm_user");
  * wasm_set_mapdir("/wasmlogs", "/var/log");
  * ```

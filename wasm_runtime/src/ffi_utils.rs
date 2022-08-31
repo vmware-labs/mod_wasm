@@ -50,8 +50,13 @@ pub fn string_to_c_char(string: String) -> *const c_char {
 } 
 
 
+// Once a const char* has been used by C-side with CString::intro_raw(), and it's not needed anymore,
+// Rust needs to recover ownership and deallocate it. So CString::from_raw() is used.
+// Later, we explicitly drop it (it's not really needed) to emphasize the fact that this CString is not needed anymore.
+// More info at: https://doc.rust-lang.org/alloc/ffi/struct.CString.html#method.from_raw
 pub fn deallocate_cstring(ptr: *const c_char) {    
     unsafe {
-        let _cstring = CString::from_raw(ptr as *mut i8);
+        let cstring_to_deallocate = CString::from_raw(ptr as *mut i8);
+        drop(cstring_to_deallocate); 
     };
 }

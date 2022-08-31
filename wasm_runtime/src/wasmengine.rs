@@ -19,8 +19,10 @@ use crate::WASM_RUNTIME_CONFIG_WASI_MAPDIRS;
 
 pub fn run_module() -> Result<String> {
     // Wasm module path
-    let filepath= WASM_RUNTIME_CONFIG_ROOT.lock().unwrap();
-    let filename= WASM_RUNTIME_CONFIG_MODULE.lock().unwrap();
+    let filepath= WASM_RUNTIME_CONFIG_ROOT.lock()
+        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_ROOT");
+    let filename= WASM_RUNTIME_CONFIG_MODULE.lock()
+        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_MODULE");
     let modulepath = format!("{}/{}", filepath, filename);
 
     // WASI context
@@ -28,10 +30,13 @@ pub fn run_module() -> Result<String> {
     let stdout_mutex = Arc::new(RwLock::new(stdout_buf));
     let stdout = WritePipe::from_shared(stdout_mutex.clone());
 
-    let mut args = WASM_RUNTIME_CONFIG_WASI_ARGS.lock().unwrap().clone();
+    let mut args = WASM_RUNTIME_CONFIG_WASI_ARGS.lock()
+        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_WASI_ARGS")
+        .clone();
     args.insert(0, filename.clone()); // adding wasm filename as args[0]
     
-    let envs = WASM_RUNTIME_CONFIG_WASI_ENVS.lock().unwrap();
+    let envs = WASM_RUNTIME_CONFIG_WASI_ENVS.lock()
+        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_WASI_ENVS");
     
     let mut wasi_builder = WasiCtxBuilder::new()
         .stdout(Box::new(stdout))
@@ -39,7 +44,10 @@ pub fn run_module() -> Result<String> {
         .args(&args).expect("ERROR! Wrong WASI args array Vector!")
         .envs(&envs).expect("ERROR! Wrong WASI envs array of duples Vector!");
 
-    for (map, dir) in collect_preopen_dirs().unwrap().into_iter() {
+    for (map, dir) in collect_preopen_dirs()
+        .expect("ERROR! Couldn't collect preopen directories!")
+        .into_iter()
+    {
         wasi_builder = wasi_builder.preopened_dir(
             dir,
             map).expect("ERROR! Can't build WASI context due to preopen directories!");
@@ -52,11 +60,13 @@ pub fn run_module() -> Result<String> {
     let mut store = Store::new(&engine, wasi);
 
     // Wasm module
-    let module = Module::from_file(&engine, modulepath).expect("ERROR! Wasmtime: Can't load module from file!");
+    let module = Module::from_file(&engine, modulepath)
+        .expect("ERROR! Wasmtime: Can't load module from file!");
 
     // Linker (with WASI extensions)
     let mut linker: Linker<WasiCtx> = Linker::new(&engine);
-    wasmtime_wasi::add_to_linker(&mut linker, |cx| cx).expect("ERROR! Wasmtime: Can't add WASI to linker!");
+    wasmtime_wasi::add_to_linker(&mut linker, |cx| cx)
+        .expect("ERROR! Wasmtime: Can't add WASI to linker!");
 
     // Wasm instance and entrypoint
     let instance = linker.instantiate(&mut store, &module)?;
@@ -66,7 +76,8 @@ pub fn run_module() -> Result<String> {
     entrypoint.call(&mut store, ())?;
 
     // Read stdout
-    let output = stdout_mutex.read().unwrap();
+    let output = stdout_mutex.read()
+        .expect("ERROR! Poisoned mutex stdout_mutex");
     let out_string = match String::from_utf8((*output).clone()) {
         Ok(s) => s,
         Err(e) => {
@@ -83,8 +94,10 @@ pub fn run_module() -> Result<String> {
 fn collect_preopen_dirs() -> Result<Vec<(String, Dir)>> {
     let mut preopen_dirs = Vec::new();
 
-    let dirs = WASM_RUNTIME_CONFIG_WASI_DIRS.lock().unwrap();
-    let map_dirs = WASM_RUNTIME_CONFIG_WASI_MAPDIRS.lock().unwrap();
+    let dirs = WASM_RUNTIME_CONFIG_WASI_DIRS.lock()
+        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_WASI_DIRS");
+    let map_dirs = WASM_RUNTIME_CONFIG_WASI_MAPDIRS.lock()
+        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_WASI_MAPDIRS");
 
     for dir in dirs.iter() {
         preopen_dirs.push(
