@@ -156,7 +156,7 @@ pub extern "C" fn load_and_run() -> *const c_char {
         }
     };
 
-    string_to_c_char(result)
+    str_to_c_char(&result)
 }
 
 

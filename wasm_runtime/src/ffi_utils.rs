@@ -29,15 +29,15 @@ pub fn const_c_char_to_str(const_c_char: *const c_char) -> &'static str {
     str
 }
 
-// Coverts a Rust String into a null-terminated C `const char*`
+// Coverts a Rust String slice into a null-terminated C `const char*`
 // Two steps:
-//   1) From String to CString (ensuring null-termination)
+//   1) From &str to CString (ensuring null-termination)
 //   2) From CString into *const c_char (C char pointer) via CString::into_raw()
 //      This sencond step will trasnfer ownership of the pointer to the C world.
 //      C must callback Rust to deallocate such a CString raw pointer via CString::from_raw.
 //      Otherwise, the CString will leak the memory used.
 //      More info at: https://doc.rust-lang.org/alloc/ffi/struct.CString.html#method.from_raw
-pub fn string_to_c_char(string: String) -> *const c_char {
+pub fn str_to_c_char(string: &str) -> *const c_char {
     let cstring = match CString::new(string) {
         Ok(s) => s,
         Err(e) => {
