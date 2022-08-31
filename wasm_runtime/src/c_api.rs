@@ -12,7 +12,7 @@ use crate::wasmengine::run_module;
 
 /// Set the root directory for loading Wasm modules.
 ///
-/// Due to String management differences between C and Rust, this funciton uses `unsafe {}` code.
+/// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
 /// So `path` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
 /// 
 /// In addition, `path` must contain valid ASCII chars that can be converted into UTF-8 encoding.
@@ -33,7 +33,7 @@ pub extern "C" fn wasm_set_root(path: *const c_char) {
 
 /// Set the Wasm module filename
 ///
-/// Due to String management differences between C and Rust, this funciton uses `unsafe {}` code.
+/// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
 /// So `filename` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
 /// 
 /// In addition, `filename` must contain valid ASCII chars that can be converted into UTF-8 encoding.
@@ -55,7 +55,7 @@ pub extern "C" fn wasm_set_module(filename: *const c_char) {
 
 /// Add a WASI arg for the Wasm module
 ///
-/// Due to String management differences between C and Rust, this funciton uses `unsafe {}` code.
+/// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
 /// So `arg` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
 /// 
 /// In addition, `arg` must contain valid ASCII chars that can be converted into UTF-8 encoding.
@@ -77,7 +77,7 @@ pub extern "C" fn wasm_set_arg(arg: *const c_char) {
 
 /// Set a WASI environment variable for the Wasm module
 ///
-/// Due to String management differences between C and Rust, this funciton uses `unsafe {}` code.
+/// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
 /// So `env` and `value` must be valid pointers to a null-terminated C char array. Otherwise, code might panic.
 /// 
 /// In addition, `env` and `value` must contain valid ASCII chars that can be converted into UTF-8 encoding.
@@ -100,7 +100,7 @@ pub extern "C" fn wasm_set_env(env: *const c_char, value: *const c_char) {
 
 /// Add a WASI preopen dir for the Wasm module
 ///
-/// Due to String management differences between C and Rust, this funciton uses `unsafe {}` code.
+/// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
 /// So `dir` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
 /// 
 /// In addition, `dir` must contain valid ASCII chars that can be converted into UTF-8 encoding.
@@ -122,7 +122,7 @@ pub extern "C" fn wasm_set_dir(dir: *const c_char) {
 
 /// Add a WASI preopen dir with mapping for the Wasm module
 ///
-/// Due to String management differences between C and Rust, this funciton uses `unsafe {}` code.
+/// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
 /// So `map` and `dir` must be valid pointers to a null-terminated C char array. Otherwise, code might panic.
 /// 
 /// In addition, `map` and `dir` must contain valid ASCII chars that can be converted into UTF-8 encoding.
