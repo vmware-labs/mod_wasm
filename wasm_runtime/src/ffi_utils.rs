@@ -1,7 +1,7 @@
-// ffi-utils.rs
-//
-// FFI stands for 'Foreign Function Interface'
-// This file contains functions needed for offering a C ABI compatible API from Rust.
+//! ffi-utils.rs
+//!
+//! FFI stands for 'Foreign Function Interface'
+//! This file contains functions needed for offering a C ABI compatible API from Rust.
 
 use std::os::raw::c_char;
 use std::ffi::CStr;

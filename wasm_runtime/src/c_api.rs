@@ -1,14 +1,18 @@
+//! c_api.rs
+//!
+//! This file contains the API functions for the C language
+
+use std::os::raw::c_char;
+
+use crate::ffi_utils::*;
+use crate::wasmengine::run_module;
+
 use crate::WASM_RUNTIME_CONFIG_ROOT;
 use crate::WASM_RUNTIME_CONFIG_MODULE;
 use crate::WASM_RUNTIME_CONFIG_WASI_ARGS;
 use crate::WASM_RUNTIME_CONFIG_WASI_ENVS;
 use crate::WASM_RUNTIME_CONFIG_WASI_DIRS;
 use crate::WASM_RUNTIME_CONFIG_WASI_MAPDIRS;
-
-use crate::ffi_utils::*;
-use std::os::raw::c_char;
-
-use crate::wasmengine::run_module;
 
 /// Set the root directory for loading Wasm modules.
 ///

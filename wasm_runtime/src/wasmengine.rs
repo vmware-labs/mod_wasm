@@ -1,6 +1,6 @@
 // wasmengine.rs
 //
-// As Wasm engine, we will use Wasmtime from the Bytecode Alliance:
+// Using Wasmtime from the Bytecode Alliance as the Wasm Engine
 // https://github.com/bytecodealliance/wasmtime
 
 use anyhow::Result;
