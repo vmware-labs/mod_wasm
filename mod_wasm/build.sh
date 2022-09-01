@@ -1,10 +1,13 @@
 #!/bin/sh
 
+env
+set -x
+
 echo "[Building mod_wasm]"
 
-HTTP_SERVER_PATH=/home/ubuntu/Home/Workspace/VMware/mod_wasm/httpd
-WASM_RUNTIME_PATH=/home/ubuntu/Home/Workspace/VMware/mod_wasm/wasm_runtime
-
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+WASM_RUNTIME_PATH=${WASM_RUNTIME_PATH:-$(realpath "${SCRIPT_DIR}/../wasm_runtime")}
+DIST_DIR=${DIST_DIR:-$(realpath "${SCRIPT_DIR}/../dist")}
 
 echo "[Deleting binaries]"
 
@@ -22,8 +25,10 @@ echo "[Building mod_wasm]"
 
 echo "[mod_wasm: compiling]"
 /usr/share/apr-1.0/build/libtool --verbose --mode=compile x86_64-linux-gnu-gcc -DLINUX -D_REENTRANT -D_GNU_SOURCE \
-     -I${HTTP_SERVER_PATH}/include -I${HTTP_SERVER_PATH}/os/unix \
-     -I/usr/include/apr-1.0 -I/usr/include \
+     -I/usr/include/apache2 \
+     $(pkg-config --cflags apr-1 apr-util-1) \
+     -I/usr/include \
+     -I/usr/include/mod_wasm \
      -I${WASM_RUNTIME_PATH}/src \
      -shared \
      -c mod_wasm.c && touch mod_wasm.slo
@@ -36,5 +41,6 @@ echo "[mod_wasm: linking]"
      -module -avoid-version mod_wasm.lo
 
 echo "[Installing module]"
-cp -v .libs/mod_wasm.so ../httpd/dist/modules/
-cp -v httpd.conf ../httpd/dist/conf
+mkdir -p "${DIST_DIR}/modules/" "${DIST_DIR}/conf/"
+cp -v .libs/mod_wasm.so "${DIST_DIR}/modules/"
+cp -v httpd.conf "${DIST_DIR}/conf/"

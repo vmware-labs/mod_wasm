@@ -1,6 +1,6 @@
-mod_wasm.la
-mod_wasm.lo
-mod_wasm.slo
+*.la
+*.lo
+*.slo
 mod_wasm/.libs
 wasm_runtime/.vscode
 examples/hello_wasm/target
