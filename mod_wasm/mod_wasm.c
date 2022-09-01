@@ -167,7 +167,6 @@ static void *x_create_dir_config(apr_pool_t *p, char *dirspec)
     cfg->loc = apr_pstrcat(p, "DIR(", dname, ")", NULL);
     note = apr_psprintf(p, "x_create_dir_config(p == %pp, dirspec == %s)",
                         (void*) p, dirspec);
-    trace_nocontext(NULL, __FILE__, __LINE__, note);
     return (void *) cfg;
 }
 
@@ -297,6 +296,27 @@ static void *x_merge_server_config(apr_pool_t *p, void *server1_conf,
 }
 
 
+/*
+ * Post-config hook
+ */
+static int post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
+                          apr_pool_t *ptemp, server_rec *s)
+{
+    trace_nocontext(NULL, __FILE__, __LINE__, "post_config_hook() - initializing wasm_runtime...");
+
+    // init wasm_runtime
+    const char* result = wasm_runtime_init_module();
+    
+    if (strcmp(result, "") != 0)  // something went wrong
+        trace_nocontext(NULL, __FILE__, __LINE__, "post_config_hook() - ERROR! Couldn't initiale wasm_runtime!");
+    else 
+        trace_nocontext(NULL, __FILE__, __LINE__, "post_config_hook() - wasm_runtime initialized!");
+
+    return_const_char_ownership(result);
+
+    return OK;
+}
+
 
 /*
  * Content handler
@@ -305,11 +325,7 @@ static int content_handler(request_rec *r)
 {
     /* If it's not for us, get out as soon as possible. */
     if (strcmp(r->handler, "wasm-handler")) {
-        //trace_nocontext(NULL, __FILE__, __LINE__, "content_handler() - DECLINED");
         return DECLINED;
-    }
-    else {
-        trace_nocontext(NULL, __FILE__, __LINE__, "content_handler() - ACCEPTED");
     }
 
 
@@ -341,8 +357,8 @@ static int content_handler(request_rec *r)
     ap_rprintf(r, "Apache HTTP Server version: \"%s\"\n", ap_get_server_banner());
     ap_rputs("  <BR>\n", r);
     
-    // invoke wasm_runtime
-    const char* content = load_and_run();
+    // run Wasm module
+    const char* content = wasm_runtime_run_module();
     ap_rprintf(r, "%s", content);
     return_const_char_ownership(content);
 
@@ -388,6 +404,7 @@ static int content_handler(request_rec *r)
  */
 static void register_hooks(apr_pool_t *p)
 {
+    ap_hook_post_config(post_config_hook, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_handler(content_handler, NULL, NULL, APR_HOOK_MIDDLE);
 }
 
@@ -403,10 +420,6 @@ static void register_hooks(apr_pool_t *p)
 static const char *wasm_directive_WasmRoot(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-
-    char message[128];
-    snprintf(message, 128, "[mod_wasm]: '%s' directive set to '%s'", WASM_DIRECTIVE_WASMROOT, word1);
-    trace_nocontext(NULL, __FILE__, __LINE__, message);
     wasm_set_root(word1);
     return NULL;
 }
@@ -415,10 +428,6 @@ static const char *wasm_directive_WasmRoot(cmd_parms *cmd, void *mconfig, const 
 static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-
-    char message[128];
-    snprintf(message, 128, "[mod_wasm]: '%s' directive set to '%s'", WASM_DIRECTIVE_WASMMODULE, word1);
-    trace_nocontext(NULL, __FILE__, __LINE__, message);
     wasm_set_module(word1);
     return NULL;
 }
@@ -427,10 +436,6 @@ static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, cons
 static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-
-    char message[128];
-    snprintf(message, 128, "[mod_wasm]: '%s' directive set to '%s'", WASM_DIRECTIVE_WASMARG, word1);
-    trace_nocontext(NULL, __FILE__, __LINE__, message);
     wasm_set_arg(word1);
     return NULL;
 }
@@ -439,10 +444,6 @@ static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const c
 static const char *wasm_directive_WasmEnv(cmd_parms *cmd, void *mconfig, const char *word1, const char *word2)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-
-    char message[128];
-    snprintf(message, 128, "[mod_wasm]: '%s' directive set to '%s' = '%s'", WASM_DIRECTIVE_WASMENV, word1, word2);
-    trace_nocontext(NULL, __FILE__, __LINE__, message);
     wasm_set_env(word1, word2);
     return NULL;
 }
@@ -451,10 +452,6 @@ static const char *wasm_directive_WasmEnv(cmd_parms *cmd, void *mconfig, const c
 static const char *wasm_directive_WasmDir(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-
-    char message[128];
-    snprintf(message, 128, "[mod_wasm]: '%s' directive set to '%s'", WASM_DIRECTIVE_WASMDIR, word1);
-    trace_nocontext(NULL, __FILE__, __LINE__, message);
     wasm_set_dir(word1);
     return NULL;
 }
@@ -463,10 +460,6 @@ static const char *wasm_directive_WasmDir(cmd_parms *cmd, void *mconfig, const c
 static const char *wasm_directive_WasmMapDir(cmd_parms *cmd, void *mconfig, const char *word1, const char *word2)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-
-    char message[128];
-    snprintf(message, 128, "[mod_wasm]: '%s' directive set to '%s' = '%s'", WASM_DIRECTIVE_WASMMAPDIR, word1, word2);
-    trace_nocontext(NULL, __FILE__, __LINE__, message);
     wasm_set_mapdir(word1, word2);
     return NULL;
 }
