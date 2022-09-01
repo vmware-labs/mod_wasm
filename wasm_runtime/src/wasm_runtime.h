@@ -108,6 +108,15 @@ void wasm_set_dir(const char *dir);
 void wasm_set_mapdir(const char *map,
                      const char *dir);
 
-const char *load_and_run(void);
+/**
+ * Initialize the Wasm module
+ *
+ * Returns empty string if initialization was succesfuly.
+ * Otherwise, it returns a string with the error.
+ *
+ */
+const char *wasm_runtime_init_module(void);
+
+const char *wasm_runtime_run_module(void);
 
 void return_const_char_ownership(const char *ptr);

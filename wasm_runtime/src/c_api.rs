@@ -5,7 +5,7 @@
 use std::os::raw::c_char;
 
 use crate::ffi_utils::*;
-use crate::wasmengine::run_module;
+use crate::wasmengine::{init_module, run_module};
 
 use crate::WASM_RUNTIME_CONFIG_ROOT;
 use crate::WASM_RUNTIME_CONFIG_MODULE;
@@ -149,12 +149,34 @@ pub extern "C" fn wasm_set_mapdir(map: *const c_char, dir: *const c_char) {
 }
 
 
+/// Initialize the Wasm module
+///
+/// Returns empty string if initialization was succesfuly.
+/// Otherwise, it returns a string with the error.
+/// 
 #[no_mangle]
-pub extern "C" fn load_and_run() -> *const c_char {
+pub extern "C" fn wasm_runtime_init_module() -> *const c_char {
+    
+    let mut return_msg = String::new();
+
+    match init_module() {
+        true => (),
+        false => {
+            return_msg = format!("ERROR: C-API: Can't initialize Wasm module!");
+            eprintln!("{}", return_msg);
+        }
+    };
+
+    str_to_c_char(&return_msg)
+}
+
+
+#[no_mangle]
+pub extern "C" fn wasm_runtime_run_module() -> *const c_char {
     let result = match run_module() {
         Ok(s) => s,
         Err(e) => {
-            let error_msg = format!("ERROR: C-API: Can't load and run Wasm module! {:?}", e);
+            let error_msg = format!("ERROR: C-API: Can't run Wasm module! {:?}", e);
             eprintln!("{}", error_msg);
             error_msg
         }

@@ -5,6 +5,11 @@
 use std::sync::{Arc, RwLock};
 use once_cell::sync::Lazy; // https://crates.io/crates/once_cell
 
+use wasmtime::{Engine, Store, Linker, Instance, Module};
+use wasi_common::WasiCtx;
+
+use crate::wasi_context::build_wasi_ctx;
+
 // modules
 mod wasmengine;
 mod wasi_context;
@@ -64,3 +69,69 @@ static WASM_RUNTIME_STDOUT_SPTR: Lazy<RwLock<Arc<RwLock<Vec<u8>>>>> = Lazy::new(
     let data = Arc::new(RwLock::new(Vec::new()));
     RwLock::new(data)
 });
+
+// Stores the Wasmtime Engine
+static WASM_RUNTIME_ENGINE: Lazy<RwLock<Engine>> = Lazy::new(|| {
+    let data: Engine = Engine::default();
+    RwLock::new(data)
+});
+
+// Stores the Wasmtime Store
+static WASM_RUNTIME_STORE: Lazy<RwLock<Store<WasiCtx>>> = Lazy::new(|| {
+    let engine = WASM_RUNTIME_ENGINE.read()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_ENGINE on read()");
+
+    let wasi = build_wasi_ctx();
+
+    let data: Store<WasiCtx> = Store::new(&engine, wasi);
+    RwLock::new(data)
+});
+
+// Stores the Wasmtime Module Instance
+//
+// Steps to load a Wasm module and invoking a function:
+// 1) Get a wasmtime::Engine object.
+//    Engine::default() will return an Engine with default setup (will be likely good enough).
+// 2) A wasmtime::Module can be loaded now into memory for the previous Engine.
+//    Module::from_file(&engine, modulepath)
+// 3) Get a wasmtime::Store object. 
+//    A new Store requires a reference to the previous Engine and optionally a WASI context (stdio, envs, args, preopen dirs, etc.)
+// 4) Get a mutable wasmtime::Linker object.
+//    Optionally, add WASI extension to the Linker via wasmtime_wasi::add_to_linker()
+// 5) Request the Linker to instantiate the Module for the given Store. That would return an Instance.
+//    linker.instantiate(&mut store, &module)
+// 6) Obtain the function to invoke from the Instance and passing the Store.
+//    instance.get_typed_func::<(), (), _>(&mut *store, "_start")
+static WASM_RUNTIME_INSTANCE: Lazy<RwLock<Instance>> = Lazy::new(|| {
+    let engine = WASM_RUNTIME_ENGINE.read()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_ENGINE on read()");
+
+    // read Wasm module from file
+    let modulepath = build_module_path();
+    let module = Module::from_file(&engine, modulepath)
+        .expect("ERROR! Wasmtime: Can't load module from file!");
+
+    let mut store = WASM_RUNTIME_STORE.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_STORE on write()");
+    
+    // Linker (with WASI extensions)
+    let mut linker: Linker<WasiCtx> = Linker::new(&engine);
+    wasmtime_wasi::add_to_linker(&mut linker, |cx| cx)
+        .expect("ERROR! Wasmtime: Can't add WASI to linker!");
+
+    let data: Instance = linker.instantiate(&mut *store, &module)
+        .expect("ERROR! Wasmtime: Can't instantiate module!");
+
+    RwLock::new(data)
+});
+
+
+fn build_module_path() -> String {
+    let filepath= WASM_RUNTIME_CONFIG_ROOT.read()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG_ROOT on read()");
+    let filename= WASM_RUNTIME_CONFIG_MODULE.read()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG_MODULE on read()");
+    let modulepath = format!("{}/{}", filepath, filename);
+
+    modulepath
+}

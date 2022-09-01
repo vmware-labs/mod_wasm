@@ -4,49 +4,87 @@
 // https://github.com/bytecodealliance/wasmtime
 
 use anyhow::Result;
-use wasmtime::*;
-use wasmtime_wasi::*;
 
-use crate::wasi_context::*;
-
-use crate::WASM_RUNTIME_CONFIG_ROOT;
-use crate::WASM_RUNTIME_CONFIG_MODULE;
 use crate::WASM_RUNTIME_STDOUT_SPTR;
+use crate::WASM_RUNTIME_STORE;
+use crate::WASM_RUNTIME_INSTANCE;
 
 
-pub fn run_module() -> Result<String> {
+/// Initialize the Wasm Module and all the Wasmtime needed objects to later call a function.
+///
+/// Due to the Wasmtime object's depency graph, by initializing an Instance, will automatically
+/// trigger all the other lazy initializations.
+/// 
+/// See below the Wasmtime object's dependcy graph:
+/// Instance  ---> Module, Linker, Store
+///    Module ---> Engine
+///    Linker ---> Engine
+///    Store  ---> Engine, WasiCtx
+///    Engine ---> 0
+///   WasiCtx ---> 0
+///
+pub fn init_module() -> bool {
+    let loaded_instance = match WASM_RUNTIME_INSTANCE.read() {
+        Ok(_) => true,
+        Err(_) => {
+            eprintln!("ERROR! Poisoned RwLock WASM_RUNTIME_STORE on write()");
+            false
+        }
+    };
+    
+    loaded_instance
+}
 
-    let wasi = build_wasi_ctx();
 
-    // Wasmtime Engine & Store (with WASI context)
-    let engine = Engine::default();
-    let mut store = Store::new(&engine, wasi);
+pub fn run_module() -> Result<String> {        
+    clear_stdout();
+    invoke_function("_start");
 
-    // Wasm module
-    let modulepath = build_module_path();
-    let module = Module::from_file(&engine, modulepath)
-        .expect("ERROR! Wasmtime: Can't load module from file!");
+    let output = read_stdout()
+        .expect("ERROR! Couldn't read stdout after invoking function!");
 
-    // Linker (with WASI extensions)
-    let mut linker: Linker<WasiCtx> = Linker::new(&engine);
-    wasmtime_wasi::add_to_linker(&mut linker, |cx| cx)
-        .expect("ERROR! Wasmtime: Can't add WASI to linker!");
+    Ok(output)
+}
 
-    // Wasm instance and entrypoint
-    let instance = linker.instantiate(&mut store, &module)?;
-    let entrypoint = instance.get_typed_func::<(), (), _>(&mut store, "_start")?;
 
-    // Calling the entrypoint inside the Wasm module
-    entrypoint.call(&mut store, ())?;
+fn clear_stdout() {
+    let stdout_sptr = WASM_RUNTIME_STDOUT_SPTR.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_STDOUT_SPTR on write()");
 
-    // Read stdout
+    let mut stdout_buf = stdout_sptr.write()
+        .expect("ERROR! Poisoned RwLock stdout_sptr on write()");
+        
+    (*stdout_buf).clear();
+}
+
+
+fn invoke_function(function_name: &str) {
+    // get store and instance from statics
+    let mut store = WASM_RUNTIME_STORE.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_STORE on write()");
+
+    let instance = WASM_RUNTIME_INSTANCE.read()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_STORE on write()");
+        
+    // get typed function from instance
+    let typed_function = instance.get_typed_func::<(), (), _>(&mut *store, function_name)
+        .expect("ERROR! Can't get typed function from instance!");
+
+    // invoke function    
+    typed_function.call(&mut (*store), ())
+        .expect("ERROR! Can't invoke typed function!");
+}
+
+
+fn read_stdout() -> Result<String> {
+    // read stdout
     let stdout_sptr = WASM_RUNTIME_STDOUT_SPTR.read()
-        .expect("ERROR! Poisoned mutex WASM_RUNTIME_STDOUT_SPTR");
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_STDOUT_SPTR on read()");
 
-    let stdou_buf = stdout_sptr.read()
-        .expect("ERROR! Poisoned mutex stdout_sptr");
-
-    let out_string = match String::from_utf8((*stdou_buf).clone()) {
+    let stdout_buf = stdout_sptr.read()
+        .expect("ERROR! Poisoned RwLock stdout_sptr on read()");
+        
+    let out_string = match String::from_utf8((*stdout_buf).clone()) {
         Ok(s) => s,
         Err(e) => {
             let str_error_msg = format!("ERROR! Can't covert stdout to UTF-8 string! {}", e);
@@ -56,15 +94,4 @@ pub fn run_module() -> Result<String> {
     };
 
     Ok(out_string)
-}
-
-
-fn build_module_path() -> String {
-    let filepath= WASM_RUNTIME_CONFIG_ROOT.read()
-        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_ROOT");
-    let filename= WASM_RUNTIME_CONFIG_MODULE.read()
-        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_MODULE");
-    let modulepath = format!("{}/{}", filepath, filename);
-
-    modulepath
 }
