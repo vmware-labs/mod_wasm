@@ -6,60 +6,24 @@
 use anyhow::Result;
 use wasmtime::*;
 use wasmtime_wasi::*;
-use wasi_common::pipe::WritePipe;
-use std::sync::{Arc, RwLock};
+
+use crate::wasi_context::*;
 
 use crate::WASM_RUNTIME_CONFIG_ROOT;
 use crate::WASM_RUNTIME_CONFIG_MODULE;
-use crate::WASM_RUNTIME_CONFIG_WASI_ARGS;
-use crate::WASM_RUNTIME_CONFIG_WASI_ENVS;
-use crate::WASM_RUNTIME_CONFIG_WASI_DIRS;
-use crate::WASM_RUNTIME_CONFIG_WASI_MAPDIRS;
+use crate::WASM_RUNTIME_STDOUT_SPTR;
 
 
 pub fn run_module() -> Result<String> {
-    // Wasm module path
-    let filepath= WASM_RUNTIME_CONFIG_ROOT.read()
-        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_ROOT");
-    let filename= WASM_RUNTIME_CONFIG_MODULE.read()
-        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_MODULE");
-    let modulepath = format!("{}/{}", filepath, filename);
 
-    // WASI context
-    let stdout_buf: Vec<u8> = vec![];
-    let stdout_mutex = Arc::new(RwLock::new(stdout_buf));
-    let stdout = WritePipe::from_shared(stdout_mutex.clone());
-
-    let mut args = WASM_RUNTIME_CONFIG_WASI_ARGS.read()
-        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_WASI_ARGS")
-        .clone();
-    args.insert(0, filename.clone()); // adding wasm filename as args[0]
-    
-    let envs = WASM_RUNTIME_CONFIG_WASI_ENVS.read()
-        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_WASI_ENVS");
-    
-    let mut wasi_builder = WasiCtxBuilder::new()
-        .stdout(Box::new(stdout))
-        .inherit_stderr()
-        .args(&args).expect("ERROR! Wrong WASI args array Vector!")
-        .envs(&envs).expect("ERROR! Wrong WASI envs array of duples Vector!");
-
-    for (map, dir) in collect_preopen_dirs()
-        .expect("ERROR! Couldn't collect preopen directories!")
-        .into_iter()
-    {
-        wasi_builder = wasi_builder.preopened_dir(
-            dir,
-            map).expect("ERROR! Can't build WASI context due to preopen directories!");
-    } 
-
-    let wasi = wasi_builder.build();
+    let wasi = build_wasi_ctx();
 
     // Wasmtime Engine & Store (with WASI context)
     let engine = Engine::default();
     let mut store = Store::new(&engine, wasi);
 
     // Wasm module
+    let modulepath = build_module_path();
     let module = Module::from_file(&engine, modulepath)
         .expect("ERROR! Wasmtime: Can't load module from file!");
 
@@ -76,9 +40,13 @@ pub fn run_module() -> Result<String> {
     entrypoint.call(&mut store, ())?;
 
     // Read stdout
-    let output = stdout_mutex.read()
-        .expect("ERROR! Poisoned mutex stdout_mutex");
-    let out_string = match String::from_utf8((*output).clone()) {
+    let stdout_sptr = WASM_RUNTIME_STDOUT_SPTR.read()
+        .expect("ERROR! Poisoned mutex WASM_RUNTIME_STDOUT_SPTR");
+
+    let stdou_buf = stdout_sptr.read()
+        .expect("ERROR! Poisoned mutex stdout_sptr");
+
+    let out_string = match String::from_utf8((*stdou_buf).clone()) {
         Ok(s) => s,
         Err(e) => {
             let str_error_msg = format!("ERROR! Can't covert stdout to UTF-8 string! {}", e);
@@ -91,33 +59,12 @@ pub fn run_module() -> Result<String> {
 }
 
 
-fn collect_preopen_dirs() -> Result<Vec<(String, Dir)>> {
-    let mut preopen_dirs = Vec::new();
+fn build_module_path() -> String {
+    let filepath= WASM_RUNTIME_CONFIG_ROOT.read()
+        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_ROOT");
+    let filename= WASM_RUNTIME_CONFIG_MODULE.read()
+        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_MODULE");
+    let modulepath = format!("{}/{}", filepath, filename);
 
-    let dirs = WASM_RUNTIME_CONFIG_WASI_DIRS.read()
-        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_WASI_DIRS");
-    let map_dirs = WASM_RUNTIME_CONFIG_WASI_MAPDIRS.read()
-        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_WASI_MAPDIRS");
-
-    for dir in dirs.iter() {
-        preopen_dirs.push(
-            (
-                dir.clone(),
-                Dir::open_ambient_dir(dir, ambient_authority())
-                        .expect(format! ("ERROR! Failed to open host directory '{}' for preopen!", dir).as_str())
-            )
-        );
-    }
-
-    for (map, host) in map_dirs.iter() {
-        preopen_dirs.push(
-            (
-                map.clone(),
-                Dir::open_ambient_dir(host, ambient_authority())
-                    .expect(format! ("ERROR! Failed to open host directory '{}' for preopen!", host).as_str())
-            )
-        );
-    }
-
-    Ok(preopen_dirs)
+    modulepath
 }

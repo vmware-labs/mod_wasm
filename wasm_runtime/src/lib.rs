@@ -2,11 +2,12 @@
 //! * Integrate with Wasm engines (such as [Wasmtime](https://github.com/bytecodealliance/wasmtime)). 
 //! * Provide a thin C API for instantiating, running, and managing Wasm modules.
 
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 use once_cell::sync::Lazy; // https://crates.io/crates/once_cell
 
 // modules
 mod wasmengine;
+mod wasi_context;
 mod ffi_utils;
 mod c_api;
 
@@ -53,4 +54,13 @@ static WASM_RUNTIME_CONFIG_WASI_MAPDIRS: Lazy<RwLock<Vec<(String, String)>>> = L
 });
 
 
-
+// Two different patterns co-live here:
+//  1) Lazy<RwLock<T>> is the pattern for static, mutable and shareable state.
+//  2) Arc<RwLock<T>> is the type required by WASI to pipe stdout.
+// We need stdout buf to be allocated in the data segment as a static variable, 
+// so that it can be shared between the Wasmtime initialization plus the Wasm instantiation process,
+// and the execution of a Wasm function.
+static WASM_RUNTIME_STDOUT_SPTR: Lazy<RwLock<Arc<RwLock<Vec<u8>>>>> = Lazy::new(|| {
+    let data = Arc::new(RwLock::new(Vec::new()));
+    RwLock::new(data)
+});
