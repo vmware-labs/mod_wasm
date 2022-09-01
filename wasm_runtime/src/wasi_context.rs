@@ -35,7 +35,7 @@ pub fn build_wasi_ctx() -> WasiCtx {
 
 fn build_stdout_pipe() -> WritePipe<Vec<u8>> {
     let stdout_mutex = WASM_RUNTIME_STDOUT_SPTR.write()
-        .expect("ERROR! Poisoned mutex WASM_RUNTIME_STDOUT_SPTR");
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_STDOUT_SPTR on write()");
     let stdout_pipe = WritePipe::from_shared((*stdout_mutex).clone());
 
     stdout_pipe
@@ -45,10 +45,10 @@ fn build_stdout_pipe() -> WritePipe<Vec<u8>> {
 fn build_wasi_args() -> Vec<String> {
     // filename will be used as arg[0]
     let filename= WASM_RUNTIME_CONFIG_MODULE.read()
-        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_MODULE");
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG_MODULE on read()");
     
     let mut args = WASM_RUNTIME_CONFIG_WASI_ARGS.read()
-        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_WASI_ARGS")
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG_WASI_ARGS on read()")
         .clone();
 
     args.insert(0, filename.clone()); // adding wasm filename as args[0]
@@ -59,7 +59,7 @@ fn build_wasi_args() -> Vec<String> {
 
 fn build_wasi_envs() -> Vec<(String, String)> {
     let envs = WASM_RUNTIME_CONFIG_WASI_ENVS.read()
-        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_WASI_ENVS")
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG_WASI_ENVS on read()")
         .clone();
         
     envs
@@ -84,9 +84,9 @@ fn collect_preopen_dirs() -> Result<Vec<(String, Dir)>> {
     let mut preopen_dirs = Vec::new();
 
     let dirs = WASM_RUNTIME_CONFIG_WASI_DIRS.read()
-        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_WASI_DIRS");
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG_WASI_DIRS on read()");
     let map_dirs = WASM_RUNTIME_CONFIG_WASI_MAPDIRS.read()
-        .expect("ERROR! Poisoned mutex WASM_RUNTIME_CONFIG_WASI_MAPDIRS");
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG_WASI_MAPDIRS on read()");
 
     // collect preopen directories (ie: --dir /tmp)
     for dir in dirs.iter() {
