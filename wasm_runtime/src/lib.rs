@@ -8,9 +8,11 @@ use once_cell::sync::Lazy; // https://crates.io/crates/once_cell
 use wasmtime::{Engine, Store, Linker, Instance, Module};
 use wasi_common::WasiCtx;
 
+use crate::config::WASM_RUNTIME_CONFIG;
 use crate::wasi_context::build_wasi_ctx;
 
 // modules
+mod config;
 mod wasmengine;
 mod wasi_context;
 mod ffi_utils;
@@ -18,45 +20,9 @@ mod c_api;
 
 // The following static variables are used to achieve a global, mutable and thread-safe shareable state.
 // For that given purpose, it uses [Once Cell](https://crates.io/crates/once_cell).
-// Any object will be protected by `once_cell::sync::Lazy` and `std::sync::Mutex`.
+// Any object will be protected by `once_cell::sync::Lazy` and `std::sync::{Mutex, RwLock}`.
 //
 //
-
-// Stores the root directory for loading Wasm modules.
-static WASM_RUNTIME_CONFIG_ROOT: Lazy<RwLock<String>> = Lazy::new(|| {
-    let data = String::new();
-    RwLock::new(data)
-});
-
-// Stores the Wasm module filename.
-static WASM_RUNTIME_CONFIG_MODULE: Lazy<RwLock<String>> = Lazy::new(|| {
-    let data = String::new();
-    RwLock::new(data)
-});
-
-// Stores the WASI args for the Wasm module.
-static WASM_RUNTIME_CONFIG_WASI_ARGS: Lazy<RwLock<Vec<String>>> = Lazy::new(|| {
-    let data: Vec<String> = Vec::new();
-    RwLock::new(data)
-});
-
-// Stores the WASI env variables for the Wasm module.
-static WASM_RUNTIME_CONFIG_WASI_ENVS: Lazy<RwLock<Vec<(String, String)>>> = Lazy::new(|| {
-    let data: Vec<(String, String)> = Vec::new();
-    RwLock::new(data)
-});
-
-// Stores the WASI preopen dirs for the Wasm module.
-static WASM_RUNTIME_CONFIG_WASI_DIRS: Lazy<RwLock<Vec<String>>> = Lazy::new(|| {
-    let data: Vec<String> = Vec::new();
-    RwLock::new(data)
-});
-
-// Stores the WASI preopen dirs with mapping for the Wasm module.
-static WASM_RUNTIME_CONFIG_WASI_MAPDIRS: Lazy<RwLock<Vec<(String, String)>>> = Lazy::new(|| {
-    let data: Vec<(String, String)> = Vec::new();
-    RwLock::new(data)
-});
 
 
 // Two different patterns co-live here:
@@ -132,11 +98,9 @@ static WASM_RUNTIME_INVOCATION: Lazy<Mutex<()>> = Lazy::new(|| {
 });
 
 fn build_module_path() -> String {
-    let filepath = WASM_RUNTIME_CONFIG_ROOT.read()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG_ROOT on read()");
-    let filename = WASM_RUNTIME_CONFIG_MODULE.read()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG_MODULE on read()");
-    let modulepath = format!("{}/{}", filepath, filename);
+    let wasm_runtime_config = WASM_RUNTIME_CONFIG.read()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on read()");
 
-    modulepath
+    // module_path = path + "/" + file
+    format!("{}/{}", wasm_runtime_config.path, wasm_runtime_config.file)
 }

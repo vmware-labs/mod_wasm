@@ -4,15 +4,9 @@
 
 use std::os::raw::c_char;
 
+use crate::config::WASM_RUNTIME_CONFIG;
 use crate::ffi_utils::*;
 use crate::wasmengine::{init_module, run_module};
-
-use crate::WASM_RUNTIME_CONFIG_ROOT;
-use crate::WASM_RUNTIME_CONFIG_MODULE;
-use crate::WASM_RUNTIME_CONFIG_WASI_ARGS;
-use crate::WASM_RUNTIME_CONFIG_WASI_ENVS;
-use crate::WASM_RUNTIME_CONFIG_WASI_DIRS;
-use crate::WASM_RUNTIME_CONFIG_WASI_MAPDIRS;
 
 /// Set the root directory for loading Wasm modules.
 ///
@@ -30,9 +24,11 @@ use crate::WASM_RUNTIME_CONFIG_WASI_MAPDIRS;
 #[no_mangle]
 pub extern "C" fn wasm_set_root(path: *const c_char) {
     let path_str = const_c_char_to_str(path);
-    WASM_RUNTIME_CONFIG_ROOT.write()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG_ROOT on write()")
-        .replace_range(.., path_str);    
+
+    WASM_RUNTIME_CONFIG.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
+        .path
+        .replace_range(.., path_str); 
 }
 
 /// Set the Wasm module filename
@@ -51,9 +47,11 @@ pub extern "C" fn wasm_set_root(path: *const c_char) {
 #[no_mangle]
 pub extern "C" fn wasm_set_module(filename: *const c_char) {
     let filename_str = const_c_char_to_str(filename);
-    WASM_RUNTIME_CONFIG_MODULE.write()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG_MODULE on write()")
-        .replace_range(.., filename_str);    
+
+    WASM_RUNTIME_CONFIG.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
+        .file
+        .replace_range(.., filename_str); 
 }
 
 
@@ -73,8 +71,10 @@ pub extern "C" fn wasm_set_module(filename: *const c_char) {
 #[no_mangle]
 pub extern "C" fn wasm_set_arg(arg: *const c_char) {
     let arg_str   = const_c_char_to_str(arg);
-    WASM_RUNTIME_CONFIG_WASI_ARGS.write()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG_WASI_ARGS on write()")
+
+    WASM_RUNTIME_CONFIG.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
+        .wasi_args
         .push(arg_str.to_string());
 }
 
@@ -96,9 +96,12 @@ pub extern "C" fn wasm_set_arg(arg: *const c_char) {
 pub extern "C" fn wasm_set_env(env: *const c_char, value: *const c_char) {
     let env_str   = const_c_char_to_str(env);
     let value_str = const_c_char_to_str(value);
-    WASM_RUNTIME_CONFIG_WASI_ENVS.write()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG_WASI_ENVS on write()")
+
+    WASM_RUNTIME_CONFIG.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
+        .wasi_envs
         .push((env_str.to_string(), value_str.to_string()));
+
 }
 
 
@@ -118,8 +121,10 @@ pub extern "C" fn wasm_set_env(env: *const c_char, value: *const c_char) {
 #[no_mangle]
 pub extern "C" fn wasm_set_dir(dir: *const c_char) {
     let dir_str   = const_c_char_to_str(dir);
-    WASM_RUNTIME_CONFIG_WASI_DIRS.write()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG_WASI_DIRS on write()")
+
+    WASM_RUNTIME_CONFIG.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
+        .wasi_dirs
         .push(dir_str.to_string());
 }
 
@@ -143,8 +148,10 @@ pub extern "C" fn wasm_set_dir(dir: *const c_char) {
 pub extern "C" fn wasm_set_mapdir(map: *const c_char, dir: *const c_char) {
     let map_str = const_c_char_to_str(map);
     let dir_str = const_c_char_to_str(dir);
-    WASM_RUNTIME_CONFIG_WASI_MAPDIRS.write()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG_WASI_MAPDIRS on write()")
+
+    WASM_RUNTIME_CONFIG.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
+        .wasi_mapdirs
         .push((map_str.to_string(), dir_str.to_string()));
 }
 
