@@ -127,9 +127,9 @@ static WASM_RUNTIME_INSTANCE: Lazy<RwLock<Instance>> = Lazy::new(|| {
 
 
 fn build_module_path() -> String {
-    let filepath= WASM_RUNTIME_CONFIG_ROOT.read()
+    let filepath = WASM_RUNTIME_CONFIG_ROOT.read()
         .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG_ROOT on read()");
-    let filename= WASM_RUNTIME_CONFIG_MODULE.read()
+    let filename = WASM_RUNTIME_CONFIG_MODULE.read()
         .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG_MODULE on read()");
     let modulepath = format!("{}/{}", filepath, filename);
 

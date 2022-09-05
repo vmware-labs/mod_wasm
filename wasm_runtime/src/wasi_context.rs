@@ -27,18 +27,15 @@ pub fn build_wasi_ctx() -> WasiCtx {
 
     wasi_builder = add_wasi_preopen_dirs(wasi_builder);
 
-    let wasi = wasi_builder.build();
-
-    wasi
+    wasi_builder.build()
 }
 
 
 fn build_stdout_pipe() -> WritePipe<Vec<u8>> {
     let stdout_mutex = WASM_RUNTIME_STDOUT_SPTR.write()
         .expect("ERROR! Poisoned RwLock WASM_RUNTIME_STDOUT_SPTR on write()");
-    let stdout_pipe = WritePipe::from_shared((*stdout_mutex).clone());
-
-    stdout_pipe
+    
+    WritePipe::from_shared((*stdout_mutex).clone())
 }
 
 
@@ -92,8 +89,13 @@ fn collect_preopen_dirs() -> Result<Vec<(String, Dir)>> {
     for dir in dirs.iter() {
         let preopen_dir = (
             dir.clone(), 
-            Dir::open_ambient_dir(dir, ambient_authority())
-                        .expect(format! ("ERROR! Failed to open host directory '{}' for preopen!", dir).as_str())
+            match Dir::open_ambient_dir(dir, ambient_authority()) {
+                Ok(d) => d,
+                Err(e) => {
+                    eprintln!("ERROR! Failed to open host directory '{}' for preopen! {}", dir.as_str(), e);
+                    continue;
+                }
+            }
         );
         preopen_dirs.push(preopen_dir);
     }
@@ -102,8 +104,13 @@ fn collect_preopen_dirs() -> Result<Vec<(String, Dir)>> {
     for (map, host) in map_dirs.iter() {
         let preopen_mapdir = (
             map.clone(),
-            Dir::open_ambient_dir(host, ambient_authority())
-                    .expect(format! ("ERROR! Failed to open host directory '{}' for preopen!", host).as_str())
+            match Dir::open_ambient_dir(host, ambient_authority()) {
+                Ok(d) => d,
+                Err(e) => {
+                    eprintln!("ERROR! Failed to open host directory '{}' for preopen! {}", host.as_str(), e);
+                    continue;
+                }
+            }
         );
         preopen_dirs.push(preopen_mapdir);
     }
