@@ -342,29 +342,10 @@ static int content_handler(request_rec *r)
         return OK;
     }
 
-
-    /*
-     * Now send our actual output.  Since we tagged this as being
-     * "text/html", we need to embed any HTML.
-     */
-    ap_rputs(DOCTYPE_HTML_3_2, r);
-    ap_rputs("<HTML>\n", r);
-    ap_rputs(" <HEAD>\n", r);
-    ap_rputs("  <TITLE>mod_wasm demo\n", r);
-    ap_rputs("  </TITLE>\n", r);
-    ap_rputs(" </HEAD>\n", r);
-    ap_rputs(" <BODY>\n", r);
-    ap_rprintf(r, "Apache HTTP Server version: \"%s\"\n", ap_get_server_banner());
-    ap_rputs("  <BR>\n", r);
-    
     // run Wasm module
     const char* content = wasm_runtime_run_module();
     ap_rprintf(r, "%s", content);
     return_const_char_ownership(content);
-
-    ap_rputs("  <BR>\n", r);
-    ap_rputs(" </BODY>\n", r);
-    ap_rputs("</HTML>\n", r);
 
     return OK;
 }
