@@ -8,6 +8,7 @@ use anyhow::Result;
 use crate::WASM_RUNTIME_STDOUT_SPTR;
 use crate::WASM_RUNTIME_STORE;
 use crate::WASM_RUNTIME_INSTANCE;
+use crate::WASM_RUNTIME_INVOCATION;
 
 
 /// Initialize the Wasm Module and all the Wasmtime needed objects to later call a function.
@@ -36,12 +37,20 @@ pub fn init_module() -> bool {
 }
 
 
-pub fn run_module() -> Result<String> {        
+pub fn run_module() -> Result<String> {    
+    // this mutex helps to protect from different threads to execute at the same time
+    // and clearing stdout to each other before used  
+    let mutex = WASM_RUNTIME_INVOCATION.lock()
+        .expect("ERROR! Poisoned Mutex WASM_RUNTIME_INVOCATION on lock()");
+    
     clear_stdout();
     invoke_function("_start");
-
     let output = read_stdout()
         .expect("ERROR! Couldn't read stdout after invoking function!");
+
+    // this drop is redundant, but helps to identify the scope of the mutex
+    // and makes explicit use of 'mutex' instead of declaring it as '_mutex'.
+    drop(mutex);    
 
     Ok(output)
 }

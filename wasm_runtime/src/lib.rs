@@ -2,7 +2,7 @@
 //! * Integrate with Wasm engines (such as [Wasmtime](https://github.com/bytecodealliance/wasmtime)). 
 //! * Provide a thin C API for instantiating, running, and managing Wasm modules.
 
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, Mutex};
 use once_cell::sync::Lazy; // https://crates.io/crates/once_cell
 
 use wasmtime::{Engine, Store, Linker, Instance, Module};
@@ -125,6 +125,11 @@ static WASM_RUNTIME_INSTANCE: Lazy<RwLock<Instance>> = Lazy::new(|| {
     RwLock::new(data)
 });
 
+// Lock for Wasm function invocation 
+static WASM_RUNTIME_INVOCATION: Lazy<Mutex<()>> = Lazy::new(|| {
+    let data = ();
+    Mutex::new(data)
+});
 
 fn build_module_path() -> String {
     let filepath = WASM_RUNTIME_CONFIG_ROOT.read()
