@@ -2,6 +2,7 @@
 //! * Integrate with Wasm engines (such as [Wasmtime](https://github.com/bytecodealliance/wasmtime)). 
 //! * Provide a thin C API for instantiating, running, and managing Wasm modules.
 
+use std::path::PathBuf;
 use std::sync::{Arc, RwLock, Mutex};
 use once_cell::sync::Lazy; // https://crates.io/crates/once_cell
 
@@ -101,6 +102,21 @@ fn build_module_path() -> String {
     let wasm_runtime_config = WASM_RUNTIME_CONFIG.read()
         .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on read()");
 
-    // module_path = path + "/" + file
-    format!("{}/{}", wasm_runtime_config.path, wasm_runtime_config.file)
+    // generates a platform-independent module_path = path + "/" + file
+    let mut module_path: PathBuf = wasm_runtime_config.path.clone();
+    module_path.push(wasm_runtime_config.file.as_str());
+
+    if ! module_path.is_file() {
+        eprintln!("WARNING! Can't find path on disk! {:?}", module_path.to_str());
+    }
+
+    let module_path_string = match module_path.to_str() {
+        Some(s) => s,
+        None => {
+            eprintln!("ERROR! Invalid UTF-8 path! {:?}", module_path.to_str());
+            ""
+        }
+    };
+
+    module_path_string.to_string()
 }
