@@ -3,3 +3,4 @@ mod_wasm.lo
 mod_wasm.slo
 mod_wasm/.libs
 wasm_runtime/.vscode
+examples/hello_wasm/target
