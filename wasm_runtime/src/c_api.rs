@@ -19,10 +19,10 @@ use crate::wasmengine::{init_module, run_module};
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_set_root("/var/www/wasm");
+/// wasm_config_set_root("/var/www/wasm");
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_set_root(path: *const c_char) {
+pub extern "C" fn wasm_config_set_root(path: *const c_char) {
     let path_str = const_c_char_to_str(path);
 
     let mut config = WASM_RUNTIME_CONFIG.write()
@@ -43,10 +43,10 @@ pub extern "C" fn wasm_set_root(path: *const c_char) {
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_set_module("hello.wasm");
+/// wasm_config_set_module("hello.wasm");
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_set_module(filename: *const c_char) {
+pub extern "C" fn wasm_config_set_module(filename: *const c_char) {
     let filename_str = const_c_char_to_str(filename);
 
     WASM_RUNTIME_CONFIG.write()
@@ -67,10 +67,10 @@ pub extern "C" fn wasm_set_module(filename: *const c_char) {
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_set_arg("--help");
+/// wasm_config_set_arg("--help");
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_set_arg(arg: *const c_char) {
+pub extern "C" fn wasm_config_set_arg(arg: *const c_char) {
     let arg_str   = const_c_char_to_str(arg);
 
     WASM_RUNTIME_CONFIG.write()
@@ -91,10 +91,10 @@ pub extern "C" fn wasm_set_arg(arg: *const c_char) {
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_set_env("TMP", "/tmp");
+/// wasm_config_set_env("TMP", "/tmp");
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_set_env(env: *const c_char, value: *const c_char) {
+pub extern "C" fn wasm_config_set_env(env: *const c_char, value: *const c_char) {
     let env_str   = const_c_char_to_str(env);
     let value_str = const_c_char_to_str(value);
 
@@ -117,10 +117,10 @@ pub extern "C" fn wasm_set_env(env: *const c_char, value: *const c_char) {
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_set_dir("/tmp");
+/// wasm_config_set_dir("/tmp");
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_set_dir(dir: *const c_char) {
+pub extern "C" fn wasm_config_set_dir(dir: *const c_char) {
     let dir_str   = const_c_char_to_str(dir);
 
     WASM_RUNTIME_CONFIG.write()
@@ -141,12 +141,12 @@ pub extern "C" fn wasm_set_dir(dir: *const c_char) {
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_set_mapdir("./", ".");
-/// wasm_set_mapdir("/wasmhome", "/home/wasm_user");
-/// wasm_set_mapdir("/wasmlogs", "/var/log");
+/// wasm_config_set_mapdir("./", ".");
+/// wasm_config_set_mapdir("/wasmhome", "/home/wasm_user");
+/// wasm_config_set_mapdir("/wasmlogs", "/var/log");
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_set_mapdir(map: *const c_char, dir: *const c_char) {
+pub extern "C" fn wasm_config_set_mapdir(map: *const c_char, dir: *const c_char) {
     let map_str = const_c_char_to_str(map);
     let dir_str = const_c_char_to_str(dir);
 

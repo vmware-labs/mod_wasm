@@ -401,7 +401,7 @@ static void register_hooks(apr_pool_t *p)
 static const char *wasm_directive_WasmRoot(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_set_root(word1);
+    wasm_config_set_root(word1);
     return NULL;
 }
 
@@ -409,7 +409,7 @@ static const char *wasm_directive_WasmRoot(cmd_parms *cmd, void *mconfig, const 
 static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_set_module(word1);
+    wasm_config_set_module(word1);
     return NULL;
 }
 
@@ -417,7 +417,7 @@ static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, cons
 static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_set_arg(word1);
+    wasm_config_set_arg(word1);
     return NULL;
 }
 
@@ -425,7 +425,7 @@ static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const c
 static const char *wasm_directive_WasmEnv(cmd_parms *cmd, void *mconfig, const char *word1, const char *word2)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_set_env(word1, word2);
+    wasm_config_set_env(word1, word2);
     return NULL;
 }
 
@@ -433,7 +433,7 @@ static const char *wasm_directive_WasmEnv(cmd_parms *cmd, void *mconfig, const c
 static const char *wasm_directive_WasmDir(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_set_dir(word1);
+    wasm_config_set_dir(word1);
     return NULL;
 }
 
@@ -441,7 +441,7 @@ static const char *wasm_directive_WasmDir(cmd_parms *cmd, void *mconfig, const c
 static const char *wasm_directive_WasmMapDir(cmd_parms *cmd, void *mconfig, const char *word1, const char *word2)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_set_mapdir(word1, word2);
+    wasm_config_set_mapdir(word1, word2);
     return NULL;
 }
 

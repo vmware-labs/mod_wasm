@@ -14,10 +14,10 @@
  * # Examples (C Code)
  *
  * ```
- * wasm_set_root("/var/www/wasm");
+ * wasm_config_set_root("/var/www/wasm");
  * ```
  */
-void wasm_set_root(const char *path);
+void wasm_config_set_root(const char *path);
 
 /**
  * Set the Wasm module filename
@@ -31,10 +31,10 @@ void wasm_set_root(const char *path);
  * # Examples (C Code)
  *
  * ```
- * wasm_set_module("hello.wasm");
+ * wasm_config_set_module("hello.wasm");
  * ```
  */
-void wasm_set_module(const char *filename);
+void wasm_config_set_module(const char *filename);
 
 /**
  * Add a WASI arg for the Wasm module
@@ -48,10 +48,10 @@ void wasm_set_module(const char *filename);
  * # Examples (C Code)
  *
  * ```
- * wasm_set_arg("--help");
+ * wasm_config_set_arg("--help");
  * ```
  */
-void wasm_set_arg(const char *arg);
+void wasm_config_set_arg(const char *arg);
 
 /**
  * Set a WASI environment variable for the Wasm module
@@ -65,11 +65,11 @@ void wasm_set_arg(const char *arg);
  * # Examples (C Code)
  *
  * ```
- * wasm_set_env("TMP", "/tmp");
+ * wasm_config_set_env("TMP", "/tmp");
  * ```
  */
-void wasm_set_env(const char *env,
-                  const char *value);
+void wasm_config_set_env(const char *env,
+                         const char *value);
 
 /**
  * Add a WASI preopen dir for the Wasm module
@@ -83,10 +83,10 @@ void wasm_set_env(const char *env,
  * # Examples (C Code)
  *
  * ```
- * wasm_set_dir("/tmp");
+ * wasm_config_set_dir("/tmp");
  * ```
  */
-void wasm_set_dir(const char *dir);
+void wasm_config_set_dir(const char *dir);
 
 /**
  * Add a WASI preopen dir with mapping for the Wasm module
@@ -100,13 +100,13 @@ void wasm_set_dir(const char *dir);
  * # Examples (C Code)
  *
  * ```
- * wasm_set_mapdir("./", ".");
- * wasm_set_mapdir("/wasmhome", "/home/wasm_user");
- * wasm_set_mapdir("/wasmlogs", "/var/log");
+ * wasm_config_set_mapdir("./", ".");
+ * wasm_config_set_mapdir("/wasmhome", "/home/wasm_user");
+ * wasm_config_set_mapdir("/wasmlogs", "/var/log");
  * ```
  */
-void wasm_set_mapdir(const char *map,
-                     const char *dir);
+void wasm_config_set_mapdir(const char *map,
+                            const char *dir);
 
 /**
  * Initialize the Wasm module
