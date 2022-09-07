@@ -7,7 +7,7 @@ use wasmtime_wasi::*;
 use wasi_common::pipe::WritePipe;
 
 use crate::config::WASM_RUNTIME_CONFIG;
-use crate::wasmengine::STDOUT_BUFFER_RWLOCK;
+use crate::stdio_buffers::STDOUT_BUFFER_RWLOCK;
 
 
 pub fn build_wasi_ctx() -> WasiCtx {
