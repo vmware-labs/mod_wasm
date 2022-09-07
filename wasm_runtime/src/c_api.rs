@@ -3,7 +3,6 @@
 //! This file contains the API functions for the C language
 
 use std::os::raw::c_char;
-use std::path::PathBuf;
 
 use crate::config::WASM_RUNTIME_CONFIG;
 use crate::ffi_utils::*;
@@ -26,9 +25,11 @@ use crate::wasmengine::{init_module, run_module};
 pub extern "C" fn wasm_set_root(path: *const c_char) {
     let path_str = const_c_char_to_str(path);
 
-    WASM_RUNTIME_CONFIG.write()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
-        .path = PathBuf::from(path_str);
+    let mut config = WASM_RUNTIME_CONFIG.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()");
+
+    config.path.clear();
+    config.path.push(path_str);
 }
 
 /// Set the Wasm module filename
