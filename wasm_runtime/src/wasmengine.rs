@@ -106,11 +106,7 @@ pub fn init_module() -> bool {
 }
 
 
-pub fn run_module() -> Result<String> {    
-    let thread_id = std::thread::current().id();
-    println!("run_module() - Thread ID: {:?}", thread_id);
-    eprintln!("run_module() - Thread ID: {:?}", thread_id);
-    
+pub fn run_module() -> Result<String> {        
     // this mutex helps to protect from different threads to execute at the same time
     // and clearing stdout to each other before used  
     let mutex = WASM_EXECUTION_MUTEX.lock()
