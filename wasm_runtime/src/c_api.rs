@@ -6,7 +6,7 @@ use std::os::raw::c_char;
 
 use crate::config::WASM_RUNTIME_CONFIG;
 use crate::ffi_utils::*;
-use crate::wasmengine::{init_module, run_module};
+use crate::wasm_engine::{init_module, run_module};
 
 /// Set the root directory for loading Wasm modules.
 ///

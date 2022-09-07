@@ -1,4 +1,4 @@
-// wasmengine.rs
+// wasm_engine.rs
 //
 // Using Wasmtime from the Bytecode Alliance as the Wasm Engine
 // https://github.com/bytecodealliance/wasmtime
