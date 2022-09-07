@@ -9,10 +9,11 @@ use std::sync::{Mutex,RwLock, Arc};
 use anyhow::Result;
 use once_cell::sync::Lazy; // https://crates.io/crates/once_cell
 
-use wasmtime::{Engine, Module, Store, Linker, Instance};
+use wasmtime::{Module, Store, Linker, Instance};
 use wasi_common::WasiCtx;
 
 use crate::config::WASM_RUNTIME_CONFIG;
+use crate::wasmtime_shared::WASMTIME_SHARED_OBJECTS;
 use crate::wasi_context::build_wasi_ctx;
 
 // The following static variables are used to achieve a global, mutable and thread-safe shareable state.
@@ -29,22 +30,6 @@ pub static STDOUT_BUFFER_RWLOCK: Lazy<RwLock<Arc<RwLock<Vec<u8>>>>> = Lazy::new(
     RwLock::new(data)
 });
 
-struct WasmTimeSharedObjects {
-    pub engine: Engine,
-    pub module: Option<Module>,
-}
-
-
-// Stores the Wasmtime shared objects between invocations: Engine and Module
-// At startup, module is 'None' since we don't know yet the Wasm file that will be loaded
-static WASMTIME_SHARED_OBJECTS: Lazy<RwLock<WasmTimeSharedObjects>> = Lazy::new(|| {
-    let data: WasmTimeSharedObjects = WasmTimeSharedObjects {
-        engine: Engine::default(),
-        module: None,
-    };
-
-    RwLock::new(data)
-});
 
 // Lock for Wasm module execution.
 // So far, we do not support more than one Wasm invocation simultaneously.

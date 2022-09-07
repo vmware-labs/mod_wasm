@@ -4,6 +4,7 @@
 
 mod config;
 mod wasmengine;
+mod wasmtime_shared;
 mod wasi_context;
 mod ffi_utils;
 mod c_api;
