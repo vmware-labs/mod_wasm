@@ -6,8 +6,8 @@ use anyhow::Result;
 use wasmtime_wasi::*;
 use wasi_common::pipe::WritePipe;
 
-use crate::WASM_RUNTIME_CONFIG;
-use crate::WASM_RUNTIME_STDOUT_SPTR;
+use crate::config::WASM_RUNTIME_CONFIG;
+use crate::wasmengine::STDOUT_BUFFER_RWLOCK;
 
 
 pub fn build_wasi_ctx() -> WasiCtx {
@@ -28,8 +28,8 @@ pub fn build_wasi_ctx() -> WasiCtx {
 
 
 fn build_stdout_pipe() -> WritePipe<Vec<u8>> {
-    let stdout_mutex = WASM_RUNTIME_STDOUT_SPTR.write()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_STDOUT_SPTR on write()");
+    let stdout_mutex = STDOUT_BUFFER_RWLOCK.write()
+        .expect("ERROR! Poisoned RwLock STDOUT_BUFFER_RWLOCK on write()");
     
     WritePipe::from_shared((*stdout_mutex).clone())
 }
