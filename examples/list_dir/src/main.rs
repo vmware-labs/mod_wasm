@@ -1,15 +1,15 @@
 use std::fs;
 
 fn main() {
-    let entries = match fs::read_dir("./") {
+    let entries = match fs::read_dir("/home") {
         Ok(entries) => Some(entries),
         Err(e) => {
-            eprintln!("ERROR! Can't read path! {}", e);
+            eprintln!("ERROR! Can't open path! {}", e);
             None
         }
     };
 
-    for path in entries {
-        println!("Name: {:?}", path);
+    for entry in entries.unwrap() {
+        println!("Entry: {}", entry.unwrap().path().display());
     }
 }
