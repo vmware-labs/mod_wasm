@@ -172,6 +172,14 @@ pub extern "C" fn wasm_config_add_mapdir(map: *const c_char, dir: *const c_char)
         .push((map_str.to_string(), dir_str.to_string()));
 }
 
+/// Clears all WASI propened dirs for the Wasm module
+#[no_mangle]
+pub extern "C" fn wasm_config_clear_mapdirs() {
+    WASM_RUNTIME_CONFIG.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
+        .wasi_mapdirs
+        .clear();
+}
 
 /// Initialize the Wasm module
 ///

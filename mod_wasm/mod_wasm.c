@@ -29,6 +29,39 @@
 /*                                                                          */
 /*--------------------------------------------------------------------------*/
 
+/**
+  * Maximum number of arguments specified in the static configuration.
+  *
+  * If the user tries to set more arguments on the Apache
+  * configuration, this will raise an error. The main reason behind
+  * this limitation is to avoid performing reallocations.
+  *
+  * TODO: remove this limitation and reallocate as more arguments are defined.
+  */
+#define CONFIG_DEFINED_ARGS_MAX 32
+
+/**
+  * Maximum number of environment variables specified in the static configuration.
+  *
+  * If the user tries to set more environment variables on the Apache
+  * configuration, this will raise an error. The main reason behind
+  * this limitation is to avoid performing reallocations.
+  *
+  * TODO: remove this limitation and reallocate as more environment
+  * variables are defined.
+  */
+#define CONFIG_DEFINED_ENVVARS_MAX 32
+
+typedef struct configArg {
+  const char *arg;
+} configArg;
+
+typedef struct configEnvVar {
+  const char *key;
+  const char *value;
+} configEnvVar;
+
+
 /*
  * Sample configuration record.  Used for both per-directory and per-server
  * configuration data.
@@ -46,18 +79,24 @@
  * inheritance, and modifying it will change the rules for other locations.
  */
 typedef struct x_cfg {
-    int cmode;                  /* Environment to which record applies
-                                 * (directory, server, or combination).
-                                 */
+    int cmode;                                               /* Environment to which record applies
+                                                              * (directory, server, or combination).
+                                                              */
 #define CONFIG_MODE_SERVER 1
 #define CONFIG_MODE_DIRECTORY 2
-#define CONFIG_MODE_COMBO 3     /* Shouldn't ever happen. */
-    int local;                  /* Boolean: "Example" directive declared
-                                 * here?
-                                 */
-    int congenital;             /* Boolean: did we inherit an "Example"? */
-    char *trace;                /* Pointer to trace string. */
-    char *loc;                  /* Location to which this record applies. */
+#define CONFIG_MODE_COMBO 3                                  /* Shouldn't ever happen. */
+    int local;                                               /* Boolean: "Example" directive declared
+                                                              * here?
+                                                              */
+    int congenital;                                          /* Boolean: did we inherit an "Example"? */
+    int bEnableCGI;                                          /* Boolean: whether this module interfaces as if it was a CGI script */
+    char *trace;                                             /* Pointer to trace string. */
+    char *loc;                                               /* Location to which this record applies. */
+
+    configEnvVar *configEnvVars[CONFIG_DEFINED_ENVVARS_MAX]; /* Environment variables set in the static configuration */
+    int configEnvVarCount;                                   /* Count of environment variables set in the static configuration */
+    configArg *configArgs[CONFIG_DEFINED_ARGS_MAX];          /* Arguments set in the static configuration */
+    int configArgCount;                                      /* Count of arguments set in the static configuration */
 } x_cfg;
 
 /*
@@ -143,7 +182,7 @@ static void trace_nocontext(apr_pool_t *p, const char *file, int line,
  * The return value is a pointer to the created module-specific
  * structure.
  */
-static void *x_create_dir_config(apr_pool_t *p, char *dirspec)
+static void *create_dir_config(apr_pool_t *p, char *dirspec)
 {
     x_cfg *cfg;
     char *dname = dirspec;
@@ -159,69 +198,18 @@ static void *x_create_dir_config(apr_pool_t *p, char *dirspec)
      */
     cfg->local = 0;
     cfg->congenital = 0;
+    cfg->bEnableCGI = 0;
+    cfg->configEnvVarCount = 0;
+    cfg->configArgCount = 0;
     cfg->cmode = CONFIG_MODE_DIRECTORY;
     /*
      * Finally, add our trace to the callback list.
      */
     dname = (dname != NULL) ? dname : "";
     cfg->loc = apr_pstrcat(p, "DIR(", dname, ")", NULL);
-    note = apr_psprintf(p, "x_create_dir_config(p == %pp, dirspec == %s)",
+    note = apr_psprintf(p, "create_dir_config(p == %pp, dirspec == %s)",
                         (void*) p, dirspec);
     return (void *) cfg;
-}
-
-/*
- * This function gets called to merge two per-directory configuration
- * records.  This is typically done to cope with things like .htaccess files
- * or <Location> directives for directories that are beneath one for which a
- * configuration record was already created.  The routine has the
- * responsibility of creating a new record and merging the contents of the
- * other two into it appropriately.  If the module doesn't declare a merge
- * routine, the record for the closest ancestor location (that has one) is
- * used exclusively.
- *
- * The routine MUST NOT modify any of its arguments!
- *
- * The return value is a pointer to the created module-specific structure
- * containing the merged values.
- */
-static void *x_merge_dir_config(apr_pool_t *p, void *parent_conf,
-                                      void *newloc_conf)
-{
-
-    x_cfg *merged_config = (x_cfg *) apr_pcalloc(p, sizeof(x_cfg));
-    x_cfg *pconf = (x_cfg *) parent_conf;
-    x_cfg *nconf = (x_cfg *) newloc_conf;
-    char *note;
-
-    /*
-     * Some things get copied directly from the more-specific record, rather
-     * than getting merged.
-     */
-    merged_config->local = nconf->local;
-    merged_config->loc = apr_pstrdup(p, nconf->loc);
-    /*
-     * Others, like the setting of the `congenital' flag, get ORed in.  The
-     * setting of that particular flag, for instance, is TRUE if it was ever
-     * true anywhere in the upstream configuration.
-     */
-    merged_config->congenital = (pconf->congenital | pconf->local);
-    /*
-     * If we're merging records for two different types of environment (server
-     * and directory), mark the new record appropriately.  Otherwise, inherit
-     * the current value.
-     */
-    merged_config->cmode =
-        (pconf->cmode == nconf->cmode) ? pconf->cmode : CONFIG_MODE_COMBO;
-    /*
-     * Now just record our being called in the trace list.  Include the
-     * locations we were asked to merge.
-     */
-    note = apr_psprintf(p, "x_merge_dir_config(p == %pp, parent_conf == "
-                        "%pp, newloc_conf == %pp)", (void*) p,
-                        (void*) parent_conf, (void*) newloc_conf);
-    trace_nocontext(NULL, __FILE__, __LINE__, note);
-    return (void *) merged_config;
 }
 
 /*
@@ -231,19 +219,20 @@ static void *x_merge_dir_config(apr_pool_t *p, void *parent_conf,
  * The return value is a pointer to the created module-specific
  * structure.
  */
-static void *x_create_server_config(apr_pool_t *p, server_rec *s)
+static void *create_server_config(apr_pool_t *p, server_rec *s)
 {
 
     x_cfg *cfg;
     char *sname = s->server_hostname;
 
     /*
-     * As with the x_create_dir_config() reoutine, we allocate and fill
+     * As with the create_dir_config() reoutine, we allocate and fill
      * in an empty record.
      */
     cfg = (x_cfg *) apr_pcalloc(p, sizeof(x_cfg));
     cfg->local = 0;
     cfg->congenital = 0;
+    cfg->bEnableCGI = 0;
     cfg->cmode = CONFIG_MODE_SERVER;
     /*
      * Note that we were called in the trace list.
@@ -253,48 +242,6 @@ static void *x_create_server_config(apr_pool_t *p, server_rec *s)
     trace_nocontext(NULL, __FILE__, __LINE__, sname);
     return (void *) cfg;
 }
-
-/*
- * This function gets called to merge two per-server configuration
- * records.  This is typically done to cope with things like virtual hosts and
- * the default server configuration  The routine has the responsibility of
- * creating a new record and merging the contents of the other two into it
- * appropriately.  If the module doesn't declare a merge routine, the more
- * specific existing record is used exclusively.
- *
- * The routine MUST NOT modify any of its arguments!
- *
- * The return value is a pointer to the created module-specific structure
- * containing the merged values.
- */
-static void *x_merge_server_config(apr_pool_t *p, void *server1_conf,
-                                         void *server2_conf)
-{
-
-    x_cfg *merged_config = (x_cfg *) apr_pcalloc(p, sizeof(x_cfg));
-    x_cfg *s1conf = (x_cfg *) server1_conf;
-    x_cfg *s2conf = (x_cfg *) server2_conf;
-    char *note;
-
-    /*
-     * Our inheritance rules are our own, and part of our module's semantics.
-     * Basically, just note whence we came.
-     */
-    merged_config->cmode =
-        (s1conf->cmode == s2conf->cmode) ? s1conf->cmode : CONFIG_MODE_COMBO;
-    merged_config->local = s2conf->local;
-    merged_config->congenital = (s1conf->congenital | s1conf->local);
-    merged_config->loc = apr_pstrdup(p, s2conf->loc);
-    /*
-     * Trace our call, including what we were asked to merge.
-     */
-    note = apr_pstrcat(p, "x_merge_server_config(\"", s1conf->loc, "\",\"",
-                   s2conf->loc, "\")", NULL);
-    trace_nocontext(NULL, __FILE__, __LINE__, note);
-
-    return (void *) merged_config;
-}
-
 
 /*
  * Post-config hook
@@ -317,9 +264,30 @@ static int post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
     return OK;
 }
 
-static int add_envvar(void *h_, const char *key, const char *value)
+// Method with a signature compatible with `apr_table_do`.
+static int _wasm_config_add_env(void *h_, const char *key, const char *value)
 {
     wasm_config_add_env(key, value);
+    return 1;
+}
+
+// Populates the runtime with the arguments defined in the static
+// configuration.
+static void populate_runtime_with_config_defined_args(x_cfg *cfg)
+{
+    for (int i = 0; i < cfg->configArgCount; ++i) {
+        wasm_config_add_arg(cfg->configArgs[i]->arg);
+    }
+}
+
+// Populates the runtime with the environment variables defined in the
+// static configuration.
+static void populate_runtime_with_config_defined_envs(x_cfg *cfg)
+{
+    for (int i = 0; i < cfg->configEnvVarCount; ++i) {
+        configEnvVar *envVar = cfg->configEnvVars[i];
+        wasm_config_add_env(envVar->key, envVar->value);
+    }
 }
 
 /*
@@ -332,12 +300,6 @@ static int content_handler(request_rec *r)
         return DECLINED;
     }
 
-
-    /*
-     * Set the Content-type header. Note that we do not actually have to send
-     * the headers: this is done by the http core.
-     */
-    ap_set_content_type(r, "text/html");
     /*
      * If we're only supposed to send header information (HEAD request), we're
      * already there.
@@ -346,10 +308,55 @@ static int content_handler(request_rec *r)
         return OK;
     }
 
+    x_cfg *dcfg = ap_get_module_config(r->per_dir_config, &wasm_module);
+
+    // Reset initial state: to be revised with multiple
+    // workers/threads.
+    //
+    // This reset to initial state is crucial when the module is
+    // behaving as a CGI module, because arguments and environnent
+    // variables might be set depending on the data of the
+    // request. However, the user might have also added some static
+    // arguments and environment variables to the Apache
+    // configuration.
+    wasm_config_clear_args();
+    wasm_config_clear_envs();
+    populate_runtime_with_config_defined_args(dcfg);
+    populate_runtime_with_config_defined_envs(dcfg);
+
+    if (dcfg->bEnableCGI) {
+      // On CGI mode, we set the request headers as environment
+      // variables.
+      apr_table_do(_wasm_config_add_env, NULL, r->headers_in, NULL);
+    }
+
     // run Wasm module
-    const char* content = wasm_runtime_run_module();
-    ap_rprintf(r, "%s", content);
-    return_const_char_ownership(content);
+    const char* module_response = wasm_runtime_run_module();
+    if (dcfg->bEnableCGI) {
+      // Retrieve the CGI variables and feed our own response with
+      // them; write the response from the module as our own response;
+      // which has the headers already stripped from it.
+      const char *termch;
+      int termarg;
+      int ret = ap_scan_script_header_err_strs(r, NULL, &termch, &termarg, module_response, NULL);
+      // ap_scan_script_header_err_strs can return either:
+      //   - HTTP_OK: success
+      //   - HTTP_INTERNAL_SERVER_ERROR: failure
+      //   - HTTP_NOT_MODIFIED or HTTP_PRECONDITION_FAILED: script
+      //     response does not meet request's conditions
+      // In order to not give the external consumer more information
+      // than what is needed, map all responses to a 500 error.
+      if (ret != 0 && ret != HTTP_OK) {
+        return_const_char_ownership(module_response);
+        return HTTP_INTERNAL_SERVER_ERROR;
+      }
+      if (termch != NULL) {
+        ap_rprintf(r, "%s", termch);
+      }
+    } else if (module_response != NULL) {
+      ap_rprintf(r, "%s", module_response);
+    }
+    return_const_char_ownership(module_response);
 
     return OK;
 }
@@ -400,6 +407,7 @@ static void register_hooks(apr_pool_t *p)
 #define WASM_DIRECTIVE_WASMENV    "WasmEnv"
 #define WASM_DIRECTIVE_WASMDIR    "WasmDir"
 #define WASM_DIRECTIVE_WASMMAPDIR "WasmMapDir"
+#define WASM_DIRECTIVE_ENABLECGI  "WasmEnableCGI"
 
 
 static const char *wasm_directive_WasmRoot(cmd_parms *cmd, void *mconfig, const char *word1)
@@ -421,7 +429,13 @@ static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, cons
 static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_config_add_arg(word1);
+    if (cfg->configArgCount == CONFIG_DEFINED_ARGS_MAX) {
+      return apr_psprintf(cmd->pool, "WasmArg limit reached in the httpd configuration (maximum is %d)", CONFIG_DEFINED_ARGS_MAX);
+    }
+    configArg *arg = malloc(sizeof(configArg));
+    arg->arg = apr_pstrdup(cmd->pool, word1);
+    cfg->configArgs[cfg->configArgCount] = arg;
+    cfg->configArgCount++;
     return NULL;
 }
 
@@ -429,7 +443,14 @@ static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const c
 static const char *wasm_directive_WasmEnv(cmd_parms *cmd, void *mconfig, const char *word1, const char *word2)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_config_add_env(word1, word2);
+    if (cfg->configEnvVarCount == CONFIG_DEFINED_ENVVARS_MAX) {
+      return apr_psprintf(cmd->pool, "WasmEnv limit reached in the httpd configuration (maximum is %d)", CONFIG_DEFINED_ENVVARS_MAX);
+    }
+    configEnvVar *env = malloc(sizeof(configEnvVar));
+    env->key = apr_pstrdup(cmd->pool, word1);
+    env->value = apr_pstrdup(cmd->pool, word2);
+    cfg->configEnvVars[cfg->configEnvVarCount] = env;
+    cfg->configEnvVarCount++;
     return NULL;
 }
 
@@ -449,6 +470,12 @@ static const char *wasm_directive_WasmMapDir(cmd_parms *cmd, void *mconfig, cons
     return NULL;
 }
 
+static const char *wasm_directive_WasmEnableCGI(cmd_parms *cmd, void *mconfig, int arg)
+{
+    x_cfg *cfg = (x_cfg *) mconfig;
+    cfg->bEnableCGI = arg;
+    return NULL;
+}
 
 /*
  * List of directives specific to our module.
@@ -497,6 +524,13 @@ static const command_rec directives[] =
         OR_OPTIONS,
         "Preopen Dir with Mapping for the Wasm Module"
     ),
+    AP_INIT_FLAG(
+        WASM_DIRECTIVE_ENABLECGI,
+        wasm_directive_WasmEnableCGI,
+        NULL,
+        OR_OPTIONS,
+        "Whether this WebAssembly module behaves as a CGI"
+    ),
     {NULL}
 };
 
@@ -515,10 +549,10 @@ static const command_rec directives[] =
 AP_DECLARE_MODULE(wasm) =
 {
     STANDARD20_MODULE_STUFF,
-    x_create_dir_config,    /* per-directory config creator */
-    x_merge_dir_config,     /* dir config merger */
-    x_create_server_config, /* server config creator */
-    x_merge_server_config,  /* server config merger */
+    create_dir_config,      /* per-directory config creator */
+    NULL,                   /* dir config merger */
+    create_server_config,   /* server config creator */
+    NULL,                   /* server config merger */
     directives,             /* command table */
     register_hooks,         /* set up other request processing hooks */
 };

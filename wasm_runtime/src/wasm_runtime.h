@@ -119,6 +119,11 @@ void wasm_config_add_mapdir(const char *map,
                             const char *dir);
 
 /**
+ * Clears all WASI propened dirs for the Wasm module
+ */
+void wasm_config_clear_mapdirs();
+
+/**
  * Initialize the Wasm module
  *
  * Returns empty string if initialization was succesfuly.
