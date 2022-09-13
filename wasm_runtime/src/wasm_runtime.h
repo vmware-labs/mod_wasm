@@ -48,10 +48,15 @@ void wasm_config_set_module(const char *filename);
  * # Examples (C Code)
  *
  * ```
- * wasm_config_set_arg("--help");
+ * wasm_config_add_arg("--help");
  * ```
  */
-void wasm_config_set_arg(const char *arg);
+void wasm_config_add_arg(const char *arg);
+
+/**
+ * Clears all WASI args for the Wasm module
+ */
+void wasm_config_clear_args();
 
 /**
  * Set a WASI environment variable for the Wasm module
@@ -65,11 +70,16 @@ void wasm_config_set_arg(const char *arg);
  * # Examples (C Code)
  *
  * ```
- * wasm_config_set_env("TMP", "/tmp");
+ * wasm_config_add_env("TMP", "/tmp");
  * ```
  */
-void wasm_config_set_env(const char *env,
+void wasm_config_add_env(const char *env,
                          const char *value);
+
+/**
+ * Clears all WASI environment variables for the Wasm module
+ */
+void wasm_config_clear_envs();
 
 /**
  * Add a WASI preopen dir for the Wasm module
@@ -100,12 +110,12 @@ void wasm_config_set_dir(const char *dir);
  * # Examples (C Code)
  *
  * ```
- * wasm_config_set_mapdir("./", ".");
- * wasm_config_set_mapdir("/wasmhome", "/home/wasm_user");
- * wasm_config_set_mapdir("/wasmlogs", "/var/log");
+ * wasm_config_add_mapdir("./", ".");
+ * wasm_config_add_mapdir("/wasmhome", "/home/wasm_user");
+ * wasm_config_add_mapdir("/wasmlogs", "/var/log");
  * ```
  */
-void wasm_config_set_mapdir(const char *map,
+void wasm_config_add_mapdir(const char *map,
                             const char *dir);
 
 /**

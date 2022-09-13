@@ -306,10 +306,10 @@ static int post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
 
     // init wasm_runtime
     const char* result = wasm_runtime_init_module();
-    
+
     if (strcmp(result, "") != 0)  // something went wrong
         trace_nocontext(NULL, __FILE__, __LINE__, "post_config_hook() - ERROR! Couldn't initiale wasm_runtime!");
-    else 
+    else
         trace_nocontext(NULL, __FILE__, __LINE__, "post_config_hook() - wasm_runtime initialized!");
 
     return_const_char_ownership(result);
@@ -317,6 +317,10 @@ static int post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
     return OK;
 }
 
+static int add_envvar(void *h_, const char *key, const char *value)
+{
+    wasm_config_add_env(key, value);
+}
 
 /*
  * Content handler
@@ -417,7 +421,7 @@ static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, cons
 static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_config_set_arg(word1);
+    wasm_config_add_arg(word1);
     return NULL;
 }
 
@@ -425,7 +429,7 @@ static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const c
 static const char *wasm_directive_WasmEnv(cmd_parms *cmd, void *mconfig, const char *word1, const char *word2)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_config_set_env(word1, word2);
+    wasm_config_add_env(word1, word2);
     return NULL;
 }
 
@@ -441,7 +445,7 @@ static const char *wasm_directive_WasmDir(cmd_parms *cmd, void *mconfig, const c
 static const char *wasm_directive_WasmMapDir(cmd_parms *cmd, void *mconfig, const char *word1, const char *word2)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_config_set_mapdir(word1, word2);
+    wasm_config_add_mapdir(word1, word2);
     return NULL;
 }
 
@@ -462,14 +466,14 @@ static const command_rec directives[] =
         WASM_DIRECTIVE_WASMMODULE,
         wasm_directive_WasmModule,
         NULL,
-        OR_OPTIONS,      
+        OR_OPTIONS,
         "Set filename for the Wasm Module"
     ),
     AP_INIT_TAKE1(
         WASM_DIRECTIVE_WASMARG,
         wasm_directive_WasmArg,
         NULL,
-        OR_OPTIONS,      
+        OR_OPTIONS,
         "Add arg context for the Wasm Module"
     ),
     AP_INIT_TAKE2(
@@ -483,7 +487,7 @@ static const command_rec directives[] =
         WASM_DIRECTIVE_WASMDIR,
         wasm_directive_WasmDir,
         NULL,
-        OR_OPTIONS,      
+        OR_OPTIONS,
         "Preopen Dir for the Wasm Module"
     ),
     AP_INIT_TAKE2(

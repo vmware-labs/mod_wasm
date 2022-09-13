@@ -12,10 +12,10 @@ use crate::wasm_engine::{init_module, run_module};
 ///
 /// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
 /// So `path` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
-/// 
+///
 /// In addition, `path` must contain valid ASCII chars that can be converted into UTF-8 encoding.
 /// Otherwise, the root directory will be an empty string.
-/// 
+///
 /// # Examples (C Code)
 ///
 /// ```
@@ -36,10 +36,10 @@ pub extern "C" fn wasm_config_set_root(path: *const c_char) {
 ///
 /// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
 /// So `filename` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
-/// 
+///
 /// In addition, `filename` must contain valid ASCII chars that can be converted into UTF-8 encoding.
 /// Otherwise, the root directory will be an empty string.
-/// 
+///
 /// # Examples (C Code)
 ///
 /// ```
@@ -52,25 +52,33 @@ pub extern "C" fn wasm_config_set_module(filename: *const c_char) {
     WASM_RUNTIME_CONFIG.write()
         .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
         .file
-        .replace_range(.., filename_str); 
+        .replace_range(.., filename_str);
 }
 
+/// Clears all WASI args for the Wasm module
+#[no_mangle]
+pub extern "C" fn wasm_config_clear_args() {
+    WASM_RUNTIME_CONFIG.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
+        .wasi_args
+        .clear();
+}
 
 /// Add a WASI arg for the Wasm module
 ///
 /// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
 /// So `arg` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
-/// 
+///
 /// In addition, `arg` must contain valid ASCII chars that can be converted into UTF-8 encoding.
 /// Otherwise, the root directory will be an empty string.
-/// 
+///
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_config_set_arg("--help");
+/// wasm_config_add_arg("--help");
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_config_set_arg(arg: *const c_char) {
+pub extern "C" fn wasm_config_add_arg(arg: *const c_char) {
     let arg_str   = const_c_char_to_str(arg);
 
     WASM_RUNTIME_CONFIG.write()
@@ -79,22 +87,30 @@ pub extern "C" fn wasm_config_set_arg(arg: *const c_char) {
         .push(arg_str.to_string());
 }
 
+/// Clears all WASI environment variables for the Wasm module
+#[no_mangle]
+pub extern "C" fn wasm_config_clear_envs() {
+    WASM_RUNTIME_CONFIG.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
+        .wasi_envs
+        .clear();
+}
 
 /// Set a WASI environment variable for the Wasm module
 ///
 /// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
 /// So `env` and `value` must be valid pointers to a null-terminated C char array. Otherwise, code might panic.
-/// 
+///
 /// In addition, `env` and `value` must contain valid ASCII chars that can be converted into UTF-8 encoding.
 /// Otherwise, they will trimmed to empty strings.
-/// 
+///
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_config_set_env("TMP", "/tmp");
+/// wasm_config_add_env("TMP", "/tmp");
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_config_set_env(env: *const c_char, value: *const c_char) {
+pub extern "C" fn wasm_config_add_env(env: *const c_char, value: *const c_char) {
     let env_str   = const_c_char_to_str(env);
     let value_str = const_c_char_to_str(value);
 
@@ -110,10 +126,10 @@ pub extern "C" fn wasm_config_set_env(env: *const c_char, value: *const c_char) 
 ///
 /// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
 /// So `dir` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
-/// 
+///
 /// In addition, `dir` must contain valid ASCII chars that can be converted into UTF-8 encoding.
 /// Otherwise, the root directory will be an empty string.
-/// 
+///
 /// # Examples (C Code)
 ///
 /// ```
@@ -134,19 +150,19 @@ pub extern "C" fn wasm_config_set_dir(dir: *const c_char) {
 ///
 /// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
 /// So `map` and `dir` must be valid pointers to a null-terminated C char array. Otherwise, code might panic.
-/// 
+///
 /// In addition, `map` and `dir` must contain valid ASCII chars that can be converted into UTF-8 encoding.
 /// Otherwise, they will trimmed to empty strings.
-/// 
+///
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_config_set_mapdir("./", ".");
-/// wasm_config_set_mapdir("/wasmhome", "/home/wasm_user");
-/// wasm_config_set_mapdir("/wasmlogs", "/var/log");
+/// wasm_config_add_mapdir("./", ".");
+/// wasm_config_add_mapdir("/wasmhome", "/home/wasm_user");
+/// wasm_config_add_mapdir("/wasmlogs", "/var/log");
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_config_set_mapdir(map: *const c_char, dir: *const c_char) {
+pub extern "C" fn wasm_config_add_mapdir(map: *const c_char, dir: *const c_char) {
     let map_str = const_c_char_to_str(map);
     let dir_str = const_c_char_to_str(dir);
 
@@ -161,10 +177,10 @@ pub extern "C" fn wasm_config_set_mapdir(map: *const c_char, dir: *const c_char)
 ///
 /// Returns empty string if initialization was succesfuly.
 /// Otherwise, it returns a string with the error.
-/// 
+///
 #[no_mangle]
 pub extern "C" fn wasm_runtime_init_module() -> *const c_char {
-    
+
     let mut return_msg = String::new();
 
     match init_module() {
