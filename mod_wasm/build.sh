@@ -10,7 +10,7 @@ fi
 
 echo "[Building mod_wasm]"
 
-SCRIPT_DIR=$( cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd )
+SCRIPT_DIR=$( cd -- "$(dirname -- "$0")" &> /dev/null && pwd )
 WASM_RUNTIME_PATH=${WASM_RUNTIME_PATH:-$(realpath "${SCRIPT_DIR}/../wasm_runtime")}
 DIST_DIR=${DIST_DIR:-$(realpath "${SCRIPT_DIR}/../dist")}
 
