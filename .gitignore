@@ -4,3 +4,6 @@
 mod_wasm/.libs
 wasm_runtime/.vscode
 examples/hello_wasm/target
+examples/list_dir/target
+httpd
+
