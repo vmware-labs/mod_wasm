@@ -264,7 +264,8 @@ static int post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
     return OK;
 }
 
-// Method with a signature compatible with `apr_table_do`.
+// Add the provided key to the wasmtime runtime as an environment
+// variable.
 static int _wasm_config_add_env(void *h_, const char *key, const char *value)
 {
     wasm_config_add_env(key, value);
@@ -326,8 +327,10 @@ static int content_handler(request_rec *r)
 
     if (dcfg->bEnableCGI) {
       // On CGI mode, we set the request headers as environment
-      // variables.
-      apr_table_do(_wasm_config_add_env, NULL, r->headers_in, NULL);
+      // variables with an HTTP_ prefix.
+      ap_add_common_vars(r);
+      ap_add_cgi_vars(r);
+      apr_table_do(_wasm_config_add_env, NULL, r->subprocess_env, NULL);
     }
 
     // run Wasm module
