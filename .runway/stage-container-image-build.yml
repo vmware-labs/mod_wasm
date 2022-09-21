@@ -1,0 +1,60 @@
+resource_types:
+# Ref https://confluence.eng.vmware.com/x/dDwmMQ
+- name: gitlab
+  type: registry-image
+  source:
+    repository: devtools-docker.artifactory.eng.vmware.com/vmware/runway/resourcetypes/gitlab-resource
+    tag: 2.1.6
+
+resources:
+- name: source-code
+  type: git
+  icon: gitlab
+  webhook_token: auto
+  source:
+    uri: git@gitlab.eng.vmware.com:xlabs/project-bumblebee/mod_wasm.git
+    branch: master
+    private_key: ((gitlab.deploy-key))
+- name: destination-docker-image
+  type: docker-image
+  source:
+    username: ((harbor-corporate.name))
+    password: ((harbor-corporate.secret))
+    repository: harbor-repo.vmware.com/wasmlabs/development/containers/httpd
+# Ref https://confluence.eng.vmware.com/x/dDwmMQ
+- name: every-2d
+  type: time
+  source:
+    interval: 48h
+- name: pipeline-repo-hooks
+  type: gitlab
+  icon: gitlab
+  source:
+    url: https://gitlab.eng.vmware.com
+    private_token: ((gitlab.token))
+    kind: Hook
+    config:
+      project_id: xlabs/project-bumblebee/mod_wasm
+      resources:
+      - resource_name: source-code
+        resource_kind: Commit
+
+jobs:
+- name: build-image
+  serial: true
+  plan:
+  - get: source-code
+    trigger: true
+  - put: destination-docker-image
+    params:
+      build: source-code
+      dockerfile: source-code/image/Dockerfile.internal
+      tag_as_latest: true
+# Ref https://confluence.eng.vmware.com/x/dDwmMQ
+- name: gitlab-hooks
+  serial: true
+  plan:
+  - get: every-2d
+    trigger: true
+  - put: pipeline-repo-hooks
+    inputs: detect
