@@ -1,7 +1,7 @@
 import os, sys
 
-FILE = os.getenv('FILE')
-WORD = os.getenv('WORD')
+FILE = os.getenv('HTTP_FILE')
+WORD = os.getenv('HTTP_WORD')
 
 if FILE == None or WORD == None:
 	print("ERROR! Set FILE and WORD headers!", file=sys.stderr)
