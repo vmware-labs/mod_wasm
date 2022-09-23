@@ -45,28 +45,33 @@
             <module>mod_wasm</module> offers a secure enclave to run untrusted 3rd party software.
             It allows <a href="https://webassembly.org/">WebAssembly (Wasm)</a> modules to be executed within the Apache Server.
             Code runs in a secure environment at almost native speed.
-            The <em>Wasm Capabilities Model</em> offers a secure-by-design approach to limit the access to system resources.
+            The <em>Wasm Capabilities Model</em> offers a secure-by-design approach to limit access to system resources.
             No capabilities are enabled by default. To enable such capabilities, new directives are provided for <code>httpd.conf</code>.
         </p><p>
-            mod_wasm, being written in C, uses the library <code>libwasm_runtime.so</code> to interact with the Wasm engine
+            <module>mod_wasm</module>, being written in C, uses the library <code>libwasm_runtime.so</code> to interact with the Wasm engine
             <a href="https://wasmtime.dev/">Wasmtime</a>, both written in Rust.
-            This provides additional gurantees regarding security, memory safety, and performance.
+            This provides additional guarantees regarding security, memory safety, and performance.
             Another module following a similar design is <module>mod_tls</module>.
         </p><p>
             WebAssembly is a portable binary code. Therefore, developers can write programs in
-            their favourite programming language (C, C++, C#, Rust, Go, Swift, etc.)
+            their favorite programming language (C, C++, C#, Rust, Go, Swift, etc.)
             and target Wasm format as the output (in the same way you can target x86_64 or aarch64).
             In addition, a language runtime written in a supported language can be compiled
             into Wasm (i.e.: PHP, Python, Ruby, Perl, all written in C).
-            And then, run their interpreters within the secure enviroment that <module>mod_wasm</module> provides.
+            And then, run their interpreters within the secure environment that <module>mod_wasm</module> provides.
         </p><p>
-            mod_wasm implements a <em>content hanlder</em> that captures the <em>stdout</em> from the Wasm binary, and then it is appended to the HTTP request respone.
+            <module>mod_wasm</module> implements a <em>content handler</em> that captures the <em>stdout</em> from the Wasm binary, and then it is appended to the HTTP request response.
         </p>
     </summary>
 
     <!-- ******************** Hello Wasm Config Example ****************** -->
-    <section id="hello_wasm">
-        <title>Running a Wasm module</title>
+    <section id="minimal_configuration">
+        <title>Minimal Configuration: Running a Wasm Module</title>
+        <p>
+            Below is a minimal configuration sample of the directives needed in <code>httpd.conf</code> to use <module>mod_wasm</module>. 
+        </p><p>
+            Just set the <code>wasm-handler</code> to the desired route, and point to a Wasm module via <directive module="mod_wasm">WasmRoot</directive> and <directive module="mod_wasm">WasmModule</directive>.
+        </p>
         <highlight language="config">
 LoadModule wasm_module modules/mod_wasm.so
 
@@ -79,14 +84,27 @@ LoadModule wasm_module modules/mod_wasm.so
   WasmModule hello.wasm
 &lt;/IfModule>
         </highlight>
-        <p>
-            The above is a minimal configuration of <module>mod_wasm</module>. Only a directory and a module name are needed.
-        </p>
     </section>
 
     <!-- ********************** Python Config Example ********************* -->
-    <section id="python_config">
-        <title>Running a Python-based webapp</title>
+    <section id="advanced_configuration">
+        <title>Advanced Configuration: Running a Python-based WebApp</title>
+        <p>
+            Below is an advanced configuration for running a Python-based webapp within <module>mod_wasm</module>.
+        </p><p>
+            The Python language runtime is in Wasm binary format. The Python script to be run is passed as an argument via <directive module="mod_wasm">WasmArg</directive>.
+        </p><p>
+            Python runtime requires both <code>PYTHONHOME</code> and <code>PYTHONPATH</code> environment variables 
+            to be set and point to a directory containing the Python standard library. This can be done using 
+            <directive module="mod_wasm">WasmEnv</directive>.
+        </p><p>
+            Also, such directories must be pre-opened and available in the Wasm context via <directive module="mod_wasm">WasmDir</directive> or <directive module="mod_wasm">WasmMapDir</directive>.
+        </p><p>
+            Finally, CGI mode is activated using <directive module="mod_wasm">WasmEnableCGI</directive>.
+            This way, HTTP headers and URL parameters from the incoming request are passed to the Wasm module
+            as environmental variables. In this mode, it is expected that responses from the Wasm module
+            start with the HTTP response header (i.e.: <code>Content-Type: text/html</code>).
+        </p>
         <highlight language="config">
 LoadModule wasm_module modules/mod_wasm.so
 
@@ -104,21 +122,11 @@ LoadModule wasm_module modules/mod_wasm.so
   WasmEnableCGI On
 &lt;/IfModule>
         </highlight>
-        <p>
-            The above is a typical configuration for running a Python-based webapp within <module>mod_wasm</module>.
-            The Python language runtime is in Wasm binary format, and as an argument, we pass the Python script.
-            Note that both <code>PYTHONHOME</code> and <code>PYTHONPATH</code> environment variables 
-            must be set and pointing to a directory containing the Python standard library.
-            Also, such directories must be pre-opened and mapped via <code>WasmDir</code> or <code>WasmMapDir</code>.
-            Finally, CGI mode is activated, so HTTP headers and URL parameters from the request are passed to the Wasm module
-            as environmental variables. In this mode, it is expected that responses from the module are started with the HTTP 
-            response header (i.e.: <code>Content-Type: text/html</code>).
-        </p>
     </section>
 
     <!-- ************************* Directives List ************************ -->
     <section id="directives">
-        <title>Full list of mod_wasm directives</title>
+        <title>mod_wasm Directives Index</title>
         <p>
             The table below provides a comprehensive list of all directives provided by <module>mod_wasm</module>. 
         </p>
@@ -150,7 +158,7 @@ LoadModule wasm_module modules/mod_wasm.so
             </p>
             <example><title>Example</title>
                 <highlight language="config">
-                    WasmRoot /var/www/wasm_modules
+WasmRoot /var/www/wasm_modules
                 </highlight>
             </example>
         </usage>
@@ -170,7 +178,7 @@ LoadModule wasm_module modules/mod_wasm.so
             </p>
             <example><title>Example</title>
                 <highlight language="config">
-                    WasmModule hello.wasm
+WasmModule hello.wasm
                 </highlight>
             </example>
         </usage>
@@ -186,14 +194,17 @@ LoadModule wasm_module modules/mod_wasm.so
         </contextlist>
         <usage>
             <p>
-                <code>WasmDir</code> pre-opens a directory in the host system to be available into the Wasm context.
+                <code>WasmDir</code> pre-opens a directory in the host system to be available in the Wasm context.
+            </p><p>
                 This is a security feature from the <em>Wasm Capabilities Model</em>,
                 in which no directory in the host filesystem is available in the Wasm module context unless is explicitly pre-opened.
+            </p><p>
                 This directive can be used as many times as needed, but only one <em>directory</em> per directive.
             </p>
             <example><title>Example</title>
                 <highlight language="config">
-                    WasmDir /var/www-data/htdocs/my-site
+WasmDir /var/www/assets/common
+WasmDir /var/www/htdocs/my-site
                 </highlight>
             </example>
         </usage>
@@ -210,15 +221,19 @@ LoadModule wasm_module modules/mod_wasm.so
         <usage>
             <p>
                 <directive>WasmMapDir</directive> is an extension of <directive module="mod_wasm">WasmDir</directive>.
-                In this case, <directive>WasmMapDir</directive> will pre-open the <em>host_directory</em>, and then mount such directory
-                as <em>wasm_directory</em> within the Wasm module context.
+            </p><p>
+                In this case, <directive>WasmMapDir</directive> will pre-open the <em>host_directory</em>,
+                and then mount such directory as <em>wasm_directory</em> within the Wasm module context.
+            </p><p>
                 This is a security feature from the <em>Wasm Capabilities Model</em>,
                 in which no directory in the host filesystem is available in the Wasm module context unless is explicitly pre-opened.
+            </p><p>
                 This directive can be used as many times as needed, but only one tuple <em>wasm_directory</em> <em>host_directory</em> per directive.
             </p>
             <example><title>Example</title>
                 <highlight language="config">
-                    WasmMapDir /my-site /var/www-data/htdocs/my-site
+WasmMapDir /common /var/www/assets/common
+WasmMapDir /my-site /var/www/htdocs/my-site
                 </highlight>
             </example>
         </usage>
@@ -234,14 +249,19 @@ LoadModule wasm_module modules/mod_wasm.so
         </contextlist>
         <usage>
             <p>            
-                <directive>WasmArg</directive> is related to the well-known <em>argv</em> paramenter in the C <code>int main (int argc, *argv[])</code> function declaration. This directive allows passing different <em>args</em> to the Wasm module as its <em>main</em> function was invoke with such argument. 
-                This directive can be used as many times as needed, but only one <em>arg</em> per directive.
-                The order is accumulative, this is, first invocation will become the first argument and so on.
+                <directive>WasmArg</directive> is related to the well-known <em>argv</em> parameter in the C <code>int main (int argc, *argv[])</code> function declaration.
+            </p><p>
+                This directive allows passing different <em>arguments</em> to the Wasm module as its <em>main</em> function
+                was invoked with such an argument.
+            </p><p>
+                This directive can be used as many times as needed, but only one <em>argument</em> per directive.
+            </p><p>
+                The order is accumulative, this is, the first invocation will become the first argument, and so on.
             </p>
             <example><title>Example</title>
                 <highlight language="config">
-                    WasmArg /my-site/scripts/hello.py
-                    WasmArg --effusive-mode
+WasmArg /my-site/scripts/hello.py
+WasmArg --effusive-mode
                 </highlight>
             </example>
         </usage>
@@ -250,7 +270,7 @@ LoadModule wasm_module modules/mod_wasm.so
     <!-- *************************** WasmEnv ****************************** -->
     <directivesynopsis>
         <name>WasmEnv</name>
-        <description>Set an environtment variable to be passed to the Wasm module context.</description>
+        <description>Set an environment variable to be passed to the Wasm module context.</description>
         <syntax>WasmEnv <em>variable_name</em> <em>variable_value</em></syntax>
         <contextlist>
             <context>server config</context>
@@ -258,12 +278,13 @@ LoadModule wasm_module modules/mod_wasm.so
         <usage>
             <p>            
                 <directive>WasmEnv</directive> allows setting environment variables within the Wasm module context.
+            </p><p>
                 This directive can be used as many times as needed, but only one tuple <em>variable_name</em> <em>variable_value</em> per directive.
             </p>
             <example><title>Example</title>
                 <highlight language="config">
-                    WasmEnv WEBAPP_SCRIPTS /my-site/scripts
-                    WasmEnv WEBAPP_DEBUG false
+WasmEnv WEBAPP_SCRIPTS /my-site/scripts
+WasmEnv WEBAPP_DEBUG false
                 </highlight>
             </example>
         </usage>
@@ -290,14 +311,14 @@ LoadModule wasm_module modules/mod_wasm.so
             </p>
             <example><title>Example</title>
                 <highlight language="config">
-                    WasmEnableCGI On
+WasmEnableCGI On
                 </highlight>
             </example>
             <p>
-                HTTP request headers are prefixed with <code>HTTP_</code>, upper cased, and dashes '-' are substituted by underscores '_' when transformed into environmental variables. As an example, a header like <code>x-custom-header: value</code> will be transformed into a <code>HTTP_X_CUSTOM_HEADER=value</code> environmental variable.
-                Also, UTL 
+                HTTP request headers are prefixed with '<code>HTTP_</code>', uppercased, and hyphens '<code>-</code>' are substituted by underscores '<code>_</code>' when transformed into environmental variables.
+            </p><p>
+                As an example, a header like <code>x-custom-header: value</code> will be transformed into an <code>HTTP_X_CUSTOM_HEADER=value</code> environmental variable.
             </p>
-
         </usage>
     </directivesynopsis>
 
