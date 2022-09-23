@@ -37,6 +37,11 @@ void wasm_config_set_root(const char *path);
 void wasm_config_set_module(const char *filename);
 
 /**
+ * Clears all WASI args for the Wasm module
+ */
+void wasm_config_clear_args(void);
+
+/**
  * Add a WASI arg for the Wasm module
  *
  * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
@@ -54,9 +59,9 @@ void wasm_config_set_module(const char *filename);
 void wasm_config_add_arg(const char *arg);
 
 /**
- * Clears all WASI args for the Wasm module
+ * Clears all WASI environment variables for the Wasm module
  */
-void wasm_config_clear_args();
+void wasm_config_clear_envs(void);
 
 /**
  * Set a WASI environment variable for the Wasm module
@@ -75,11 +80,6 @@ void wasm_config_clear_args();
  */
 void wasm_config_add_env(const char *env,
                          const char *value);
-
-/**
- * Clears all WASI environment variables for the Wasm module
- */
-void wasm_config_clear_envs();
 
 /**
  * Add a WASI preopen dir for the Wasm module
@@ -121,7 +121,7 @@ void wasm_config_add_mapdir(const char *map,
 /**
  * Clears all WASI propened dirs for the Wasm module
  */
-void wasm_config_clear_mapdirs();
+void wasm_config_clear_mapdirs(void);
 
 /**
  * Initialize the Wasm module
