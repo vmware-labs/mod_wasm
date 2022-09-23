@@ -120,53 +120,10 @@ module AP_MODULE_DECLARE_DATA wasm_module;
 /*                                                                          */
 /*--------------------------------------------------------------------------*/
 
-/*
- * Locate our directory configuration record for the current request.
- */
-static x_cfg *our_dconfig(const request_rec *r)
-{
-    return (x_cfg *) ap_get_module_config(r->per_dir_config, &wasm_module);
-}
-
-/*
- * The following utility routines are not used in the module. Don't
- * compile them so -Wall doesn't complain about functions that are
- * defined but not used.
- */
-#if 0
-/*
- * Locate our server configuration record for the specified server.
- */
-static x_cfg *our_sconfig(const server_rec *s)
-{
-    return (x_cfg *) ap_get_module_config(s->module_config, &wasm_module);
-}
-
-/*
- * Likewise for our configuration record for the specified request.
- */
-static x_cfg *our_rconfig(const request_rec *r)
-{
-    return (x_cfg *) ap_get_module_config(r->request_config, &wasm_module);
-}
-#endif /* if 0 */
-
-/*
- * Likewise for our configuration record for a connection.
- */
-static x_cfg *our_cconfig(const conn_rec *c)
-{
-    return (x_cfg *) ap_get_module_config(c->conn_config, &wasm_module);
-}
-
-#define EXAMPLE_LOG_EACH 1
-
 static void trace_nocontext(apr_pool_t *p, const char *file, int line,
                             const char *note)
 {
-#ifdef EXAMPLE_LOG_EACH
     ap_log_perror(file, line, APLOG_MODULE_INDEX, APLOG_NOTICE, 0, p, "%s", note);
-#endif
 }
 
 
