@@ -27,9 +27,8 @@ RUN ./build.sh
 FROM docker.io/library/httpd:2.4@sha256:5d1b0bd4333abe51e4631564bffb7c56f08f449757615c42d9676c807ccea8bd
 ARG WASM_RUNTIME_PATH=/usr/src/mod_wasm
 ARG DIST_DIR=$WASM_RUNTIME_PATH/dist
-RUN mkdir -p /usr/local/apache2/wasm_modules
 RUN mkdir -p /usr/local/apache2/wasm_modules/demo
-COPY ./examples/wasm_modules/mod_wasm_demo.conf /usr/local/apache2/wasm_modules
+COPY ./examples/wasm_modules/mod_wasm.conf /usr/local/apache2/wasm_modules/mod_wasm_demo.conf
 COPY ./examples/wasm_modules/python/ /usr/local/apache2/wasm_modules/python/
 COPY --from=builder-rs $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so /usr/lib
 COPY --from=builder-apache $DIST_DIR/modules /usr/local/apache2/modules
