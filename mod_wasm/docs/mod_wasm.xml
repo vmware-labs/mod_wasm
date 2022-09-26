@@ -39,7 +39,7 @@
     <status>Experimental</status>
     <sourcefile>mod_wasm.c</sourcefile>
     <identifier>wasm_module</identifier>
-    <compatibility>Available in version 2.4.52 and later</compatibility>
+    <compatibility>Available in version 2.4.x and later</compatibility>
     <summary>
         <p>
             <module>mod_wasm</module> offers a secure enclave to run untrusted 3rd party software.
