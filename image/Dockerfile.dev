@@ -1,0 +1,12 @@
+# Container image build for ease of testing mod_wasm.
+#
+# This container image provides Apache2, mod_wasm and a default
+# configuration that makes easy to execute custom WebAssembly modules.
+
+ARG BASE_IMAGE=httpd-mod-wasm:latest
+
+FROM $BASE_IMAGE as build-dev-image
+RUN apt-get update && apt-get install python3 python3-pip -y && pip3 install pygments
+
+RUN mkdir -p /usr/local/apache2/wasm_modules
+COPY ./examples/wasm_modules/ /usr/local/apache2/wasm_modules/
