@@ -9,7 +9,7 @@ To try out the default wasm module just type:
 $ docker run -p 8080:8080 projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
 ```
 
-Then open a browser at [http://localhost:8080/wasm-module-endpoint]() and enjoy.
+Then open a browser at [http://localhost:8080/wasm-module-endpoint](http://localhost:8080/wasm-module-endpoint) and enjoy.
 
 ## Table of contents
 
