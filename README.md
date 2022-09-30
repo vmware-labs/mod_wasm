@@ -3,6 +3,32 @@
 Welcome to the `mod_wasm` project! This project implements an Apache
 module that is able to execute WebAssembly modules.
 
+To try out the default wasm module just type:
+
+```console
+$ docker run -p 8080:8080 projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
+```
+
+Then open a browser at [http://localhost:8080/wasm-module-endpoint]() and enjoy.
+
+## Table of contents
+
+* [Running in a container](#running-in-a-container)
+  * [Default example](#default-example)
+  * [Running different examples](#running-the-different-examples)
+  * [Running development image](#running-the-dev-image)
+* [Demonstrating security capabilities](#demonstrating-security-capabilities)
+* [Examples](#examples)
+  * [cgi_hello_python.conf](#cgi_hello_pythonconf)
+  * [cgi_prettify.conf](#cgi_prettifyconf)
+  * [cgi_python.conf](#cgi_pythonconf)
+  * [cgi_search_word_count.conf](#cgi_search_word_countconf)
+  * [hello_python_html.conf](#hello_python_htmlconf)
+  * [rust_hello_wasm.conf](#rust_hello_wasmconf)
+  * [rust_list_dir.conf](#rust_list_dirconf)
+* [Building the container image](#building-the-container-image)
+* [Building the examples modules](#building-the-example-modules)
+
 ## Running in a container
 
 A container image is provided for testing convenience. You can find it
@@ -153,13 +179,14 @@ Runs the [hello_python_html.py](./examples/wasm_modules/python-scripts/hello_pyt
 This is just a python script that lists the contents of the `/home` folder. It is not cgi compatible.
 You can see in the config file that `/home` is mapped to `wasm_modules` on the server.
 
-
 ### rust_hello_wasm.conf
+
 Runs the `hello_wasm` binary built from [examples/rust-src/hello_wasm](./examples/rust-src/hello_wasm/src/main.rs).
 
 This is just a simple hello world in rust, which will run in a sandboxed mod_wasm environment.
 
-### rust_list_dirconf
+### rust_list_dir.conf
+
 Runs the `list_dir` binary built from [examples/rust-src/list_dir](./examples/rust-src/list_dir/src/main.rs).
 
 This is just a simple hello world in rust, which will run in a sandboxed mod_wasm environment.
