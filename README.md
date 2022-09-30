@@ -6,7 +6,7 @@ module that is able to execute WebAssembly modules.
 ## Running in a container
 
 A container image is provided for testing convenience. You can find it
-as `httpd-mod-wasm:latest`.
+as `projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest`.
 
 This image is based on `docker.io/library/httpd`. The image has some
 points of interest:
@@ -29,17 +29,17 @@ what `mod_wasm.conf` could look like.
 
 ### Default example
 
-**Note**: If you don't have access to the `httpd-mod-wasm:latest` image from
+**Note**: If you don't have access to the `projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest` image from
 a public repository, you can build it on your own by following the
-[Building the container image](<#Building the container image>) section below.
+[Building the container image](#Building-the-container-image) section below.
 
 To try out the default wasm module just type
 
 ```console
-$ docker run -d -p8080:8080 httpd-mod-wasm:latest
+$ docker run -p 8080:8080 projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
 ```
 
-Then open a browser at `http://localhost:8080/wasm-module-endpoint` and enjoy.
+Then open a browser at [http://localhost:8080/wasm-module-endpoint]() and enjoy.
 
 By default you will see the `cgi_prettify.py` script described below running
 with a wasm python binary.
@@ -55,7 +55,7 @@ folder that comes with the image. Here is how to do it (we'll assume the
 name `mod_wasm_examples` for convenience):
 
 ```console
-$ docker run --name mod_wasm_examples -d -p8080:8080 -v ./examples/wasm_modules/:/usr/local/apache2/wasm_modules/ httpd-mod-wasm:latest
+$ docker run --name mod_wasm_examples -p 8080:8080 -v ./examples/wasm_modules/:/usr/local/apache2/wasm_modules/ projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
 ```
 
 Now to try something different from the default demo you need to:
@@ -68,18 +68,18 @@ Now to try something different from the default demo you need to:
 
 ### Running the dev image
 
-If you plan on experimenting a comparison between executing python via cgi and mod_wasm you will need to run the development container image. Refer to [Building a dev image](<#Building a dev image>).
+If you plan on experimenting a comparison between executing python via cgi and mod_wasm you will need to run the development container image. Refer to [Building a dev image](#Building-a-dev-image).
 
 To just run the image and see the default example (with enabled cgi access to everything) use
 
 ```console
-docker run --name mod_wasm_dev_examples -d -p8080:8080 httpd-mod-wasm-dev:latest
+docker run --name mod_wasm_dev_examples -p 8080:8080 httpd-mod-wasm-dev:latest
 ```
 
 If you want to easily modify the examples and restart an existing container (as described above) run with
 
 ```console
-$ docker run --name mod_wasm_dev_examples -d -p8080:8080 -v ./examples/wasm_modules/:/usr/local/apache2/wasm_modules/ httpd-mod-wasm-dev:latest
+$ docker run --name mod_wasm_dev_examples -p 8080:8080 -v ./examples/wasm_modules/:/usr/local/apache2/wasm_modules/ httpd-mod-wasm-dev:latest
 ```
 
 ## Demonstrating security capabilities
@@ -115,13 +115,13 @@ Here you can find a list of the included examples and what they do
 
 ### cgi_hello_python.conf
 
-Runs the [cgi_hello_python.py](./examples/wasm_modules/python-scripts/cgi_hello_python.py) script. To see differences when this runs as a cgi script try [http://localhost:8080/cgi-bin/cgi_hello_python.py]
+Runs the [cgi_hello_python.py](./examples/wasm_modules/python-scripts/cgi_hello_python.py) script. To see differences when this runs as a cgi script try [http://localhost:8080/cgi-bin/cgi_hello_python.py]()
 
 This cgi compatible script will just print out the current environment variables.
 
 ### cgi_prettify.conf
 
-Runs the [cgi_prettify.py](./examples/wasm_modules/python-scripts/cgi_prettify.py) script. To see differences when this runs as a cgi script try [http://localhost:8080/cgi-bin/cgi_prettify.py]
+Runs the [cgi_prettify.py](./examples/wasm_modules/python-scripts/cgi_prettify.py) script. To see differences when this runs as a cgi script try [http://localhost:8080/cgi-bin/cgi_prettify.py]()
 
 This cgi compatible script will print out the contents of `uploads` folder. You can see in the config that `uploads` is mapped to the `/usr/local/apache2/wasm_modules/python-scripts/uploads` folder on the server.
 
@@ -129,13 +129,13 @@ If called with a `?file=/path/to/file` parameter it will print the given file. R
 
 ### cgi_python.conf
 
-Runs the [cgi_python.py](./examples/wasm_modules/python-scripts/cgi_python.py) script. To see differences when this runs as a cgi script try [http://localhost:8080/cgi-bin/cgi_python.py]
+Runs the [cgi_python.py](./examples/wasm_modules/python-scripts/cgi_python.py) script. To see differences when this runs as a cgi script try [http://localhost:8080/cgi-bin/cgi_python.py]()
 
 This cgi compatible script includes mackdoors for listing dirs, opening files or running programs. Running this as a cgi script will expose the server system, while running it in mod_wasm will automatically allow only sandboxed access.
 
 ### cgi_search_word_count.conf
 
-Runs the [cgi_search_word_count.py](./examples/wasm_modules/python-scripts/cgi_search_word_count.py) script. To see differences when this runs as a cgi script try [http://localhost:8080/cgi-bin/cgi_search_word_count.py]
+Runs the [cgi_search_word_count.py](./examples/wasm_modules/python-scripts/cgi_search_word_count.py) script. To see differences when this runs as a cgi script try [http://localhost:8080/cgi-bin/cgi_search_word_count.py]()
 
 This cgi compatible script includes will count the occurence of a word in a file. Running this as a cgi script will expose the server system, while running it in mod_wasm will automatically allow only sandboxed access.
 
@@ -148,7 +148,7 @@ curl -H "File: Sherlock.txt" -H "Word: elementary" http://localhost:8080/cgi-bin
 
 ### hello_python_html.conf
 
-Runs the [hello_python_html.py](./examples/wasm_modules/python-scripts/hello_python_html.py) script. To see differences when this runs as a cgi script try [http://localhost:8080/cgi-bin/hello_python_html.py]
+Runs the [hello_python_html.py](./examples/wasm_modules/python-scripts/hello_python_html.py) script. To see differences when this runs as a cgi script try [http://localhost:8080/cgi-bin/hello_python_html.py]()
 
 This is just a python script that lists the contents of the `/home` folder. It is not cgi compatible.
 You can see in the config file that `/home` is mapped to `wasm_modules` on the server.

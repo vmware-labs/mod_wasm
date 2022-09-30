@@ -3,7 +3,7 @@
 # This container image provides Apache2, mod_wasm and a default
 # configuration that makes easy to execute custom WebAssembly modules.
 
-ARG BASE_IMAGE=httpd-mod-wasm:latest
+ARG BASE_IMAGE=projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
 
 FROM $BASE_IMAGE as build-dev-image
 RUN apt-get update && apt-get install python3 python3-pip -y && pip3 install pygments
