@@ -6,7 +6,7 @@ module that is able to execute WebAssembly modules.
 To try out the default wasm module just type:
 
 ```console
-$ docker run -p 8080:8080 projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
+docker run -p 8080:8080 projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
 ```
 
 Then open a browser at [http://localhost:8080/wasm-module-endpoint](http://localhost:8080/wasm-module-endpoint) and enjoy.
@@ -57,12 +57,12 @@ what `mod_wasm.conf` could look like.
 
 **Note**: If you don't have access to the `projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest` image from
 a public repository, you can build it on your own by following the
-[Building the container image](#Building-the-container-image) section below.
+[Building the container image](#building-the-container-image) section below.
 
 To try out the default wasm module just type
 
 ```console
-$ docker run -p 8080:8080 projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
+docker run -p 8080:8080 projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
 ```
 
 Then open a browser at [http://localhost:8080/wasm-module-endpoint]() and enjoy.
@@ -70,31 +70,9 @@ Then open a browser at [http://localhost:8080/wasm-module-endpoint]() and enjoy.
 By default you will see the `cgi_prettify.py` script described below running
 with a wasm python binary.
 
-### Running the different examples
-
-This repo cointains several pre-built webassembly modules along with their
-respective configurations.
-
-To play with them you will need to create a container based on the same image
-but with `examples/wasm_modules` shadowing the `/usr/local/apache2/wasm_modules`
-folder that comes with the image. Here is how to do it (we'll assume the
-name `mod_wasm_examples` for convenience):
-
-```console
-$ docker run --name mod_wasm_examples -p 8080:8080 -v ./examples/wasm_modules/:/usr/local/apache2/wasm_modules/ projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
-```
-
-Now to try something different from the default demo you need to:
-
- 1. Open `examples/wasm_modules/mod_wasm_demo.conf`, comment out the currently
-    loaded example and uncomment the one you desire.
- 2. Restart the container via `docker restart mod_wasm_examples`
- 3. Point your browser again at [http://localhost:8080/wasm-module-endpoint]()
-    and see how the different example behaves.
-
 ### Running the dev image
 
-If you plan on experimenting a comparison between executing python via cgi and mod_wasm you will need to run the development container image. Refer to [Building a dev image](#Building-a-dev-image).
+If you plan on experimenting a comparison between executing python via cgi and mod_wasm you will need to run the development container image. Refer to [Building a dev image](#building-a-dev-image).
 
 To just run the image and see the default example (with enabled cgi access to everything) use
 
@@ -105,7 +83,7 @@ docker run --name mod_wasm_dev_examples -p 8080:8080 httpd-mod-wasm-dev:latest
 If you want to easily modify the examples and restart an existing container (as described above) run with
 
 ```console
-$ docker run --name mod_wasm_dev_examples -p 8080:8080 -v ./examples/wasm_modules/:/usr/local/apache2/wasm_modules/ httpd-mod-wasm-dev:latest
+docker run --name mod_wasm_dev_examples -p 8080:8080 -v ./examples/wasm_modules/:/usr/local/apache2/wasm_modules/ httpd-mod-wasm-dev:latest
 ```
 
 ## Demonstrating security capabilities
@@ -116,7 +94,7 @@ Let's examine how it behaves compared to running the script via CGI.
 
 ### 1. By default the script will list the contents of an `uploads` folder.
 
- - Open [http://localhost:8080/wasm-module-endpoint]() to view the listing via mod_wasm. Note that `sys.platform = wasi` information.
+ - Open [http://localhost:8080/wasm-module-endpoint]() to view the listing via mod_wasm. Note the `sys.platform = wasi` information.
  - Open [http://localhost:8080/cgi-bin/cgi_prettify.py]() to view the listing via cgi. Note that `sys.platform = linux`.
 
 ### 2. Now let's prettify a file
@@ -126,18 +104,39 @@ Let's examine how it behaves compared to running the script via CGI.
 
 ### 3. Let's try to hack a bit
 
-So let's think like a hacker that wants to try and get access to any file on the system:
+So let's think like a hacker that wants to try and get access to any file on the server system:
 
 1. It looks like the path to the prettified file is relative to `uploads`.
 2. We know for sure that the apache httpd will have access to `/usr/local/apache2/conf/httpd.conf`.
-3. Then let's just try and access this file relative to `uploads`. Starting from `../usr/local/apache2/conf/httpd.conf` with CGI we can easily go to [http://localhost:8080/cgi-bin/cgi_prettify.py?file=../../../../../../usr/local/apache2/conf/httpd.conf]()
-4. Voila - we have access to the server's configuration and we know where root is located relative to `uploads`.
+3. Then let's just try and access this file relative to `uploads`. Starting from `../usr/local/apache2/conf/httpd.conf` with CGI we can
+   easily experiment by prepending enough times with `../` until we get to a working link like [http://localhost:8080/cgi-bin/cgi_prettify.py?file=../../../../../../usr/local/apache2/conf/httpd.conf]()
+5. Voila - we have access to the server's configuration and we know where root is located relative to `uploads`.
 
 However, that will never happen with mod_wasm. Just give it a try and see that we have no access outside the `uploads` folder - [http://localhost:8080/wasm-module-endpoint?file=../../../../../../usr/local/apache2/conf/httpd.conf]()
 
 ## Examples
 
-Here you can find a list of the included examples and what they do
+This repo cointains several pre-built webassembly modules along with their
+respective configurations.
+
+### Running the different examples
+
+To play with them you will need to create a container based on the same image
+but with `examples/wasm_modules` shadowing the `/usr/local/apache2/wasm_modules`
+folder that comes with the image. Here is how to do it (we'll assume the
+name `mod_wasm_examples` for convenience):
+
+```console
+docker run --name mod_wasm_examples -p 8080:8080 -v ./examples/wasm_modules/:/usr/local/apache2/wasm_modules/ projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
+```
+
+Now to try something different from the default demo you need to:
+
+ 1. Open `examples/wasm_modules/mod_wasm_demo.conf`, comment out the currently
+    loaded example and uncomment the one you desire.
+ 2. Restart the container via `docker restart mod_wasm_examples`
+ 3. Point your browser again at [http://localhost:8080/wasm-module-endpoint]()
+    and see how the different example behaves.
 
 ### cgi_hello_python.conf
 
@@ -207,9 +206,7 @@ For convenience we've organized the build commands in a [Makefile](./Makefile), 
 You can build this image like so:
 
 ```console
-$ make container-image
-<snip>
-Successfully tagged httpd-mod-wasm:latest
+make container-image
 ```
 
 ### Building a dev image
@@ -217,7 +214,7 @@ Successfully tagged httpd-mod-wasm:latest
 The dev image will include all examples, along with additional tools required for future development. If you want to benchmark and compare running a python script via cgi vs via mod_wasm you will need to build this image.
 
 ```console
-$ make dev-image
+make dev-image
 ```
 
 ## Building the example modules
@@ -233,7 +230,8 @@ don't forget to copy the python source files or rust wasm modules from `src` int
 ### Python examples
 
 For the python-based examples we are relying on [fermyon/wagi-python](https://github.com/fermyon/wagi-python)
-which provides both the python binary (`python3.11.wasm`) and the standard python modules (`python311.zip`).
+which provides both the python binary (`python3.11.wasm`) and the standard python modules (`python311.zip`)
+with [Apache License 2.0](https://github.com/fermyon/wagi-python/blob/main/LICENSE). 
 
 As of 2022-10-01, Fermyon claims that their binaries are based on [singlestore-labs/python-wasi](https://github.com/singlestore-labs/python-wasi).
 
@@ -242,20 +240,24 @@ appropriately. You can see how to do this any `.conf` file in `examples/wasm_mod
 
 The python code itself is not compiled to a wasm module, but is interpreted on the spot.
 
+The [cgi_prettify.py](examples/wasm-modules/python-scripts/cgi_prettify.py) example uses
+the [pygments/pygments](https://github.com/pygments/pygments) library in `pygments.zip` with
+[BSD 2-Clause "Simplified" License](https://github.com/pygments/pygments/blob/master/LICENSE) 
+
 ### Rust examples
 
 Assuming you are familiar with Rust and its development tools, to be able to
 build the Rust examples you will need to add the `wasm32-wasi` target via:
 
 ```console
-$ rustup target add wasm32-wasi
+rustup target add wasm32-wasi
 ```
 
 Then just go inside any source folder (e.g. `examples/rust-src/hello_wasm` or
 `examples/rust-src/list_dir`) and run:
 
 ```console
-$ cargo build --release --target=wasm32-wasi
+cargo build --release --target=wasm32-wasi
 ```
 
 After building don't forget to copy the module from the respective `target/wasm32-wasi/release/`
