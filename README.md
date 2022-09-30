@@ -117,36 +117,36 @@ However, that will never happen with mod_wasm. Just give it a try and see that w
 ## Examples
 
 This repo cointains several pre-built webassembly modules along with their
-respective configurations.
+respective configurations. To try them out quickly you will first have to
+clone this repository.
 
 ### Running the different examples
 
-To play with them you will need to create a container based on the same image
-but with `examples/wasm_modules` shadowing the `/usr/local/apache2/wasm_modules`
-folder that comes with the image. Here is how to do it (we'll assume the
-name `mod_wasm_examples` for convenience):
-
-```console
-docker run --name mod_wasm_examples -p 8080:8080 -v ./examples/wasm_modules/:/usr/local/apache2/wasm_modules/ projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
-```
-
-Now to try something different from the default demo you need to:
-
- 1. Open `examples/wasm_modules/mod_wasm_demo.conf`, comment out the currently
-    loaded example and uncomment the one you desire.
- 2. Restart the container via `docker restart mod_wasm_examples`
- 3. Point your browser again at [http://localhost:8080/wasm-module-endpoint]()
+To play with the example, when you run a container you will have to:
+ - mount `examples/wasm_modules` over the `/usr/local/apache2/wasm_modules` folder that comes with the image. 
+ - set the WASM_MODULE_CONFIG environment variable to the example you want to try
+ - Point your browser again at [http://localhost:8080/wasm-module-endpoint]()
     and see how the different example behaves.
+
+For convenience the command is available with each example below.
 
 ### cgi_hello_python.conf
 
-Runs the [cgi_hello_python.py](./examples/wasm_modules/python-scripts/cgi_hello_python.py) script. To see differences when this runs as a cgi script try [http://localhost:8080/cgi-bin/cgi_hello_python.py]()
+```console
+docker run --rm -e WASM_MODULE_CONFIG="cgi_hello_python.conf" -p 8080:8080 -v ./examples/wasm_modules/:/usr/local/apache2/wasm_modules/ projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
+```
+
+Runs the [cgi_hello_python.py](./examples/wasm_modules/python-scripts/cgi_hello_python.py) script.
 
 This cgi compatible script will just print out the current environment variables.
 
 ### cgi_prettify.conf
 
-Runs the [cgi_prettify.py](./examples/wasm_modules/python-scripts/cgi_prettify.py) script. To see differences when this runs as a cgi script try [http://localhost:8080/cgi-bin/cgi_prettify.py]()
+```console
+docker run --rm -e WASM_MODULE_CONFIG="cgi_prettify.conf" -p 8080:8080 -v ./examples/wasm_modules/:/usr/local/apache2/wasm_modules/ projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
+```
+
+Runs the [cgi_prettify.py](./examples/wasm_modules/python-scripts/cgi_prettify.py) script.
 
 This cgi compatible script will print out the contents of `uploads` folder. You can see in the config that `uploads` is mapped to the `/usr/local/apache2/wasm_modules/python-scripts/uploads` folder on the server.
 
@@ -154,15 +154,23 @@ If called with a `?file=/path/to/file` parameter it will print the given file. R
 
 ### cgi_python.conf
 
-Runs the [cgi_python.py](./examples/wasm_modules/python-scripts/cgi_python.py) script. To see differences when this runs as a cgi script try [http://localhost:8080/cgi-bin/cgi_python.py]()
+```console
+docker run --rm -e WASM_MODULE_CONFIG="cgi_python.conf" -p 8080:8080 -v ./examples/wasm_modules/:/usr/local/apache2/wasm_modules/ projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
+```
 
-This cgi compatible script includes mackdoors for listing dirs, opening files or running programs. Running this as a cgi script will expose the server system, while running it in mod_wasm will automatically allow only sandboxed access.
+Runs the [cgi_python.py](./examples/wasm_modules/python-scripts/cgi_python.py) script.
+
+This cgi compatible script includes backdoors for listing dirs, opening files or running programs. Running this as a cgi script will expose the server system, while running it in mod_wasm will automatically allow only sandboxed access.
 
 ### cgi_search_word_count.conf
 
-Runs the [cgi_search_word_count.py](./examples/wasm_modules/python-scripts/cgi_search_word_count.py) script. To see differences when this runs as a cgi script try [http://localhost:8080/cgi-bin/cgi_search_word_count.py]()
+```console
+docker run --rm -e WASM_MODULE_CONFIG="cgi_search_word_count.conf" -p 8080:8080 -v ./examples/wasm_modules/:/usr/local/apache2/wasm_modules/ projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
+```
 
-This cgi compatible script includes will count the occurence of a word in a file. Running this as a cgi script will expose the server system, while running it in mod_wasm will automatically allow only sandboxed access.
+Runs the [cgi_search_word_count.py](./examples/wasm_modules/python-scripts/cgi_search_word_count.py) script.
+
+This cgi compatible script will count the occurence of a word in a file. Running this as a cgi script will expose the server system, while running it in mod_wasm will automatically allow only sandboxed access.
 
 The file name and word are passed as custom http parameters. For example:
 
@@ -173,18 +181,30 @@ curl -H "File: Sherlock.txt" -H "Word: elementary" http://localhost:8080/cgi-bin
 
 ### hello_python_html.conf
 
-Runs the [hello_python_html.py](./examples/wasm_modules/python-scripts/hello_python_html.py) script. To see differences when this runs as a cgi script try [http://localhost:8080/cgi-bin/hello_python_html.py]()
+```console
+docker run --rm -e WASM_MODULE_CONFIG="hello_python_html.conf" -p 8080:8080 -v ./examples/wasm_modules/:/usr/local/apache2/wasm_modules/ projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
+```
+
+Runs the [hello_python_html.py](./examples/wasm_modules/python-scripts/hello_python_html.py) script.
 
 This is just a python script that lists the contents of the `/home` folder. It is not cgi compatible.
 You can see in the config file that `/home` is mapped to `wasm_modules` on the server.
 
 ### rust_hello_wasm.conf
 
+```console
+docker run --rm -e WASM_MODULE_CONFIG="rust_hello_wasm.conf" -p 8080:8080 -v ./examples/wasm_modules/:/usr/local/apache2/wasm_modules/ projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
+```
+
 Runs the `hello_wasm` binary built from [examples/rust-src/hello_wasm](./examples/rust-src/hello_wasm/src/main.rs).
 
 This is just a simple hello world in rust, which will run in a sandboxed mod_wasm environment.
 
 ### rust_list_dir.conf
+
+```console
+docker run --rm -e WASM_MODULE_CONFIG="rust_list_dir.conf" -p 8080:8080 -v ./examples/wasm_modules/:/usr/local/apache2/wasm_modules/ projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
+```
 
 Runs the `list_dir` binary built from [examples/rust-src/list_dir](./examples/rust-src/list_dir/src/main.rs).
 
