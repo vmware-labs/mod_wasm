@@ -28,7 +28,7 @@ Then open a browser at [http://localhost:8080/wasm-module-endpoint](http://local
   * [rust_list_dir.conf](#rust_list_dirconf)
 * [Building the container image](#building-the-container-image)
 * [Building the examples modules](#building-the-example-modules)
-* [Building mod_wasm in your environment](#building-mod-wasm-in-your-environment)
+* [Building mod_wasm in your environment](#building-mod_wasm-in-your-environment)
 
 ## Running in a container
 
