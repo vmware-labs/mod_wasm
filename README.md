@@ -28,6 +28,7 @@ Then open a browser at [http://localhost:8080/wasm-module-endpoint](http://local
   * [rust_list_dir.conf](#rust_list_dirconf)
 * [Building the container image](#building-the-container-image)
 * [Building the examples modules](#building-the-example-modules)
+* [Building mod_wasm in your environment](#building-mod-wasm-in-your-environment)
 
 ## Running in a container
 
@@ -123,7 +124,7 @@ clone this repository.
 ### Running the different examples
 
 To play with the example, when you run a container you will have to:
- - mount `examples/wasm_modules` over the `/usr/local/apache2/wasm_modules` folder that comes with the image. 
+ - mount `examples/wasm_modules` over the `/usr/local/apache2/wasm_modules` folder that comes with the image.
  - set the WASM_MODULE_CONFIG environment variable to the example you want to try
  - Point your browser again at [http://localhost:8080/wasm-module-endpoint]()
     and see how the different example behaves.
@@ -251,7 +252,7 @@ don't forget to copy the python source files or rust wasm modules from `src` int
 
 For the python-based examples we are relying on [fermyon/wagi-python](https://github.com/fermyon/wagi-python)
 which provides both the python binary (`python3.11.wasm`) and the standard python modules (`python311.zip`)
-with [Apache License 2.0](https://github.com/fermyon/wagi-python/blob/main/LICENSE). 
+with [Apache License 2.0](https://github.com/fermyon/wagi-python/blob/main/LICENSE).
 
 As of 2022-10-01, Fermyon claims that their binaries are based on [singlestore-labs/python-wasi](https://github.com/singlestore-labs/python-wasi).
 
@@ -262,7 +263,7 @@ The python code itself is not compiled to a wasm module, but is interpreted on t
 
 The [cgi_prettify.py](examples/wasm-modules/python-scripts/cgi_prettify.py) example uses
 the [pygments/pygments](https://github.com/pygments/pygments) library in `pygments.zip` with
-[BSD 2-Clause "Simplified" License](https://github.com/pygments/pygments/blob/master/LICENSE) 
+[BSD 2-Clause "Simplified" License](https://github.com/pygments/pygments/blob/master/LICENSE)
 
 ### Rust examples
 
@@ -282,3 +283,41 @@ cargo build --release --target=wasm32-wasi
 
 After building don't forget to copy the module from the respective `target/wasm32-wasi/release/`
 to the mounted `wasm_modules/rust-wasm` folder.
+
+## Building mod_wasm in your environment
+
+### Prerequisites
+
+- Apache Portable Runtime Project (apr)
+- Apache Portable Runtime Utility Library (aprutil)
+- Apache HTTP Server (development headers)
+- Cargo
+- C compiler
+- `pkg-config`
+
+For example, in an Ubuntu environment, you can install all
+dependencies by running:
+
+```
+apt install make cargo libapr1-dev libaprutil1-dev pkg-config apache2-dev
+```
+
+### Building
+
+```console
+make build
+```
+
+After the build is complete, you can find the module and an example
+Apache configuration file under the `dist` directory:
+
+```console
+$ tree dist
+dist
+|-- conf
+|   `-- httpd.conf
+`-- modules
+    `-- mod_wasm.so
+```
+
+Now, you can load this module in your Apache installation.
