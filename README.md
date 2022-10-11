@@ -15,19 +15,9 @@ Then open a browser at [http://localhost:8080/wasm-module-endpoint](http://local
 
 * [Running in a container](#running-in-a-container)
   * [Default example](#default-example)
-  * [Running different examples](#running-the-different-examples)
   * [Running development image](#running-the-dev-image)
 * [Demonstrating security capabilities](#demonstrating-security-capabilities)
-* [Examples](#examples)
-  * [cgi_hello_python.conf](#cgi_hello_pythonconf)
-  * [cgi_prettify.conf](#cgi_prettifyconf)
-  * [cgi_python.conf](#cgi_pythonconf)
-  * [cgi_search_word_count.conf](#cgi_search_word_countconf)
-  * [hello_python_html.conf](#hello_python_htmlconf)
-  * [rust_hello_wasm.conf](#rust_hello_wasmconf)
-  * [rust_list_dir.conf](#rust_list_dirconf)
-* [Building the container image](#building-the-container-image)
-* [Building the examples modules](#building-the-example-modules)
+* [More Examples](#more-examples)
 * [Building mod_wasm in your environment](#building-mod_wasm-in-your-environment)
 
 ## Running in a container
@@ -115,9 +105,9 @@ So let's think like a hacker that wants to try and get access to any file on the
 
 However, that will never happen with mod_wasm. Just give it a try and see that we have no access outside the `uploads` folder - [http://localhost:8080/wasm-module-endpoint?file=../../../../../../usr/local/apache2/conf/httpd.conf]()
 
-## Examples
+## More examples
 
-This repo cointains several pre-built webassembly modules along with their
+This repo cointains several pre-built WebAssembly modules along with their
 respective configurations.
 
 Go to [examples/](https://github.com/vmware-labs/mod_wasm/tree/main/examples) for more information.
