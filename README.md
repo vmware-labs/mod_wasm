@@ -1,15 +1,21 @@
 # `mod_wasm`
 
-Welcome to the `mod_wasm` project! This project implements an Apache
-module that is able to execute WebAssembly modules. A detailed article can be found at VMware's [Wasm Labs](https://wasmlabs.dev/articles/apache-mod-wasm/) page.
+Welcome to the `mod_wasm` project!
 
-To try out the default wasm module just type:
+`mod_wasm` is an **Apache Server** (httpd) extension module able to run and serve WebAssembly binaries as endpoints.
 
+A full-detailed article can be found at VMware's [Wasm Labs](https://wasmlabs.dev/articles/apache-mod-wasm/) page.
+
+To try out the default WebAssembly demo:
+
+1. Running the demo container:
 ```console
 docker run -p 8080:8080 projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
 ```
 
-Then open a browser at [http://localhost:8080/wasm-module-endpoint](http://localhost:8080/wasm-module-endpoint) and enjoy.
+2. Open browser at:
+[http://localhost:8080/wasm-module-endpoint](http://localhost:8080/wasm-module-endpoint)
+
 
 ## Table of contents
 
