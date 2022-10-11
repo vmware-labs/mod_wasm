@@ -1,7 +1,7 @@
 # `mod_wasm`
 
 Welcome to the `mod_wasm` project! This project implements an Apache
-module that is able to execute WebAssembly modules.
+module that is able to execute WebAssembly modules. A detailed article can be found at VMware's [Wasm Labs](https://wasmlabs.dev/articles/apache-mod-wasm/) page.
 
 To try out the default wasm module just type:
 
