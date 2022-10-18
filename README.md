@@ -25,6 +25,9 @@ docker run -p 8080:8080 projects.registry.vmware.com/wasmlabs/containers/httpd-m
 * [Demonstrating security capabilities](#demonstrating-security-capabilities)
 * [More Examples](#more-examples)
 * [Building mod_wasm in your environment](#building-mod_wasm-in-your-environment)
+* [Troubleshooting](#troubleshooting)
+* [Debugging mod_wasm and WebAssembly](#debugging-mod_wasm-and-webassembly)
+
 
 ## Running in a container
 
@@ -156,3 +159,30 @@ dist
 ```
 
 Now, you can load this module in your Apache installation.
+
+
+## Troubleshooting
+
+### Cannot load `modules/mod_wasm.so` into server
+
+This is a common error related to `LD_LIBRARY_PATH`:
+```
+$ httpd
+httpd: Syntax error on line XXX of <...>/httpd/dist/conf/httpd.conf:
+Cannot load modules/mod_wasm.so into server: libwasm_runtime.so: cannot open shared object file: No such file or directory
+```
+
+Apache is loading `modules/mod_wasm.so` but during the process it cannot find `libwasm_runtime.so`. Either run Apache with `LD_LIBRARY_PATH` pointing to the directory where `libwasm_runtime.so` is located, or copy `libwasm_runtime.so` to a directory such as `/usr/lib`. 
+
+
+## Debugging mod_wasm and WebAssembly
+
+To get detailed debugging information about Wasm execution within Wasmtime, run Apache with the following environment variables:
+* `WASMTIME_BACKTRACE_DETAILS=1`
+* `RUST_BACKTRACE=full`
+
+Also, it is recommended to run Apache in debug mode (`-X` option), with only one worker and without detaching from the terminal.
+
+```
+WASMTIME_BACKTRACE_DETAILS=1 RUST_BACKTRACE=full ./httpd -X
+```
