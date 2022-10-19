@@ -1,20 +1,35 @@
 # `mod_wasm`
 
-Welcome to the `mod_wasm` project!
-
-`mod_wasm` is an **Apache Server** (httpd) extension module able to run and serve WebAssembly binaries as endpoints.
+`mod_wasm` is an [**Apache Server** (httpd)](https://httpd.apache.org/) extension module able to run and serve [WebAssembly](https://webassembly.org/) binaries as endpoints:
+* Run existing applications from a variety of languages without modification.
+* Execute untrusted third-party code in a secure environment without using containers.
+* The Wasm capabilities model allows to enable/disable capabilites per HTTP request (*still WIP).
 
 A full-detailed article can be found at VMware's [Wasm Labs](https://wasmlabs.dev/articles/apache-mod-wasm/) page.
 
-To try out the default WebAssembly demo:
 
-1. Running the demo container:
+## Demo
+
+The easiest way to try out `mod_wasm` is using our Docker demo container: 
+
+1. Running the container:
 ```console
 docker run -p 8080:8080 projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
 ```
 
 2. Open browser at:
 [http://localhost:8080/wasm-module-endpoint](http://localhost:8080/wasm-module-endpoint)
+
+### 'PrettyFy' WebApp
+
+The 'PrettyFy' demo is a simple one-script, Python-based WebApp (see [Examples](#examples)).
+* The Python interpreter has been compiled to WebAssembly.
+* Note how the system platform is identified: `sys.platform = WASI`.
+* The app accepts `file=` as URL parameter to highlight a previously uploaded file:
+  * [http://localhost:8080/wasm-module-endpoint?file=uploaded_text.txt](http://localhost:8080/wasm-module-endpoint?file=uploaded_text.txt)
+  * [http://localhost:8080/wasm-module-endpoint?file=cgi_hello_python.py](http://localhost:8080/wasm-module-endpoint?file=cgi_hello_python.py)
+* Now, if you try a basic [path traversal](https://owasp.org/www-community/attacks/Path_Traversal) attack, it won't be succesful thanks to the WebAssembly sandboxed model where the Python interpreter is running:
+  * [http://localhost:8080/wasm-module-endpoint?file=../../conf/httpd.conf](http://localhost:8080/wasm-module-endpoint?file=../../conf/httpd.conf)
 
 
 ## Table of contents
@@ -23,7 +38,7 @@ docker run -p 8080:8080 projects.registry.vmware.com/wasmlabs/containers/httpd-m
   * [Default example](#default-example)
   * [Running development image](#running-the-dev-image)
 * [Demonstrating security capabilities](#demonstrating-security-capabilities)
-* [More Examples](#more-examples)
+* [Examples](#examples)
 * [Building mod_wasm in your environment](#building-mod_wasm-in-your-environment)
 * [Troubleshooting](#troubleshooting)
 * [Debugging mod_wasm and WebAssembly](#debugging-mod_wasm-and-webassembly)
@@ -114,9 +129,9 @@ So let's think like a hacker that wants to try and get access to any file on the
 
 However, that will never happen with mod_wasm. Just give it a try and see that we have no access outside the `uploads` folder - [http://localhost:8080/wasm-module-endpoint?file=../../../../../../usr/local/apache2/conf/httpd.conf]()
 
-## More examples
+## Examples
 
-This repo cointains several pre-built WebAssembly modules along with their
+This repo cointains several pre-built WebAssembly modules as examples along with their
 respective configurations.
 
 Go to [examples/](https://github.com/vmware-labs/mod_wasm/tree/main/examples) for more information.
