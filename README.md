@@ -1,6 +1,8 @@
 # `mod_wasm`
 
-`mod_wasm` is an [**Apache Server** (httpd)](https://httpd.apache.org/) extension module able to run and serve [WebAssembly](https://webassembly.org/) binaries as endpoints:
+`mod_wasm` is an [**Apache Server** (httpd)](https://httpd.apache.org/) extension module able to run and serve [WebAssembly](https://webassembly.org/) binaries as endpoints.
+
+`mod_wasm` can be useful in the different scenarios: 
 * Run existing applications from a variety of languages without modification.
 * Execute untrusted third-party code in a secure environment without using containers.
 * The Wasm capabilities model allows to enable/disable capabilites per HTTP request (*still WIP).
@@ -8,11 +10,9 @@
 A full-detailed article can be found at VMware's [Wasm Labs](https://wasmlabs.dev/articles/apache-mod-wasm/) page.
 
 
-## Demo
+## Quick Demo
 
-The easiest way to try out `mod_wasm` is using our Docker demo container: 
-
-1. Running the container:
+1. Run the container:
 ```console
 docker run -p 8080:8080 projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
 ```
@@ -20,7 +20,20 @@ docker run -p 8080:8080 projects.registry.vmware.com/wasmlabs/containers/httpd-m
 2. Open browser at:
 [http://localhost:8080/wasm-module-endpoint](http://localhost:8080/wasm-module-endpoint)
 
-### 'PrettyFy' WebApp
+More detailes about the ['PrettyFy' WebApp Demo](#prettyfy-webapp-demo) below.
+
+
+## Table of contents
+
+* ['PrettyFy' WebApp Demo](#prettyfy-webapp-demo)
+* [Examples](#examples)
+* [Building mod_wasm in your environment](#building-mod_wasm-in-your-environment)
+* [Building the container image](#building-the-container-image)
+* [Troubleshooting](#troubleshooting)
+* [Debugging mod_wasm and WebAssembly](#debugging-mod_wasm-and-webassembly)
+
+
+## 'PrettyFy' WebApp Demo
 
 The 'PrettyFy' demo is a simple one-script, Python-based WebApp (see [Examples](#examples)).
 * The Python interpreter has been compiled to WebAssembly.
@@ -30,14 +43,6 @@ The 'PrettyFy' demo is a simple one-script, Python-based WebApp (see [Examples](
   * [http://localhost:8080/wasm-module-endpoint?file=cgi_hello_python.py](http://localhost:8080/wasm-module-endpoint?file=cgi_hello_python.py)
 * Now, if you try a basic [path traversal](https://owasp.org/www-community/attacks/Path_Traversal) attack, it won't be succesful thanks to the WebAssembly sandboxed model where the Python interpreter is running:
   * [http://localhost:8080/wasm-module-endpoint?file=../../conf/httpd.conf](http://localhost:8080/wasm-module-endpoint?file=../../conf/httpd.conf)
-
-
-## Table of contents
-
-* [Examples](#examples)
-* [Building mod_wasm in your environment](#building-mod_wasm-in-your-environment)
-* [Troubleshooting](#troubleshooting)
-* [Debugging mod_wasm and WebAssembly](#debugging-mod_wasm-and-webassembly)
 
 
 ## Examples
