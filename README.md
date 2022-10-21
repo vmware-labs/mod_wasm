@@ -1,16 +1,15 @@
-# `mod_wasm`
+# mod_wasm
 
-`mod_wasm` is an [**Apache Server** (httpd)](https://httpd.apache.org/) extension module able to run and serve [WebAssembly](https://webassembly.org/) binaries as endpoints.
+**mod_wasm** is an [**Apache Server** (httpd)](https://httpd.apache.org/) extension module able to run and serve [WebAssembly](https://webassembly.org/) binaries as endpoints. A full-detailed article can be found at VMware's [Wasm Labs](https://wasmlabs.dev/articles/apache-mod-wasm/) page.
 
-`mod_wasm` can be useful in the different scenarios: 
+**mod_wasm** can be useful in the different scenarios: 
 * Run existing applications from a variety of languages without modification.
 * Execute untrusted third-party code in a secure environment without using containers.
-* The Wasm capabilities model allows to enable/disable capabilites per HTTP request (*still WIP).
-
-A full-detailed article can be found at VMware's [Wasm Labs](https://wasmlabs.dev/articles/apache-mod-wasm/) page.
+* The Wasm capabilities model allows to enable/disable capabilites per HTTP request.
 
 
-## Quick Demo
+
+### ▶️ Quick Demo
 
 1. Run the container:
 ```console
@@ -20,22 +19,58 @@ docker run -p 8080:8080 projects.registry.vmware.com/wasmlabs/containers/httpd-m
 2. Open browser at:
 [http://localhost:8080/wasm-module-endpoint](http://localhost:8080/wasm-module-endpoint)
 
-More detailes about the ['PrettyFy' WebApp Demo](#prettyfy-webapp-demo) below.
+More details about the ['PrettyFy' WebApp Demo](#-prettyfy-webapp-demo) below.
 
 
-## Table of contents
+## 📔 Contents
 
-* ['PrettyFy' WebApp Demo](#prettyfy-webapp-demo)
-* [Examples](#examples)
-* [Building mod_wasm in your environment](#building-mod_wasm-in-your-environment)
-* [Building the container image](#building-the-container-image)
-* [Troubleshooting](#troubleshooting)
-* [Debugging mod_wasm and WebAssembly](#debugging-mod_wasm-and-webassembly)
+* [Overview](#-overview)
+* ['PrettyFy' WebApp Demo](#-prettyfy-webapp-demo)
+* [Examples](#%EF%B8%8F-examples)
+* [Building mod_wasm in your environment](#%EF%B8%8F-building-mod_wasm-in-your-environment)
+* [Building the container image](#-building-the-container-image)
+* [Troubleshooting](#%EF%B8%8F-troubleshooting)
+* [Debugging](#-debugging)
 
 
-## 'PrettyFy' WebApp Demo
+## 🔭 Overview
 
-The 'PrettyFy' demo is a simple one-script, Python-based WebApp (see [Examples](#examples)).
+The **mod_wasm** project is composed by two different libraries:
+- `mod_wasm.so` (written in C) acts as the extension module for the [Apache Server (httpd)](https://httpd.apache.org/).
+- `libwasm_runtime.so` (written in Rust) offers a very high-level C-API to manage WebAssembly modules via [Wasmtime](https://wasmtime.dev/).
+
+![alt Architecture](https://raw.githubusercontent.com/vmware-labs/mod_wasm/main/docs/slides/architecture.png)
+
+
+### New Directives
+
+To setup and manage WebAssembly binaries, **mod_wasm** offers new directives to the `httpd.conf` configuration file:
+
+| Directive       | Description |
+| --------------- | ----------- |
+| `WasmRoot`      | Set the root directory for Wasm modules. |
+| `WasmModule`    | Set the Wasm module file name. |
+| `WasmDir`       | Pre-open a host directory for the Wasm context. |
+| `WasmMapDir`    | Pre-open a host directory for the Wasm context and mount into a given directory. |
+| `WasmArg`       | Set an argument to be passed to the Wasm module context. |
+| `WasmEnv`       | Set an environment variable to be passed to the Wasm module context. |
+| `WasmEnableCGI` | Enable/Disable CGI emulation mode for HTTP requests. |
+
+
+### Workflow
+
+**mod_wasm** plays a role in two different stages of the Apache Server workflow:
+1. The different `WasmXXX` directives are read from `httpd.conf` during the boot up sequence. Once the configuration if fully processed, mod_wasm requests to the Wasm runtime to start loading the Wasm binaries. This is by far the most expensive operation and that is why it is executed only once during the Apache boot up sequence. When completed, the Apache Sever is ready to response to incoming HTTP requests.
+2. For each HTTP request, mod_wasm builds the WASI context for the already-loaded Wasm binary. Next, the Wasm module is instantiated and the entry point is executed. The `stdout` from the Wasm module is redirected to the HTTP response, and the `stderr` is appended to Apache Server's trace (usually at `<httpd_dir>/dist/logs/error_log`). 
+
+**mod_wasm** also offers the ability to build a specific execution context per HTTP request. When setting up `WasmEnableCGI On`, mod_wasm will pass HTTP headers as environtment variables to the Wasm module (they will be prefixed as `HTTP_`). In addition, URL parameters are also passed in the environment variable `QUERY_STRING`.
+
+![alt Workflow](https://raw.githubusercontent.com/vmware-labs/mod_wasm/main/docs/slides/workflow.png)
+
+
+## ⭐ 'PrettyFy' WebApp Demo
+
+The 'PrettyFy' demo is a simple one-script, Python-based WebApp (see [Examples](#%EF%B8%8F-examples)).
 * The Python interpreter has been compiled to WebAssembly.
 * Note how the system platform is identified: `sys.platform = WASI`.
 * The app accepts `file=` as URL parameter to highlight a previously uploaded file:
@@ -45,15 +80,14 @@ The 'PrettyFy' demo is a simple one-script, Python-based WebApp (see [Examples](
   * [http://localhost:8080/wasm-module-endpoint?file=../../conf/httpd.conf](http://localhost:8080/wasm-module-endpoint?file=../../conf/httpd.conf)
 
 
-## Examples
+## 🕹️ Examples
 
-This repo cointains several pre-built WebAssembly modules as examples along with their
-respective configurations.
+This repo cointains several pre-built WebAssembly [examples](https://github.com/vmware-labs/mod_wasm/tree/main/examples) to play with.
 
-Go to [examples/](https://github.com/vmware-labs/mod_wasm/tree/main/examples) for more information.
+Feel free to explore, modify and crash them!
 
 
-## Building mod_wasm in your environment
+## 🏗️ Building mod_wasm in your environment
 
 ### Prerequisites
 
@@ -92,7 +126,7 @@ dist
 Now, you can load this module in your Apache installation.
 
 
-## Building the container image
+## 📦 Building the container image
 
 This repository contains all you need to build a local container image
 
@@ -119,7 +153,7 @@ The dev image will include all examples, along with additional tools required fo
 make dev-image
 ```
 
-## Troubleshooting
+## ⚠️ Troubleshooting
 
 ### Cannot load `modules/mod_wasm.so` into server
 
@@ -133,13 +167,13 @@ Cannot load modules/mod_wasm.so into server: libwasm_runtime.so: cannot open sha
 Apache is loading `modules/mod_wasm.so` but during the process it cannot find `libwasm_runtime.so`. Either run Apache with `LD_LIBRARY_PATH` pointing to the directory where `libwasm_runtime.so` is located, or copy `libwasm_runtime.so` to a directory such as `/usr/lib`. 
 
 
-## Debugging mod_wasm and WebAssembly
+## 🐛 Debugging
 
-To get detailed debugging information about Wasm execution within Wasmtime, run Apache with the following environment variables:
+To get detailed debugging information about the Wasm execution, run the Apache Server with the following environment variables:
 * `WASMTIME_BACKTRACE_DETAILS=1`
 * `RUST_BACKTRACE=full`
 
-Also, it is recommended to run Apache in debug mode (`-X` option), with only one worker and without detaching from the terminal.
+Also, it is recommended to run Apache in debug mode (`-X` option), this means only one process, only one worker, and without detaching from the terminal.
 
 ```
 WASMTIME_BACKTRACE_DETAILS=1 RUST_BACKTRACE=full ./httpd -X
