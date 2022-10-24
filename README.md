@@ -1,6 +1,11 @@
 # mod_wasm
 
-**mod_wasm** is an [**Apache Server** (httpd)](https://httpd.apache.org/) extension module able to run and serve [WebAssembly](https://webassembly.org/) binaries as endpoints. A full-detailed article can be found at VMware's [Wasm Labs](https://wasmlabs.dev/articles/apache-mod-wasm/) page.
+**mod_wasm** is an [**Apache Server** (httpd)](https://httpd.apache.org/) extension module able to run and serve [WebAssembly](https://webassembly.org/) binaries as endpoints.
+
+It was unveiled at the ApacheCon North America on Oct 3rd, 2022 (see the [slides](https://apachecon.com/acna2022/slides/01_Gonz%c3%a1lez_mod-wasm_Bringing_WebAssembly.pdf)). In addition, a full-detailed article can be found at VMware's [Wasm Labs](https://wasmlabs.dev/articles/apache-mod-wasm/) page. 
+
+
+### ✅ Features
 
 **mod_wasm** can be useful in the different scenarios: 
 * Run existing applications from a variety of languages without modification.
