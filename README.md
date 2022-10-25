@@ -99,15 +99,16 @@ Feel free to explore, modify and crash them!
 - Apache Portable Runtime Project (apr)
 - Apache Portable Runtime Utility Library (aprutil)
 - Apache HTTP Server (development headers)
-- Cargo
+- Rust
 - C compiler
 - `pkg-config`
+- `libtool`
 
 For example, in an Ubuntu environment, you can install all
 dependencies by running:
 
 ```
-apt install make cargo libapr1-dev libaprutil1-dev pkg-config apache2-dev
+apt install make pkg-config libtool-bin cargo libapr1-dev libaprutil1-dev apache2-dev 
 ```
 
 ### Building
