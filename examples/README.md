@@ -31,7 +31,7 @@ what `mod_wasm.conf` could look like.
 
 **Note**: If you don't have access to the `projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest` image from
 a public repository, you can build it on your own by following the
-[Building the container image](#building-the-container-image) section below.
+[Building the container image](../#-building-the-container-image) section below.
 
 To try out the default wasm module just type
 
@@ -46,7 +46,7 @@ with a wasm python binary.
 
 ### Running the dev image
 
-If you plan on experimenting a comparison between executing python via cgi and mod_wasm you will need to run the development container image. Refer to [Building a dev image](#building-a-dev-image).
+If you plan on experimenting a comparison between executing python via cgi and mod_wasm you will need to run the development container image. Refer to [Building a dev image](../#building-a-dev-image).
 
 To just run the image and see the default example (with enabled cgi access to everything) use
 
