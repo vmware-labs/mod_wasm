@@ -107,9 +107,17 @@ Feel free to explore, modify and crash them!
 For example, in an Ubuntu environment, you can install all
 dependencies by running:
 
+```console
+apt install make pkg-config libtool-bin cargo libapr1-dev libaprutil1-dev apache2-dev
 ```
-apt install make pkg-config libtool-bin cargo libapr1-dev libaprutil1-dev apache2-dev 
+
+Also, [cbindgen](https://github.com/eqrion/cbindgen) is needed to generate the C bindings from Rust:
+
+```console
+cargo install cbindgen
 ```
+
+
 
 ### Building
 
