@@ -96,27 +96,31 @@ Feel free to explore, modify and crash them!
 
 ### Prerequisites
 
-- Apache Portable Runtime Project (apr)
-- Apache Portable Runtime Utility Library (aprutil)
-- Apache HTTP Server (development headers)
-- Rust
-- C compiler
-- `pkg-config`
-- `libtool`
+- [GNU C compiler](https://gcc.gnu.org/) (`gcc`)
+- [GNU Make](https://www.gnu.org/software/make/manual/html_node/index.html) (`make`)  
+- [pkg-config](https://gitlab.freedesktop.org/pkg-config/pkg-config) (`pkg-config`)
+- [Libtool](https://www.gnu.org/software/libtool/manual/html_node/index.html) (`libtool-bin`)
+- [Perl Compatible Regular Expressions](https://pcre.org/) (`libpcre2-dev`)
+- [Apache Portable Runtime Project](https://apr.apache.org/) (`libapr1-dev`, `libaprutil1-dev`)
+- [Apache HTTP Server Development Headers](https://httpd.apache.org/) (`apache2-dev`)
+- [Rust](https://www.rust-lang.org/) 
+- [cbindgen](https://github.com/eqrion/cbindgen)
 
 For example, in an Ubuntu environment, you can install all
 dependencies by running:
-
 ```console
-apt install make pkg-config libtool-bin cargo libapr1-dev libaprutil1-dev apache2-dev
+sudo apt install gcc make pkg-config libtool-bin libpcre2-dev libapr1-dev libaprutil1-dev apache2-dev
 ```
 
-Also, [cbindgen](https://github.com/eqrion/cbindgen) is needed to generate the C bindings from Rust:
+Next, installing Rust as specified in its [Getting Started](https://www.rust-lang.org/learn/get-started) guide:
+```console
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
 
+Once Rust is installed, [cbindgen](https://github.com/eqrion/cbindgen) can be installed:
 ```console
 cargo install cbindgen
 ```
-
 
 
 ### Building
