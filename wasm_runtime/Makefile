@@ -17,3 +17,4 @@ doc:
 clean:
 	rm -rf wasm_runtime.h
 	rm -rf target/release/libwasm_runtime.*
+
