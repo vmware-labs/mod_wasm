@@ -146,10 +146,10 @@ pub extern "C" fn wasm_config_clear_dirs() {
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_config_set_dir("/tmp");
+/// wasm_config_add_dir("/tmp");
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_config_set_dir(dir: *const c_char) {
+pub extern "C" fn wasm_config_add_dir(dir: *const c_char) {
     let dir_str   = const_c_char_to_str(dir);
 
     WASM_RUNTIME_CONFIG.write()
