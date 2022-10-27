@@ -126,7 +126,7 @@ pub extern "C" fn wasm_config_add_env(env: *const c_char, value: *const c_char) 
 
 }
 
-/// Clears all WASI propened dirs for the Wasm module
+/// Clears all WASI preopened dirs for the Wasm module
 #[no_mangle]
 pub extern "C" fn wasm_config_clear_dirs() {
     WASM_RUNTIME_CONFIG.write()
@@ -215,7 +215,11 @@ pub extern "C" fn wasm_runtime_init_module() -> *const c_char {
     str_to_c_char(&return_msg)
 }
 
-
+/// Run the Wasm module
+///
+/// Returns a string with the stdout from the module if execution was succesfuly.
+/// Otherwise, trace the error and returns the string explaining the error.
+///
 #[no_mangle]
 pub extern "C" fn wasm_runtime_run_module() -> *const c_char {
     let result = match run_module() {
@@ -231,6 +235,12 @@ pub extern "C" fn wasm_runtime_run_module() -> *const c_char {
 }
 
 
+/// Returns raw pointer's ownership
+///
+/// After returning a const *char pointer from Rust-world to the C-world, when such a pointer is not going to be used any more, 
+/// C-world MUST invoke this function in order to Rust-world being able to deallocate the memory.
+/// Otherwise, memory will leak.
+///
 #[no_mangle]
 pub extern "C" fn return_const_char_ownership(ptr: *const c_char) {
     deallocate_cstring(ptr);
