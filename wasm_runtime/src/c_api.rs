@@ -126,6 +126,14 @@ pub extern "C" fn wasm_config_add_env(env: *const c_char, value: *const c_char) 
 
 }
 
+/// Clears all WASI propened dirs for the Wasm module
+#[no_mangle]
+pub extern "C" fn wasm_config_clear_dirs() {
+    WASM_RUNTIME_CONFIG.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
+        .wasi_dirs
+        .clear();
+}
 
 /// Add a WASI preopen dir for the Wasm module
 ///
@@ -150,6 +158,14 @@ pub extern "C" fn wasm_config_set_dir(dir: *const c_char) {
         .push(dir_str.to_string());
 }
 
+/// Clears all WASI propened dirs with mapping for the Wasm module
+#[no_mangle]
+pub extern "C" fn wasm_config_clear_mapdirs() {
+    WASM_RUNTIME_CONFIG.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
+        .wasi_mapdirs
+        .clear();
+}
 
 /// Add a WASI preopen dir with mapping for the Wasm module
 ///
@@ -177,14 +193,6 @@ pub extern "C" fn wasm_config_add_mapdir(map: *const c_char, dir: *const c_char)
         .push((map_str.to_string(), dir_str.to_string()));
 }
 
-/// Clears all WASI propened dirs for the Wasm module
-#[no_mangle]
-pub extern "C" fn wasm_config_clear_mapdirs() {
-    WASM_RUNTIME_CONFIG.write()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
-        .wasi_mapdirs
-        .clear();
-}
 
 /// Initialize the Wasm module
 ///
