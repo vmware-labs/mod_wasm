@@ -278,14 +278,12 @@ static int content_handler(request_rec *r)
     // workers/threads.
     //
     // This reset to initial state is crucial when the module is
-    // behaving as a CGI module, because arguments and environnent
-    // variables might be set depending on the data of the
+    // behaving as a CGI module, because environnent variables
+    // might be set depending on the data of the
     // request. However, the user might have also added some static
     // arguments and environment variables to the Apache
     // configuration.
-    wasm_config_clear_args();
     wasm_config_clear_envs();
-    populate_runtime_with_config_defined_args(dcfg);
     populate_runtime_with_config_defined_envs(dcfg);
 
     if (dcfg->bEnableCGI) {
