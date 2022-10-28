@@ -265,8 +265,11 @@ static void populate_runtime_with_config_defined_envs(x_cfg *cfg)
 
 
 /*
- * This function reads the HTTP Body Request
+ * This function reads the HTTP Request Body
  * 
+ * r: request
+ * rbuff: buffer to where the body will be allocated
+ * size: size of the buffer allocated
  * 
  * More info:
  *  - https://httpd.apache.org/docs/trunk/developer/modguide.html (section: "Reading the request body into memory")
