@@ -9,18 +9,21 @@
 
 use anyhow::Result;
 use wasmtime_wasi::*;
-use wasi_common::pipe::WritePipe;
+use wasi_common::pipe::{ReadPipe, WritePipe};
+use std::io::Cursor;
 
 use crate::config::WASM_RUNTIME_CONFIG;
 use crate::stdio_buffers::STDOUT_BUFFER_RWLOCK;
 
 
 pub fn build_wasi_ctx() -> WasiCtx {
+    let stdin_pipe = build_stdin_pipe();
     let stdout_pipe = build_stdout_pipe();
     let args = build_wasi_args();
     let envs = build_wasi_envs();
 
     let mut wasi_builder = WasiCtxBuilder::new()
+        .stdin(Box::new(stdin_pipe))
         .stdout(Box::new(stdout_pipe))
         .inherit_stderr()
         .args(&args).expect("ERROR! Wrong WASI args array Vector!")
@@ -29,6 +32,13 @@ pub fn build_wasi_ctx() -> WasiCtx {
     wasi_builder = add_wasi_preopen_dirs(wasi_builder);
 
     wasi_builder.build()
+}
+
+fn build_stdin_pipe() -> ReadPipe<Cursor<Vec<u8>>> {
+    let wasm_runtime_config = WASM_RUNTIME_CONFIG.read()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on read()");
+
+    ReadPipe::from(wasm_runtime_config.wasi_stdin.clone())
 }
 
 
