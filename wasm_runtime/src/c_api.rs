@@ -7,7 +7,8 @@
 //!
 //! This file contains the API functions for the C language
 
-use std::os::raw::c_char;
+use std::ffi::{c_char, c_uchar};
+use std::slice;
 
 use crate::config::WASM_RUNTIME_CONFIG;
 use crate::ffi_utils::*;
@@ -191,6 +192,30 @@ pub extern "C" fn wasm_config_add_mapdir(map: *const c_char, dir: *const c_char)
         .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
         .wasi_mapdirs
         .push((map_str.to_string(), dir_str.to_string()));
+}
+
+
+/// Set the WASI stdin for the Wasm module
+///
+/// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+/// So `filename` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+///
+/// In addition, `filename` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+/// Otherwise, the root directory will be an empty string.
+///
+/// # Examples (C Code)
+///
+/// ```
+/// wasm_config_set_module("hello.wasm");
+/// ```
+#[no_mangle]
+pub extern "C" fn wasm_config_set_stdin(buffer: *const c_uchar, size: usize) {
+    let bytes = unsafe { slice::from_raw_parts(buffer, size) };
+    let bytes_vec: Vec<u8> = Vec::from(bytes);
+
+    WASM_RUNTIME_CONFIG.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
+        .wasi_stdin = bytes_vec;
 }
 
 

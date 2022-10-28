@@ -129,9 +129,22 @@ void wasm_config_add_mapdir(const char *map,
                             const char *dir);
 
 /**
- * Clears all WASI propened dirs for the Wasm module
+ * Set the WASI stdin for the Wasm module
+ *
+ * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+ * So `filename` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ *
+ * In addition, `filename` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+ * Otherwise, the root directory will be an empty string.
+ *
+ * # Examples (C Code)
+ *
+ * ```
+ * wasm_config_set_module("hello.wasm");
+ * ```
  */
-void wasm_config_clear_mapdirs(void);
+void wasm_config_set_stdin(const unsigned char *buffer,
+                           uintptr_t size);
 
 /**
  * Initialize the Wasm module
