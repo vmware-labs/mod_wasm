@@ -4,6 +4,10 @@
 
 -
 
+## 0.7.0 (2022/11/03)
+
+- Added support for sending HTTP Request body into WASI `stdin`.
+
 ## 0.6.0 (2022/10/26)
 
 - Fixed build for aarm64.
