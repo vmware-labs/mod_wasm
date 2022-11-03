@@ -82,6 +82,11 @@ void wasm_config_add_env(const char *env,
                          const char *value);
 
 /**
+ * Clears all WASI preopened dirs for the Wasm module
+ */
+void wasm_config_clear_dirs(void);
+
+/**
  * Add a WASI preopen dir for the Wasm module
  *
  * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
@@ -93,10 +98,15 @@ void wasm_config_add_env(const char *env,
  * # Examples (C Code)
  *
  * ```
- * wasm_config_set_dir("/tmp");
+ * wasm_config_add_dir("/tmp");
  * ```
  */
-void wasm_config_set_dir(const char *dir);
+void wasm_config_add_dir(const char *dir);
+
+/**
+ * Clears all WASI propened dirs with mapping for the Wasm module
+ */
+void wasm_config_clear_mapdirs(void);
 
 /**
  * Add a WASI preopen dir with mapping for the Wasm module
@@ -119,9 +129,22 @@ void wasm_config_add_mapdir(const char *map,
                             const char *dir);
 
 /**
- * Clears all WASI propened dirs for the Wasm module
+ * Set the WASI stdin for the Wasm module
+ *
+ * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+ * So `filename` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ *
+ * In addition, `filename` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+ * Otherwise, the root directory will be an empty string.
+ *
+ * # Examples (C Code)
+ *
+ * ```
+ * wasm_config_set_module("hello.wasm");
+ * ```
  */
-void wasm_config_clear_mapdirs(void);
+void wasm_config_set_stdin(const unsigned char *buffer,
+                           uintptr_t size);
 
 /**
  * Initialize the Wasm module
@@ -132,6 +155,21 @@ void wasm_config_clear_mapdirs(void);
  */
 const char *wasm_runtime_init_module(void);
 
+/**
+ * Run the Wasm module
+ *
+ * Returns a string with the stdout from the module if execution was succesfuly.
+ * Otherwise, trace the error and returns the string explaining the error.
+ *
+ */
 const char *wasm_runtime_run_module(void);
 
+/**
+ * Returns raw pointer's ownership
+ *
+ * After returning a const *char pointer from Rust-world to the C-world, when such a pointer is not going to be used any more,
+ * C-world MUST invoke this function in order to Rust-world being able to deallocate the memory.
+ * Otherwise, memory will leak.
+ *
+ */
 void return_const_char_ownership(const char *ptr);

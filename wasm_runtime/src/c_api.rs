@@ -7,7 +7,8 @@
 //!
 //! This file contains the API functions for the C language
 
-use std::os::raw::c_char;
+use std::ffi::{c_char, c_uchar};
+use std::slice;
 
 use crate::config::WASM_RUNTIME_CONFIG;
 use crate::ffi_utils::*;
@@ -126,6 +127,14 @@ pub extern "C" fn wasm_config_add_env(env: *const c_char, value: *const c_char) 
 
 }
 
+/// Clears all WASI preopened dirs for the Wasm module
+#[no_mangle]
+pub extern "C" fn wasm_config_clear_dirs() {
+    WASM_RUNTIME_CONFIG.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
+        .wasi_dirs
+        .clear();
+}
 
 /// Add a WASI preopen dir for the Wasm module
 ///
@@ -138,10 +147,10 @@ pub extern "C" fn wasm_config_add_env(env: *const c_char, value: *const c_char) 
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_config_set_dir("/tmp");
+/// wasm_config_add_dir("/tmp");
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_config_set_dir(dir: *const c_char) {
+pub extern "C" fn wasm_config_add_dir(dir: *const c_char) {
     let dir_str   = const_c_char_to_str(dir);
 
     WASM_RUNTIME_CONFIG.write()
@@ -150,6 +159,14 @@ pub extern "C" fn wasm_config_set_dir(dir: *const c_char) {
         .push(dir_str.to_string());
 }
 
+/// Clears all WASI propened dirs with mapping for the Wasm module
+#[no_mangle]
+pub extern "C" fn wasm_config_clear_mapdirs() {
+    WASM_RUNTIME_CONFIG.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
+        .wasi_mapdirs
+        .clear();
+}
 
 /// Add a WASI preopen dir with mapping for the Wasm module
 ///
@@ -177,14 +194,30 @@ pub extern "C" fn wasm_config_add_mapdir(map: *const c_char, dir: *const c_char)
         .push((map_str.to_string(), dir_str.to_string()));
 }
 
-/// Clears all WASI propened dirs for the Wasm module
+
+/// Set the WASI stdin for the Wasm module
+///
+/// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+/// So `filename` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+///
+/// In addition, `filename` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+/// Otherwise, the root directory will be an empty string.
+///
+/// # Examples (C Code)
+///
+/// ```
+/// wasm_config_set_module("hello.wasm");
+/// ```
 #[no_mangle]
-pub extern "C" fn wasm_config_clear_mapdirs() {
+pub extern "C" fn wasm_config_set_stdin(buffer: *const c_uchar, size: usize) {
+    let bytes = unsafe { slice::from_raw_parts(buffer, size) };
+    let bytes_vec: Vec<u8> = Vec::from(bytes);
+
     WASM_RUNTIME_CONFIG.write()
         .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
-        .wasi_mapdirs
-        .clear();
+        .wasi_stdin = bytes_vec;
 }
+
 
 /// Initialize the Wasm module
 ///
@@ -207,7 +240,11 @@ pub extern "C" fn wasm_runtime_init_module() -> *const c_char {
     str_to_c_char(&return_msg)
 }
 
-
+/// Run the Wasm module
+///
+/// Returns a string with the stdout from the module if execution was succesfuly.
+/// Otherwise, trace the error and returns the string explaining the error.
+///
 #[no_mangle]
 pub extern "C" fn wasm_runtime_run_module() -> *const c_char {
     let result = match run_module() {
@@ -223,6 +260,12 @@ pub extern "C" fn wasm_runtime_run_module() -> *const c_char {
 }
 
 
+/// Returns raw pointer's ownership
+///
+/// After returning a const *char pointer from Rust-world to the C-world, when such a pointer is not going to be used any more, 
+/// C-world MUST invoke this function in order to Rust-world being able to deallocate the memory.
+/// Otherwise, memory will leak.
+///
 #[no_mangle]
 pub extern "C" fn return_const_char_ownership(ptr: *const c_char) {
     deallocate_cstring(ptr);

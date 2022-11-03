@@ -36,6 +36,14 @@
 /*--------------------------------------------------------------------------*/
 
 /**
+  * Maximum number of bytes to allocate the body from an HTTP Request.
+  *
+  * 16KB (16*1024 = 16386)
+  *
+  */
+#define CONFIG_HTTP_REQUEST_BODY_MAX 16386
+
+/**
   * Maximum number of arguments specified in the static configuration.
   *
   * If the user tries to set more arguments on the Apache
@@ -254,6 +262,59 @@ static void populate_runtime_with_config_defined_envs(x_cfg *cfg)
     }
 }
 
+
+
+/*
+ * This function reads the HTTP Request Body
+ * 
+ * r: request
+ * rbuff: buffer to where the body will be allocated
+ * size: size of the buffer allocated
+ * 
+ * More info:
+ *  - https://httpd.apache.org/docs/trunk/developer/modguide.html (section: "Reading the request body into memory")
+ *  - https://docstore.mik.ua/orelly/apache_mod/139.htm 
+ */
+static int read_http_request_body(request_rec *r, const char **rbuf, apr_off_t *size)
+{
+    int rc = DECLINED; // return code ('DECLINED' by default)
+
+    // setup the client to allow Apache to read the request body
+    if ( (rc = ap_setup_client_block(r, REQUEST_CHUNKED_ERROR)) != OK )
+    {
+        return rc;
+    }
+
+
+    // can we read or abort?
+    if ( ap_should_client_block(r) )
+    {
+        char argsbuffer[CONFIG_HTTP_REQUEST_BODY_MAX];
+        apr_off_t rsize, len_read, rpos = 0;
+        apr_off_t length = r->remaining;
+
+        *rbuf = (const char *) apr_pcalloc( r->pool, (apr_size_t)(length + 1) );
+        *size = length;
+        while ( (len_read = ap_get_client_block(r, argsbuffer, sizeof(argsbuffer))) > 0 )
+        {
+            if ( (rpos + len_read) > length )
+            {
+                rsize = length - rpos;
+            }
+            else
+            {
+                rsize = len_read;
+            }
+
+            memcpy( (char *)*rbuf + rpos, argsbuffer, (size_t)rsize );
+            rpos += rsize;
+        }
+    }
+
+    return rc;
+}
+
+
 /*
  * Content handler
  */
@@ -294,7 +355,20 @@ static int content_handler(request_rec *r)
       ap_add_common_vars(r);
       ap_add_cgi_vars(r);
       apr_table_do(_wasm_config_add_env, NULL, r->subprocess_env, NULL);
+
+      // read request body and store it as WASI Stdin
+      apr_off_t body_size = 0;
+      const char* body_buffer;
+
+      if ( read_http_request_body(r, &body_buffer, &body_size) != OK ) {
+        trace_nocontext(NULL, __FILE__, __LINE__, "content_handler() - ERROR! Couldn't read HTTP Request Body!");
+      }
+      else 
+      {
+        wasm_config_set_stdin(body_buffer, body_size);
+      }
     }
+
 
     // run Wasm module
     const char* module_response = wasm_runtime_run_module();
@@ -424,7 +498,7 @@ static const char *wasm_directive_WasmEnv(cmd_parms *cmd, void *mconfig, const c
 static const char *wasm_directive_WasmDir(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_config_set_dir(word1);
+    wasm_config_add_dir(word1);
     return NULL;
 }
 

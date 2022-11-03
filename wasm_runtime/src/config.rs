@@ -18,6 +18,7 @@ pub struct WasmRuntimeConfig {
     pub wasi_envs:    Vec<(String, String)>,
     pub wasi_dirs:    Vec<String>,
     pub wasi_mapdirs: Vec<(String, String)>,
+    pub wasi_stdin:   Vec<u8>,
 }
 
 // The following static variable is used to achieve a global, mutable and thread-safe shareable state.
@@ -34,6 +35,7 @@ pub static WASM_RUNTIME_CONFIG: Lazy<RwLock<WasmRuntimeConfig>> = Lazy::new(|| {
         wasi_envs:    Vec::new(),
         wasi_dirs:    Vec::new(),
         wasi_mapdirs: Vec::new(),
+        wasi_stdin:   Vec::new(),
     };
 
     RwLock::new(data)
