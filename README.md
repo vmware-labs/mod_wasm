@@ -96,9 +96,10 @@ Feel free to explore, modify and crash them!
 
 <!-- ### Building `mod_wasm.so` extension module -->
 
-There are two main libraries in the mod_wasm project:
-* To build `mod_wasm.so`, the Apache Server module extention, go to [mod_wasm](https://github.com/vmware-labs/mod_wasm/tree/main/mod_wasm) for detailed instructions.
-* For `libwasm_runtime.so`, the Wasm modules management and runtime, go to [wasm_runtime](https://github.com/vmware-labs/mod_wasm/tree/main/wasm_runtime).
+As introduced in the [overview](#-overview), there are two main libraries in the **mod_wasm** project, being `libwasm_runtime.so` a dependency for `mod_wasm.so`. So, you might want to build `libwasm_runtime.so` first:
+
+1) To build `libwasm_runtime.so`, the Wasm management and runtime library, go to [wasm_runtime](https://github.com/vmware-labs/mod_wasm/tree/main/wasm_runtime) for detailed instructions.
+2) For `mod_wasm.so`, the Apache Server module extension, go to [mod_wasm](https://github.com/vmware-labs/mod_wasm/tree/main/mod_wasm).
 
 
 ## 📦 Building the container image

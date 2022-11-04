@@ -15,12 +15,14 @@ There are two different ways to build the **mod_wasm** extension module:
 - [Apache Portable Runtime Project](https://apr.apache.org/) (`libapr1-dev`, `libaprutil1-dev`)
 - [Apache HTTP Server Development Headers](https://httpd.apache.org/) (`apache2-dev`)
 - [Subversion](https://subversion.apache.org/) (`svn`)
+- [wasm_runtime](https://github.com/vmware-labs/mod_wasm/tree/main/wasm_runtime) (`libwasm_runtime`)
 
-For example, in an Ubuntu environment, you can install all
-dependencies by running:
+In a Ubuntu-like environment, you can install all dependencies by running:
 ```console
 sudo apt install gcc make pkg-config libtool-bin libxml2-dev libpcre2-dev libapr1-dev libaprutil1-dev apache2-dev subversion
 ```
+
+⚠️ Since `mod_wasm.so` depends on `libwasm_runtime.so`, make sure you build such library first by following the instructions from [wasm_runtime]([wasm_runtime](https://github.com/vmware-labs/mod_wasm/tree/main/wasm_runtime)).
 
 ## Building mod_wasm ad-hoc via `build.sh`
 
