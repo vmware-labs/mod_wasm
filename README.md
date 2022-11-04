@@ -94,43 +94,17 @@ Feel free to explore, modify and crash them!
 
 ## 🏗️ Building mod_wasm
 
-### Building `mod_wasm.so` extension module
+<!-- ### Building `mod_wasm.so` extension module -->
 
-There are different ways to build `mod_wasm.so`.
-
-Go to [mod_wasm](https://github.com/vmware-labs/mod_wasm/tree/main/mod_wasm) for detailed instructions.
-
-### Building `libwasm_runtime.so`
-
-Go to [wasm_runtime](https://github.com/vmware-labs/mod_wasm/tree/main/wasm_runtime) for detailed instructions.
+There are two main libraries in the mod_wasm project:
+* To build `mod_wasm.so`, the Apache Server module extention, go to [mod_wasm](https://github.com/vmware-labs/mod_wasm/tree/main/mod_wasm) for detailed instructions.
+* For `libwasm_runtime.so`, the Wasm modules management and runtime, go to [wasm_runtime](https://github.com/vmware-labs/mod_wasm/tree/main/wasm_runtime).
 
 
 ## 📦 Building the container image
 
-This repository contains all you need to build a local container image
+This repository contains all you need to build a local container image. Go to [image](https://github.com/vmware-labs/mod_wasm/tree/main/image) for detailed instructions.
 
-### Prerequisites
-
-To build the container you will need `docker`, or `podman` with the `docker` alias
-enabled.
-
-For convenience we've organized the build commands in a [Makefile](./Makefile), so you can use `make` if you prefer.
-
-### Build
-
-You can build this image like so:
-
-```console
-make container-image
-```
-
-### Building a dev image
-
-The dev image will include all examples, along with additional tools required for future development. If you want to benchmark and compare running a python script via cgi vs via mod_wasm you will need to build this image.
-
-```console
-make dev-image
-```
 
 ## ⚠️ Troubleshooting
 
