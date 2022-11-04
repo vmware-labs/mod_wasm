@@ -1,8 +1,15 @@
-.DS_Store
+# mod_wasm
 *.la
 *.lo
 *.slo
 mod_wasm/.libs
+
+# OS filesystem indexes
+.DS_Store
+
+# IDEs working files
 */.vscode
-httpd/
+
+# sym link to httpd directory
+httpd
 
