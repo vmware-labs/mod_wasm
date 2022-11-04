@@ -40,7 +40,7 @@ To build mod_wasm with such tools and integrated into the Apache Server build:
    ```console
    git clone https://github.com/apache/httpd.git httpd
    ```
-2) Copy mod_wasm files into the Apache Server file structure:
+2) Copy mod_wasm files from this directory into the Apache Server file structure:
    ```console
    cp -Rv modules docs httpd/
    ```
