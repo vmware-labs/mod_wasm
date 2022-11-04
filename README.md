@@ -32,7 +32,7 @@ More details about the ['PrettyFy' WebApp Demo](#-prettyfy-webapp-demo) below.
 * [Overview](#-overview)
 * ['PrettyFy' WebApp Demo](#-prettyfy-webapp-demo)
 * [Examples](#%EF%B8%8F-examples)
-* [Building mod_wasm in your environment](#%EF%B8%8F-building-mod_wasm-in-your-environment)
+* [Building mod_wasm](#%EF%B8%8F-building-mod_wasm)
 * [Building the container image](#-building-the-container-image)
 * [Troubleshooting](#%EF%B8%8F-troubleshooting)
 * [Debugging](#-debugging)
