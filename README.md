@@ -92,56 +92,17 @@ This repo cointains several pre-built WebAssembly [examples](https://github.com/
 Feel free to explore, modify and crash them!
 
 
-## 🏗️ Building mod_wasm in your environment
+## 🏗️ Building mod_wasm
 
-### Prerequisites
+### Building `mod_wasm.so` extension module
 
-- [GNU C compiler](https://gcc.gnu.org/) (`gcc`)
-- [GNU Make](https://www.gnu.org/software/make/manual/html_node/index.html) (`make`)  
-- [pkg-config](https://gitlab.freedesktop.org/pkg-config/pkg-config) (`pkg-config`)
-- [Libtool](https://www.gnu.org/software/libtool/manual/html_node/index.html) (`libtool-bin`)
-- [Perl Compatible Regular Expressions](https://pcre.org/) (`libpcre2-dev`)
-- [Apache Portable Runtime Project](https://apr.apache.org/) (`libapr1-dev`, `libaprutil1-dev`)
-- [Apache HTTP Server Development Headers](https://httpd.apache.org/) (`apache2-dev`)
-- [Rust](https://www.rust-lang.org/) 
-- [cbindgen](https://github.com/eqrion/cbindgen)
+There are different ways to build `mod_wasm.so`.
 
-For example, in an Ubuntu environment, you can install all
-dependencies by running:
-```console
-sudo apt install gcc make pkg-config libtool-bin libpcre2-dev libapr1-dev libaprutil1-dev apache2-dev
-```
+Go to [mod_wasm](https://github.com/vmware-labs/mod_wasm/tree/main/mod_wasm) for detailed instructions.
 
-Next, installing Rust as specified in its [Getting Started](https://www.rust-lang.org/learn/get-started) guide:
-```console
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
+### Building `libwasm_runtime.so`
 
-Once Rust is installed, [cbindgen](https://github.com/eqrion/cbindgen) can be installed:
-```console
-cargo install cbindgen
-```
-
-
-### Building
-
-```console
-make build
-```
-
-After the build is complete, you can find the module and an example
-Apache configuration file under the `dist` directory:
-
-```console
-$ tree dist
-dist
-|-- conf
-|   `-- httpd.conf
-`-- modules
-    `-- mod_wasm.so
-```
-
-Now, you can load this module in your Apache installation.
+Go to [wasm_runtime](https://github.com/vmware-labs/mod_wasm/tree/main/wasm_runtime) for detailed instructions.
 
 
 ## 📦 Building the container image
