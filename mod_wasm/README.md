@@ -10,6 +10,7 @@ There are two different ways to build the **mod_wasm** extension module:
 - [GNU Make](https://www.gnu.org/software/make/manual/html_node/index.html) (`make`)  
 - [pkg-config](https://gitlab.freedesktop.org/pkg-config/pkg-config) (`pkg-config`)
 - [Libtool](https://www.gnu.org/software/libtool/manual/html_node/index.html) (`libtool-bin`)
+- [libxml2](https://gitlab.gnome.org/GNOME/libxml2) (`libxml2-dev`)
 - [Perl Compatible Regular Expressions](https://pcre.org/) (`libpcre2-dev`)
 - [Apache Portable Runtime Project](https://apr.apache.org/) (`libapr1-dev`, `libaprutil1-dev`)
 - [Apache HTTP Server Development Headers](https://httpd.apache.org/) (`apache2-dev`)
@@ -18,7 +19,7 @@ There are two different ways to build the **mod_wasm** extension module:
 For example, in an Ubuntu environment, you can install all
 dependencies by running:
 ```console
-sudo apt install gcc make pkg-config libtool-bin libpcre2-dev libapr1-dev libaprutil1-dev apache2-dev subversion
+sudo apt install gcc make pkg-config libtool-bin libxml2-dev libpcre2-dev libapr1-dev libaprutil1-dev apache2-dev subversion
 ```
 
 ## Building mod_wasm ad-hoc via `build.sh`
