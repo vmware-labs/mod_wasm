@@ -52,7 +52,7 @@ To build mod_wasm with such tools and integrated into the Apache Server build:
    ```
 5) Configure Apache to include mod_wasm as an optional module:
    ```console
-   ./configure --prefix${PWD}/dist --enable-wasm --with-wasmruntime=../../wasm_runtime/
+   ./configure --prefix=${PWD}/dist --enable-wasm --with-wasmruntime=../../wasm_runtime/
    ```
 6) Build Apache Server and mod_wasm and install into `dist/`
    ```console
