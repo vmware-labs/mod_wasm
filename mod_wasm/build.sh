@@ -3,33 +3,42 @@
 env
 set -x
 
+# check dependencies
+if ! which libtool; then
+    echo "libtool not found; please, install it"
+    exit 1
+fi
+
 if ! which pkg-config; then
     echo "pkg-config not found; please, install it"
     exit 1
 fi
 
+
 echo "[Building mod_wasm]"
 
 SCRIPT_DIR=$( cd -- "$(dirname -- "$0")" &> /dev/null && pwd )
+MOD_WASM_DIR=${MOD_WASM_DIR:-$(realpath "${SCRIPT_DIR}/modules/wasm")}
 WASM_RUNTIME_PATH=${WASM_RUNTIME_PATH:-$(realpath "${SCRIPT_DIR}/../wasm_runtime")}
 DIST_DIR=${DIST_DIR:-$(realpath "${SCRIPT_DIR}/../dist")}
 ARCH=$(uname -m)
 
 echo "[Deleting binaries]"
 
-rm -fv modules/wasm/mod_wasm.o
-rm -fv modules/wasm/mod_wasm.lo
-rm -fv modules/wasm/mod_wasm.slo
-rm -fv modules/wasm/mod_wasm.la
-rm -fv modules/wasm/.libs/mod_wasm.o
-rm -fv modules/wasm/.libs/mod_wasm.la
-rm -fv modules/wasm/.libs/mod_wasm.lai
-rm -fv modules/wasm/.libs/mod_wasm.a
-rm -fv modules/wasm/.libs/mod_wasm.so
+rm -fv ${MOD_WASM_DIR}/mod_wasm.o
+rm -fv ${MOD_WASM_DIR}/mod_wasm.lo
+rm -fv ${MOD_WASM_DIR}/mod_wasm.slo
+rm -fv ${MOD_WASM_DIR}/mod_wasm.la
+rm -fv ${MOD_WASM_DIR}/.libs/mod_wasm.o
+rm -fv ${MOD_WASM_DIR}/.libs/mod_wasm.la
+rm -fv ${MOD_WASM_DIR}/.libs/mod_wasm.lai
+rm -fv ${MOD_WASM_DIR}/.libs/mod_wasm.a
+rm -fv ${MOD_WASM_DIR}/.libs/mod_wasm.so
 
 echo "[Building mod_wasm]"
 
 echo "[mod_wasm: compiling]"
+cd ${MOD_WASM_DIR}
 /usr/share/apr-1.0/build/libtool --verbose --mode=compile ${ARCH}-linux-gnu-gcc -DLINUX -D_REENTRANT -D_GNU_SOURCE \
      -I/usr/include/apache2 \
      $(pkg-config --cflags apr-1 apr-util-1) \
@@ -49,4 +58,8 @@ echo "[mod_wasm: linking]"
 echo "[Installing module]"
 mkdir -p "${DIST_DIR}/modules/" "${DIST_DIR}/conf/"
 cp -v .libs/mod_wasm.so "${DIST_DIR}/modules/"
+
+echo "[Installing httpd.conf]"
+cd ${SCRIPT_DIR}
 cp -v httpd.conf "${DIST_DIR}/conf/"
+
