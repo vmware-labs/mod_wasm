@@ -22,7 +22,7 @@ In a Ubuntu-like environment, you can install all dependencies by running:
 sudo apt install gcc make pkg-config libtool-bin libxml2-dev libpcre2-dev libapr1-dev libaprutil1-dev apache2-dev subversion
 ```
 
-⚠️ Since `mod_wasm.so` depends on `libwasm_runtime.so`, make sure you build such library first by following the instructions from [wasm_runtime]([wasm_runtime](https://github.com/vmware-labs/mod_wasm/tree/main/wasm_runtime)).
+⚠️ Since `mod_wasm.so` depends on `libwasm_runtime.so`, make sure you build such library first by following the instructions from [wasm_runtime](https://github.com/vmware-labs/mod_wasm/tree/main/wasm_runtime).
 
 ## Building mod_wasm ad-hoc via `build.sh`
 
