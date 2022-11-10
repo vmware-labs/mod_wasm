@@ -23,6 +23,7 @@
 
 #include <stdio.h>
 
+#include "mod_wasm.h"
 #include "wasm_runtime.h"
 
 

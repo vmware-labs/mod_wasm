@@ -114,9 +114,9 @@ AC_DEFUN([APACHE_CHECK_WASMRUNTIME],[
        ac_cv_wasmruntime=no]
     )
 
-    mod_wasm_version_major=0
-    mod_wasm_version_minor=5
-    mod_wasm_version_patch=0
+    mod_wasm_version_major=`grep MOD_WASM_VERSION_MAJOR modules/wasm/mod_wasm.h | cut -d' ' -f3`
+    mod_wasm_version_minor=`grep MOD_WASM_VERSION_MINOR modules/wasm/mod_wasm.h | cut -d' ' -f3`
+    mod_wasm_version_patch=`grep MOD_WASM_VERSION_PATCH modules/wasm/mod_wasm.h | cut -d' ' -f3`
     mod_wasm_version="$mod_wasm_version_major"."$mod_wasm_version_minor"."$mod_wasm_version_patch"
     AC_MSG_CHECKING([for mod_wasm $mod_wasm_version compatibility])
     AC_LANG([C])
