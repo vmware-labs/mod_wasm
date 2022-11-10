@@ -2,6 +2,12 @@
 
 /* Generated with cbindgen:0.24.3 */
 
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include "version.h"
+
 /**
  * Set the root directory for loading Wasm modules.
  *

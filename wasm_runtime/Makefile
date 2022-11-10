@@ -2,11 +2,11 @@
 
 all: target/release/libwasm_runtime.so
 
-target/release/libwasm_runtime.so: src/wasm_runtime.h $(wildcard src/*.rs)
+target/release/libwasm_runtime.so: include/wasm_runtime.h $(wildcard src/*.rs)
 	cargo build --release
 
-src/wasm_runtime.h: cbindgen.toml src/c_api.rs
-	cbindgen --output src/wasm_runtime.h
+include/wasm_runtime.h: cbindgen.toml src/c_api.rs
+	cbindgen --output include/wasm_runtime.h
 
 install: all
 	cp -v target/release/libwasm_runtime.so ../httpd/dist/modules

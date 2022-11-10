@@ -93,8 +93,8 @@ AC_DEFUN([APACHE_CHECK_WASMRUNTIME],[
 
     dnl fall back to the user-supplied directory if not found via pkg-config
     if test "x$ap_wasmruntime_base" != "x" -a "x$ap_wasmruntime_found" = "x"; then
-      APR_ADDTO(CPPFLAGS, [-I$ap_wasmruntime_base/src])
-      APR_ADDTO(MOD_CFLAGS, [-I$ap_wasmruntime_base/src])
+      APR_ADDTO(CPPFLAGS, [-I$ap_wasmruntime_base/include])
+      APR_ADDTO(MOD_CFLAGS, [-I$ap_wasmruntime_base/include])
       APR_ADDTO(LDFLAGS, [-L$ap_wasmruntime_base/target/release])
       APR_ADDTO(MOD_LDFLAGS, [-L$ap_wasmruntime_base/target/release])
       if test "x$ap_platform_runtime_link_flag" != "x"; then
