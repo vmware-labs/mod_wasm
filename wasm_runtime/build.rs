@@ -25,10 +25,11 @@ fn main() -> Result<(), Error> {
         Err(e) => panic!("ERROR! Can't open file {}: {}", VERSION_FILE, e),
     };
 
-    write!(file, "#define WASM_RUNTIME_VERSION \"{}\"\n", VERSION)?;
-    write!(file, "#define WASM_RUNTIME_VERSION_MAJOR {}\n", VERSION_MAJOR)?;
-    write!(file, "#define WASM_RUNTIME_VERSION_MINOR {}\n", VERSION_MINOR)?;
-    write!(file, "#define WASM_RUNTIME_VERSION_PATCH {}\n", VERSION_PATCH)?;
+    writeln!(file, "#define WASM_RUNTIME_VERSION \"{}\"", VERSION)?;
+    writeln!(file, "#define WASM_RUNTIME_VERSION_MAJOR {}", VERSION_MAJOR)?;
+    writeln!(file, "#define WASM_RUNTIME_VERSION_MINOR {}", VERSION_MINOR)?;
+    writeln!(file, "#define WASM_RUNTIME_VERSION_PATCH {}", VERSION_PATCH)?;
+    writeln!(file)?;
 
     Ok(())
 }
