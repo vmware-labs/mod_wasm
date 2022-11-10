@@ -103,15 +103,45 @@ AC_DEFUN([APACHE_CHECK_WASMRUNTIME],[
       fi
     fi
 
-    AC_MSG_CHECKING([for Wasm Runtime version >= 0.5.0])
+    AC_MSG_CHECKING([for libwasm_runtime is available])
     AC_LANG([C])
     AC_TRY_COMPILE(
-      [#include <stdint.h>
-       #include "wasm_runtime.h"],
+      [#include "wasm_runtime.h"],
       [wasm_runtime_init_module();],
       [AC_MSG_RESULT(OK)
        ac_cv_wasmruntime=yes],
-      [AC_MSG_RESULT(FAILED)])
+      [AC_MSG_RESULT(FAILED)
+       ac_cv_wasmruntime=no]
+    )
+
+    mod_wasm_version_major=0
+    mod_wasm_version_minor=5
+    mod_wasm_version_patch=0
+    mod_wasm_version="$mod_wasm_version_major"."$mod_wasm_version_minor"."$mod_wasm_version_patch"
+    AC_MSG_CHECKING([for mod_wasm $mod_wasm_version compatibility])
+    AC_LANG([C])
+    AC_RUN_IFELSE(
+      [AC_LANG_PROGRAM(
+        [#include <stdio.h>
+         #include "wasm_runtime.h"],
+        [ printf("\n");
+          printf("\tmod_wasm version is $mod_wasm_version\n");
+          printf("\tlibwasm_runtime version is %s\n", WASM_RUNTIME_VERSION);
+         if ( $mod_wasm_version_major == WASM_RUNTIME_VERSION_MAJOR
+           && $mod_wasm_version_minor <= WASM_RUNTIME_VERSION_MINOR )
+          exit(0);
+         else
+         {
+          printf("\tIncompatible version numbers!\n");
+          exit(1);
+         }
+        ]
+      )],
+      [AC_MSG_RESULT(OK)
+       ac_cv_wasmruntime=yes],
+      [AC_MSG_RESULT(FAILED)
+       ac_cv_wasmruntime=no]
+    )
 
     dnl restore
     CPPFLAGS="$saved_CPPFLAGS"
