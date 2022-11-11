@@ -93,8 +93,8 @@ AC_DEFUN([APACHE_CHECK_WASMRUNTIME],[
 
     dnl fall back to the user-supplied directory if not found via pkg-config
     if test "x$ap_wasmruntime_base" != "x" -a "x$ap_wasmruntime_found" = "x"; then
-      APR_ADDTO(CPPFLAGS, [-I$ap_wasmruntime_base/src])
-      APR_ADDTO(MOD_CFLAGS, [-I$ap_wasmruntime_base/src])
+      APR_ADDTO(CPPFLAGS, [-I$ap_wasmruntime_base/include])
+      APR_ADDTO(MOD_CFLAGS, [-I$ap_wasmruntime_base/include])
       APR_ADDTO(LDFLAGS, [-L$ap_wasmruntime_base/target/release])
       APR_ADDTO(MOD_LDFLAGS, [-L$ap_wasmruntime_base/target/release])
       if test "x$ap_platform_runtime_link_flag" != "x"; then
@@ -103,15 +103,45 @@ AC_DEFUN([APACHE_CHECK_WASMRUNTIME],[
       fi
     fi
 
-    AC_MSG_CHECKING([for Wasm Runtime version >= 0.5.0])
+    AC_MSG_CHECKING([for libwasm_runtime is available])
     AC_LANG([C])
     AC_TRY_COMPILE(
-      [#include <stdint.h>
-       #include "wasm_runtime.h"],
+      [#include "wasm_runtime.h"],
       [wasm_runtime_init_module();],
       [AC_MSG_RESULT(OK)
        ac_cv_wasmruntime=yes],
-      [AC_MSG_RESULT(FAILED)])
+      [AC_MSG_RESULT(FAILED)
+       ac_cv_wasmruntime=no]
+    )
+
+    mod_wasm_version_major=`grep MOD_WASM_VERSION_MAJOR modules/wasm/mod_wasm.h | cut -d' ' -f3`
+    mod_wasm_version_minor=`grep MOD_WASM_VERSION_MINOR modules/wasm/mod_wasm.h | cut -d' ' -f3`
+    mod_wasm_version_patch=`grep MOD_WASM_VERSION_PATCH modules/wasm/mod_wasm.h | cut -d' ' -f3`
+    mod_wasm_version="$mod_wasm_version_major"."$mod_wasm_version_minor"."$mod_wasm_version_patch"
+    AC_MSG_CHECKING([for mod_wasm $mod_wasm_version compatibility])
+    AC_LANG([C])
+    AC_RUN_IFELSE(
+      [AC_LANG_PROGRAM(
+        [#include <stdio.h>
+         #include "wasm_runtime.h"],
+        [ printf("\n");
+          printf("\tmod_wasm version is $mod_wasm_version\n");
+          printf("\tlibwasm_runtime version is %s\n", WASM_RUNTIME_VERSION);
+         if ( $mod_wasm_version_major == WASM_RUNTIME_VERSION_MAJOR
+           && $mod_wasm_version_minor <= WASM_RUNTIME_VERSION_MINOR )
+          exit(0);
+         else
+         {
+          printf("\tIncompatible version numbers!\n");
+          exit(1);
+         }
+        ]
+      )],
+      [AC_MSG_RESULT(OK)
+       ac_cv_wasmruntime=yes],
+      [AC_MSG_RESULT(FAILED)
+       ac_cv_wasmruntime=no]
+    )
 
     dnl restore
     CPPFLAGS="$saved_CPPFLAGS"
