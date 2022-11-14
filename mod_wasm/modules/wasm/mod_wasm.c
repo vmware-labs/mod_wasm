@@ -39,10 +39,10 @@
 /**
   * Maximum number of bytes to allocate the body from an HTTP Request.
   *
-  * 16KB (16*1024 = 16386)
+  * 16KB (16*1024 = 16384)
   *
   */
-#define CONFIG_HTTP_REQUEST_BODY_MAX 16386
+#define CONFIG_HTTP_REQUEST_BODY_MAX 16384
 
 /**
   * Maximum number of arguments specified in the static configuration.
