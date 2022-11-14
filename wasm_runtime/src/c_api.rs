@@ -232,7 +232,7 @@ pub extern "C" fn wasm_runtime_init_module() -> *const c_char {
     match init_module() {
         true => (),
         false => {
-            return_msg = format!("ERROR: C-API: Can't initialize Wasm module!");
+            return_msg.push_str("ERROR: C-API: Can't initialize Wasm module!");
             eprintln!("{}", return_msg);
         }
     };

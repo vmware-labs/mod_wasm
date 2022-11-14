@@ -29,8 +29,8 @@ use crate::wasi_context::build_wasi_ctx;
 // Lock for Wasm module execution.
 // So far, we do not support more than one Wasm invocation simultaneously.
 // That would requiere a pool of stdio buffers, and likely a pool of other different Wasmtime objects.
-static WASM_EXECUTION_MUTEX: Lazy<Mutex<()>> = Lazy::new(|| {
-    let data = ();
+static WASM_EXECUTION_MUTEX: Lazy<Mutex<bool>> = Lazy::new(|| {
+    let data = true;
     Mutex::new(data)
 });
 
