@@ -179,10 +179,6 @@ void wasm_config_set_stdin(const unsigned char *buffer,
  * Returns empty string if initialization was succesfuly.
  * Otherwise, it returns a string with the error.
  *
- */
-const char *wasm_runtime_init_module(void);
-
-/**
  * Run the Wasm module
  *
  * Returns a string with the stdout from the module if execution was succesfuly.

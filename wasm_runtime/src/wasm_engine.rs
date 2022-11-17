@@ -8,7 +8,6 @@
 // Using Wasmtime from the Bytecode Alliance as the Wasm Engine
 // https://github.com/bytecodealliance/wasmtime
 
-use std::path::PathBuf;
 use std::sync::Mutex;
 
 use anyhow::Result;
@@ -17,8 +16,6 @@ use once_cell::sync::Lazy; // https://crates.io/crates/once_cell
 use wasmtime::{Module, Store, Linker, Instance};
 use wasi_common::WasiCtx;
 
-use crate::config::WASM_RUNTIME_CONFIG;
-use crate::wasmtime_shared::WASMTIME_SHARED_OBJECTS;
 use crate::stdio_buffers::{clear_stdout, read_stdout};
 use crate::wasi_context::build_wasi_ctx;
 
@@ -35,12 +32,11 @@ static WASM_EXECUTION_MUTEX: Lazy<Mutex<bool>> = Lazy::new(|| {
 });
 
 
-/// Initialize the Wasm Module and all the Wasmtime needed objects to later call a function.
+/// Run the Wasm Module and all the Wasmtime needed objects to later call a function.
 ///
-/// Due to the Wasmtime object's depency graph, init_module() will only create an Engine object and 
-/// will load the Wasm module (.wasm file) into memory.
+/// Due to the Wasmtime object's depency graph, a Module and an Engine can be loaded in memory and be safety shared among other entities and threads.
 // 
-// Later, run_module() will create WasiCtx, Linker, Store, Instance and Typed_Function
+// `run_module()` will create WasiCtx, Linker, Store, Instance and Typed_Function 
 // upon the input parameters
 // 
 // See below the Wasmtime object's dependcy graph:
@@ -66,40 +62,7 @@ static WASM_EXECUTION_MUTEX: Lazy<Mutex<bool>> = Lazy::new(|| {
 //    linker.instantiate(&mut store, &module)
 // 6) Obtain the function to invoke from the Instance and passing the Store.
 //    instance.get_typed_func::<(), (), _>(&mut *store, "_start")
-
-/// Returns 'true' if the module was successfully loaded.  Otherwise, will return 'false'.
-/// 
-pub fn init_module() -> bool {
-    // wasmtime shared objects
-    let mut wasmtime_shared_objects = WASMTIME_SHARED_OBJECTS.write()
-        .expect("ERROR! Poisoned Mutex WASMTIME_SHARED on write()");
-
-    // avoid double initialization
-    if wasmtime_shared_objects.module.is_some() {
-        let config = WASM_RUNTIME_CONFIG.read()
-            .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on read()"); 
-
-        eprintln!("WARNING! init_module() called twice! Wasm module '{}' has been already initialized. Ignoring second attempt.", config.file);
-        return true;
-    };
-
-    // read Wasm module from file
-    let modulepath = build_module_path();
-    let module = match Module::from_file(&wasmtime_shared_objects.engine, modulepath.clone()){
-        Ok(m) => m,
-        Err(e) => {
-            println!("ERROR! Failed to load Wasm module from file '{}': {}", modulepath, e);
-            return false;
-        }
-    };
-
-    // set the loaded module to the static shared object
-    wasmtime_shared_objects.module = Some(module);
-    
-    true
-}
-
-
+//
 pub fn run_module() -> Result<String> {        
     // this mutex helps to protect from different threads to execute at the same time
     // and clearing stdout to each other before used  
@@ -116,36 +79,6 @@ pub fn run_module() -> Result<String> {
     drop(mutex);    
 
     Ok(output)
-}
-
-
-fn build_module_path() -> String {
-    let config = WASM_RUNTIME_CONFIG.read()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on read()");
-
-    // do we have a Wasm file to load?
-    if config.file.is_empty() {
-        eprintln!("ERROR! Can't find any Wasm module to initialize! Did you invoke wasm_set_module() first?");
-        return "".to_string();
-    }
-
-    // generates a platform-independent module_path = path + "/" + file
-    let mut module_path: PathBuf = config.path.clone();
-    module_path.push(config.file.as_str());
-
-    if ! module_path.is_file() {
-        eprintln!("WARNING! Can't find path on disk! {:?}", module_path.to_str());
-    }
-
-    let module_path_string = match module_path.to_str() {
-        Some(s) => s.to_string(),
-        None => {
-            eprintln!("ERROR! Invalid UTF-8 path! {:?}", module_path.to_str());
-            "".to_string()
-        }
-    };
-
-    module_path_string
 }
 
 

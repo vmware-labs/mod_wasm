@@ -10,7 +10,6 @@
 mod config;
 mod module;
 mod wasm_engine;
-mod wasmtime_shared;
 mod wasi_context;
 mod stdio_buffers;
 mod ffi_utils;

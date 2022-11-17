@@ -258,27 +258,6 @@ pub extern "C" fn wasm_config_set_stdin(buffer: *const c_uchar, size: usize) {
 }
 
 
-/// Initialize the Wasm module
-///
-/// Returns empty string if initialization was succesfuly.
-/// Otherwise, it returns a string with the error.
-///
-#[no_mangle]
-pub extern "C" fn wasm_runtime_init_module() -> *const c_char {
-
-    let mut return_msg = String::new();
-
-    match init_module() {
-        true => (),
-        false => {
-            return_msg.push_str("ERROR: C-API: Can't initialize Wasm module!");
-            eprintln!("{}", return_msg);
-        }
-    };
-
-    str_to_c_char(&return_msg)
-}
-
 /// Run the Wasm module
 ///
 /// Returns a string with the stdout from the module if execution was succesfuly.

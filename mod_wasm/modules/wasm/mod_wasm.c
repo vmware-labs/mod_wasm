@@ -215,27 +215,6 @@ static void *create_server_config(apr_pool_t *p, server_rec *s)
     return (void *) cfg;
 }
 
-/*
- * Post-config hook
- */
-static int post_config_hook(apr_pool_t *pconf, apr_pool_t *plog,
-                          apr_pool_t *ptemp, server_rec *s)
-{
-    trace_nocontext(NULL, __FILE__, __LINE__, "post_config_hook() - initializing wasm_runtime...");
-
-    // init wasm_runtime
-    const char* result = wasm_runtime_init_module();
-
-    if (strcmp(result, "") != 0)  // something went wrong
-        trace_nocontext(NULL, __FILE__, __LINE__, "post_config_hook() - ERROR! Couldn't initiale wasm_runtime!");
-    else
-        trace_nocontext(NULL, __FILE__, __LINE__, "post_config_hook() - wasm_runtime initialized!");
-
-    return_const_char_ownership(result);
-
-    return OK;
-}
-
 // Add the provided key to the wasmtime runtime as an environment
 // variable.
 static int _wasm_config_add_env(void *h_, const char *key, const char *value)
@@ -262,8 +241,6 @@ static void populate_runtime_with_config_defined_envs(x_cfg *cfg)
         wasm_config_add_env(envVar->key, envVar->value);
     }
 }
-
-
 
 /*
  * This function reads the HTTP Request Body
@@ -437,7 +414,6 @@ static int content_handler(request_rec *r)
  */
 static void register_hooks(apr_pool_t *p)
 {
-    ap_hook_post_config(post_config_hook, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_handler(content_handler, NULL, NULL, APR_HOOK_MIDDLE);
 }
 
