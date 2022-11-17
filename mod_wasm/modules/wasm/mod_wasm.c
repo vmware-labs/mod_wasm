@@ -442,13 +442,21 @@ static void register_hooks(apr_pool_t *p)
 }
 
 
-#define WASM_DIRECTIVE_WASMROOT   "WasmRoot"
-#define WASM_DIRECTIVE_WASMMODULE "WasmModule"
-#define WASM_DIRECTIVE_WASMARG    "WasmArg"
-#define WASM_DIRECTIVE_WASMENV    "WasmEnv"
-#define WASM_DIRECTIVE_WASMDIR    "WasmDir"
-#define WASM_DIRECTIVE_WASMMAPDIR "WasmMapDir"
-#define WASM_DIRECTIVE_ENABLECGI  "WasmEnableCGI"
+#define WASM_DIRECTIVE_WASMLOADMODULE "WasmLoadModule"
+#define WASM_DIRECTIVE_WASMROOT       "WasmRoot"
+#define WASM_DIRECTIVE_WASMMODULE     "WasmModule"
+#define WASM_DIRECTIVE_WASMARG        "WasmArg"
+#define WASM_DIRECTIVE_WASMENV        "WasmEnv"
+#define WASM_DIRECTIVE_WASMDIR        "WasmDir"
+#define WASM_DIRECTIVE_WASMMAPDIR     "WasmMapDir"
+#define WASM_DIRECTIVE_ENABLECGI      "WasmEnableCGI"
+
+static const char *wasm_directive_WasmLoadModule(cmd_parms *cmd, void *mconfig, const char *word1, const char *word2)
+{
+    x_cfg *cfg = (x_cfg *) mconfig;
+    wasm_module_load(word1, word2);
+    return NULL;
+}
 
 
 static const char *wasm_directive_WasmRoot(cmd_parms *cmd, void *mconfig, const char *word1)
@@ -523,12 +531,19 @@ static const char *wasm_directive_WasmEnableCGI(cmd_parms *cmd, void *mconfig, i
  */
 static const command_rec directives[] =
 {
+    AP_INIT_TAKE2(
+        WASM_DIRECTIVE_WASMLOADMODULE,                                      /* directive name */
+        wasm_directive_WasmLoadModule,                                      /* config action routine */
+        NULL,                                                               /* argument to include in call */
+        OR_OPTIONS,                                                         /* where available */
+        "Load a Wasm Module from disk and assign it the given identifier"   /* directive description */
+    ),
     AP_INIT_TAKE1(
-        WASM_DIRECTIVE_WASMROOT,                 /* directive name */
-        wasm_directive_WasmRoot,                 /* config action routine */
-        NULL,                                    /* argument to include in call */
-        OR_OPTIONS,                              /* where available */
-        "Set root directory for the Wasm file"   /* directive description */
+        WASM_DIRECTIVE_WASMROOT,
+        wasm_directive_WasmRoot,
+        NULL,
+        OR_OPTIONS,
+        "Set root directory for the Wasm file"
     ),
     AP_INIT_TAKE1(
         WASM_DIRECTIVE_WASMMODULE,

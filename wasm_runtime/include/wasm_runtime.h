@@ -9,6 +9,27 @@
 #include "version.h"
 
 /**
+ * Load a Wasm Module from disk and assign it the given identifier.
+ *
+ * All successfully loaded Wasm modules are stored in a `HashMap`.
+ * This implies that:
+ *  - The `module_id` cannot be used more than once.
+ *  - The `path` must point to an existing file.
+ *  - The file must be a valid .wasm module.
+ *
+ * In case of error, it returns a string explaining the error.
+ * Otherwise, it returns an empty string.
+ *
+ * # Examples (C Code)
+ *
+ * ```
+ * wasm_module_load("python", "/var/www/wasm/python3_11.wasm");
+ * wasm_module_load("PHP", "/var/www/wasm/php8.wasm");
+ * ```
+ */
+int wasm_module_load(const char *module_id, const char *path);
+
+/**
  * Set the root directory for loading Wasm modules.
  *
  * Due to String management differences between C and Rust, this function uses `unsafe {}` code.

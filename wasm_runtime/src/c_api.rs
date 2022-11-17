@@ -3,16 +3,55 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-//! c_api.rs
+//! `c_api.rs`
 //!
 //! This file contains the API functions for the C language
 
-use std::ffi::{c_char, c_uchar};
+use std::ffi::{c_int, c_char, c_uchar};
 use std::slice;
 
-use crate::config::WASM_RUNTIME_CONFIG;
+
 use crate::ffi_utils::*;
-use crate::wasm_engine::{init_module, run_module};
+use crate::module::WasmModule;
+use crate::config::WASM_RUNTIME_CONFIG;
+use crate::wasm_engine::{run_module};
+
+
+/// Load a Wasm Module from disk and assign it the given identifier.
+///
+/// All successfully loaded Wasm modules are stored in a `HashMap`.
+/// This implies that:
+///  - The `module_id` cannot be used more than once.
+///  - The `path` must point to an existing file.
+///  - The file must be a valid .wasm module.
+///
+/// In case of error, it returns a string explaining the error.
+/// Otherwise, it returns an empty string.
+///
+/// # Examples (C Code)
+///
+/// ```
+/// wasm_module_load("python", "/var/www/wasm/python3_11.wasm");
+/// wasm_module_load("PHP", "/var/www/wasm/php8.wasm");
+/// ```
+#[no_mangle]
+pub extern "C" fn wasm_module_load(module_id: *const c_char, path: *const c_char) -> c_int {
+    let module_id_str = const_c_char_to_str(module_id);
+    let path_str = const_c_char_to_str(path);
+
+    let result: c_int = match WasmModule::from_file(module_id_str, path_str) {
+        Ok(_) => {
+            0
+        },
+        Err(e) => {
+            eprintln!("C-API: Couldn't load Wasm module \"{}\": {}", module_id_str, e);
+            -1
+        }
+    };
+
+    result
+}
+
 
 /// Set the root directory for loading Wasm modules.
 ///
