@@ -419,8 +419,6 @@ static void register_hooks(apr_pool_t *p)
 
 
 #define WASM_DIRECTIVE_WASMLOADMODULE "WasmLoadModule"
-#define WASM_DIRECTIVE_WASMROOT       "WasmRoot"
-#define WASM_DIRECTIVE_WASMMODULE     "WasmModule"
 #define WASM_DIRECTIVE_WASMARG        "WasmArg"
 #define WASM_DIRECTIVE_WASMENV        "WasmEnv"
 #define WASM_DIRECTIVE_WASMDIR        "WasmDir"
@@ -431,22 +429,6 @@ static const char *wasm_directive_WasmLoadModule(cmd_parms *cmd, void *mconfig, 
 {
     x_cfg *cfg = (x_cfg *) mconfig;
     wasm_module_load(word1, word2);
-    return NULL;
-}
-
-
-static const char *wasm_directive_WasmRoot(cmd_parms *cmd, void *mconfig, const char *word1)
-{
-    x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_config_set_root(word1);
-    return NULL;
-}
-
-
-static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, const char *word1)
-{
-    x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_config_set_module(word1);
     return NULL;
 }
 
@@ -513,20 +495,6 @@ static const command_rec directives[] =
         NULL,                                                               /* argument to include in call */
         OR_OPTIONS,                                                         /* where available */
         "Load a Wasm Module from disk and assign it the given identifier"   /* directive description */
-    ),
-    AP_INIT_TAKE1(
-        WASM_DIRECTIVE_WASMROOT,
-        wasm_directive_WasmRoot,
-        NULL,
-        OR_OPTIONS,
-        "Set root directory for the Wasm file"
-    ),
-    AP_INIT_TAKE1(
-        WASM_DIRECTIVE_WASMMODULE,
-        wasm_directive_WasmModule,
-        NULL,
-        OR_OPTIONS,
-        "Set filename for the Wasm Module"
     ),
     AP_INIT_TAKE1(
         WASM_DIRECTIVE_WASMARG,

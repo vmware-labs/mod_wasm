@@ -30,40 +30,6 @@
 int wasm_module_load(const char *module_id, const char *path);
 
 /**
- * Set the root directory for loading Wasm modules.
- *
- * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
- * So `path` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
- *
- * In addition, `path` must contain valid ASCII chars that can be converted into UTF-8 encoding.
- * Otherwise, the root directory will be an empty string.
- *
- * # Examples (C Code)
- *
- * ```
- * wasm_config_set_root("/var/www/wasm");
- * ```
- */
-void wasm_config_set_root(const char *path);
-
-/**
- * Set the Wasm module filename
- *
- * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
- * So `filename` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
- *
- * In addition, `filename` must contain valid ASCII chars that can be converted into UTF-8 encoding.
- * Otherwise, the root directory will be an empty string.
- *
- * # Examples (C Code)
- *
- * ```
- * wasm_config_set_module("hello.wasm");
- * ```
- */
-void wasm_config_set_module(const char *filename);
-
-/**
  * Clears all WASI args for the Wasm module
  */
 void wasm_config_clear_args(void);
@@ -174,11 +140,6 @@ void wasm_config_set_stdin(const unsigned char *buffer,
                            uintptr_t size);
 
 /**
- * Initialize the Wasm module
- *
- * Returns empty string if initialization was succesfuly.
- * Otherwise, it returns a string with the error.
- *
  * Run the Wasm module
  *
  * Returns a string with the stdout from the module if execution was succesfuly.
