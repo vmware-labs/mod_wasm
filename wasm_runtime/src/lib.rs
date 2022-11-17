@@ -8,6 +8,7 @@
 //! * Provide a thin C API for instantiating, running, and managing Wasm modules.
 
 mod config;
+mod module;
 mod wasm_engine;
 mod wasmtime_shared;
 mod wasi_context;
