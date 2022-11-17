@@ -1,6 +1,6 @@
 [package]
 name = "wasm_runtime"
-version = "0.8.0"
+version = "0.9.0"
 edition = "2021"
 authors = ["VMware's Wasm Labs"]
 description = "Wrapper for offering a simple C-API to manage WebAssembly modules via Wasmtime"
@@ -22,5 +22,5 @@ wasmtime-wasi = "2.0.2"
 wasi-common = "2.0.2"
 wasi-cap-std-sync = "2.0.2"
 anyhow = "1.0.66"
-once_cell = "1.15.0"
+once_cell = "1.16.0"
 
