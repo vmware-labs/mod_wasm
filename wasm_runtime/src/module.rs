@@ -7,8 +7,7 @@
 //
 // Struct to store Wasm Module
 use std::path::PathBuf;
-use wasmtime::Engine;
-use wasmtime::Module;
+use wasmtime::{Engine, Module};
 use std::sync::RwLock;
 use once_cell::sync::Lazy; // https://crates.io/crates/once_cell
 use std::collections::HashMap;
@@ -17,6 +16,7 @@ use std::collections::HashMap;
 pub struct WasmModule {
     pub id:     String,
     pub path:   PathBuf,
+    pub engine: wasmtime::Engine,
     pub module: wasmtime::Module,
 }
 
@@ -61,8 +61,11 @@ impl WasmModule {
             return Err(error_msg);
         }
 
-        // try load module on the Wasmtime runtime (with default engine configuration)
-        let wasmtime_module = match Module::from_file(&Engine::default(), module_path.clone()) {
+        // load a Wasmtime Engine with default configuration
+        let module_engine = Engine::default();
+
+        // try load module on the Wasmtime runtime
+        let wasmtime_module = match Module::from_file(&module_engine, module_path.clone()) {
             Ok(m) => m,
             Err(e) => {
                 let error_msg = format!("Can't load module `{}`! {}", module_id, e);
@@ -74,6 +77,7 @@ impl WasmModule {
         let wasm_module = WasmModule {
             id: module_id.to_string(),
             path: module_path,
+            engine: module_engine,
             module: wasmtime_module,
         };
 
