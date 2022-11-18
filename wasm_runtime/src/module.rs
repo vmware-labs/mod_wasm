@@ -6,11 +6,13 @@
 // module.rs
 //
 // Struct to store Wasm Module
+
 use std::path::PathBuf;
-use wasmtime::{Engine, Module};
-use std::sync::RwLock;
-use once_cell::sync::Lazy; // https://crates.io/crates/once_cell
 use std::collections::HashMap;
+use std::sync::RwLock;
+
+use once_cell::sync::Lazy;
+use wasmtime::{Engine, Module};
 
 
 pub struct WasmModule {
@@ -26,7 +28,7 @@ impl WasmModule {
     /// It checks for double loads, duplicated `module_id` or wrong file format.
     /// Returns Result<(), String>, so that in case of error the String will contain the reason.
     /// 
-    pub fn from_file(module_id: &str, path: &str) -> Result<(), String> {
+    pub fn load_from_file(module_id: &str, path: &str) -> Result<(), String> {
 
         // get write access to the WasmModule HashMap
         let mut modules = WASM_RUNTIME_MODULES.write()
@@ -35,7 +37,7 @@ impl WasmModule {
         // check for existing module_id in the loaded modules
         if let Some(wasm_module) = modules.get(module_id) {
             // same id?
-            if wasm_module.id == module_id {    // redundant but it's Wasm module which really owns its ID, not the Key in the HashMap
+            if wasm_module.id == module_id {    // redundant but it's the WasmModule which really owns its ID, not the Key in the HashMap
                 // same path? then it's being loaded twice
                 if wasm_module.path == PathBuf::from(path) {
                     // TO-DO: the commented lines below should be the right behaviour.

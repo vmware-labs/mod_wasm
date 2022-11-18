@@ -7,8 +7,8 @@
 //! * Integrate with Wasm engines (such as [Wasmtime](https://github.com/bytecodealliance/wasmtime)). 
 //! * Provide a thin C API for instantiating, running, and managing Wasm modules.
 
-mod config;
 mod module;
+mod config;
 mod wasm_engine;
 mod wasi_context;
 mod stdio_buffers;

@@ -40,14 +40,18 @@ impl WasmConfig {
         if let Some(wasm_config) = configs.get(config_id) {
             // same id?
             if wasm_config.id == config_id {    // redundant but it's the WasmConfig which really owns its ID, not the Key in the HashMap
-                // same module? then WasmConfig it's being built twice
+                // same module? then WasmConfig it's being added twice
                 if wasm_config.module_id == module_id {
-                    let error_msg = format!("Wasm config \'{}\' for module \'{}\' already exists, skipping", config_id, module_id);
-                    return Err(error_msg);
+                    // TO-DO: the commented lines below should be the right behaviour.
+                    // But since dry-run is not supported yet in mod_wasm.c, it's preferible to turn this check off
+                    // See issue #26: https://github.com/vmware-labs/mod_wasm/issues/26
+                    //                    
+                    // let error_msg = format!("Wasm config \'{}\' for module \'{}\' already exists, skipping", config_id, module_id);
+                    // return Err(error_msg);
                 }
                 // different module? then config_id is already in use by another WasmConfig 
                 else {
-                    let error_msg = format!("Wasm config \'{}\' is already in use for module \'{}\'", config_id, module_id);
+                    let error_msg = format!("Wasm config \'{}\' is already in use for module \'{}\'", config_id, wasm_config.module_id);
                     return Err(error_msg);
                 }
             }

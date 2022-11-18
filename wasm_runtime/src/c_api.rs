@@ -21,12 +21,12 @@ use crate::wasm_engine::{run_module};
 ///
 /// All successfully loaded Wasm modules are stored in a `HashMap`.
 /// This implies that:
-///  - The `module_id` cannot be used more than once.
+///  - The `module_id` must be unique.
 ///  - The `path` must point to an existing file.
 ///  - The file must be a valid .wasm module.
 ///
-/// In case of error, it returns a string explaining the error.
-/// Otherwise, it returns an empty string.
+/// In case of error, the reason is printed to stderr and returns -1.
+/// Otherwise, it returns 0.
 ///
 /// # Examples (C Code)
 ///
@@ -39,7 +39,7 @@ pub extern "C" fn wasm_module_load(module_id: *const c_char, path: *const c_char
     let module_id_str = const_c_char_to_str(module_id);
     let path_str = const_c_char_to_str(path);
 
-    let result: c_int = match WasmModule::from_file(module_id_str, path_str) {
+    let result: c_int = match WasmModule::load_from_file(module_id_str, path_str) {
         Ok(_) => {
             0
         },
@@ -88,7 +88,7 @@ pub extern "C" fn wasm_config_add(config_id: *const c_char, module_id: *const c_
             0
         },
         Err(e) => {
-            eprintln!("C-API: Couldn't build Wasm config \"{}\": {}", config_id_str, e);
+            eprintln!("C-API: Couldn't add Wasm config \"{}\" for module \"{}\": {}", config_id_str, module_id_str, e);
             -1
         }
     };
@@ -200,7 +200,7 @@ pub extern "C" fn wasm_config_add_mapdir(map: *const c_char, dir: *const c_char)
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_config_set_module("hello.wasm");
+/// wasm_config_set_stdin(body_buffer, body_size);
 /// ```
 #[no_mangle]
 pub extern "C" fn wasm_config_set_stdin(buffer: *const c_uchar, size: usize) {
