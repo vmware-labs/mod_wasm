@@ -123,21 +123,23 @@ void wasm_config_add_mapdir(const char *map,
 
 /**
  * Set the WASI stdin for the Wasm module
+ * Add a new Wasm Config with the given unique identifier and for an existing Wasm Module.
  *
- * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
- * So `filename` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ * In order to successfully build a new Wasm Config:
+ *  - The `config_id` must be unique.
+ *  - The `module_id` must refer to a previously loaded Wasm Module id.
  *
- * In addition, `filename` must contain valid ASCII chars that can be converted into UTF-8 encoding.
- * Otherwise, the root directory will be an empty string.
+ * In case of error, the reason is printed to stderr and returns -1.
+ * Otherwise, it returns 0.
  *
  * # Examples (C Code)
  *
  * ```
- * wasm_config_set_module("hello.wasm");
+ * wasm_config_add("Drupal", "PHP");
+ * wasm_config_add("WordPress", "PHP");
  * ```
  */
-void wasm_config_set_stdin(const unsigned char *buffer,
-                           uintptr_t size);
+int wasm_config_add(const char *config_id, const char *module_id);
 
 /**
  * Run the Wasm module

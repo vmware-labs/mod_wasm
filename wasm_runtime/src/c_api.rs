@@ -13,7 +13,7 @@ use std::slice;
 
 use crate::ffi_utils::*;
 use crate::module::WasmModule;
-use crate::config::WASM_RUNTIME_CONFIG;
+use crate::config::WasmConfig;
 use crate::wasm_engine::{run_module};
 
 
@@ -63,35 +63,37 @@ pub extern "C" fn wasm_config_clear_args() {
 }
 
 /// Add a WASI arg for the Wasm module
+/// Add a new Wasm Config with the given unique identifier and for an existing Wasm Module.
 ///
-/// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
-/// So `arg` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+/// In order to successfully build a new Wasm Config:
+///  - The `config_id` must be unique.
+///  - The `module_id` must refer to a previously loaded Wasm Module id.
 ///
-/// In addition, `arg` must contain valid ASCII chars that can be converted into UTF-8 encoding.
-/// Otherwise, the root directory will be an empty string.
+/// In case of error, the reason is printed to stderr and returns -1.
+/// Otherwise, it returns 0.
 ///
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_config_add_arg("--help");
+/// wasm_config_add("Drupal", "PHP");
+/// wasm_config_add("WordPress", "PHP");
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_config_add_arg(arg: *const c_char) {
-    let arg_str   = const_c_char_to_str(arg);
+pub extern "C" fn wasm_config_add(config_id: *const c_char, module_id: *const c_char) -> c_int {
+    let config_id_str = const_c_char_to_str(config_id);
+    let module_id_str = const_c_char_to_str(module_id);
 
-    WASM_RUNTIME_CONFIG.write()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
-        .wasi_args
-        .push(arg_str.to_string());
-}
+    let result: c_int = match WasmConfig::add_for_module(config_id_str, module_id_str) {
+        Ok(_) => {
+            0
+        },
+        Err(e) => {
+            eprintln!("C-API: Couldn't build Wasm config \"{}\": {}", config_id_str, e);
+            -1
+        }
+    };
 
-/// Clears all WASI environment variables for the Wasm module
-#[no_mangle]
-pub extern "C" fn wasm_config_clear_envs() {
-    WASM_RUNTIME_CONFIG.write()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
-        .wasi_envs
-        .clear();
+    result
 }
 
 /// Set a WASI environment variable for the Wasm module
