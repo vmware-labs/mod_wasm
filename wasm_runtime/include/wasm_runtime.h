@@ -49,12 +49,7 @@ int wasm_module_load(const char *module_id, const char *path);
 int wasm_config_add(const char *config_id, const char *module_id);
 
 /**
- * Clears all WASI args for the Wasm module
- */
-void wasm_config_clear_args(void);
-
-/**
- * Add a WASI arg for the given Wasm config
+ * Add a WASI argument for the given Wasm config
  *
  * Wasm config must has been previously created.
  *
@@ -67,18 +62,15 @@ void wasm_config_clear_args(void);
  * # Examples (C Code)
  *
  * ```
- * wasm_config_add_arg("--help");
+ * wasm_config_arg_add("config_id", "--help");
  * ```
  */
-void wasm_config_add_arg(const char *arg);
+int wasm_config_arg_add(const char *config_id, const char *arg);
 
 /**
- * Clears all WASI environment variables for the Wasm module
- */
-void wasm_config_clear_envs(void);
-
-/**
- * Set a WASI environment variable for the Wasm module
+ * Add a WASI environment variable for the given Wasm config
+ *
+ * Wasm config must has been previously created.
  *
  * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
  * So `env` and `value` must be valid pointers to a null-terminated C char array. Otherwise, code might panic.
@@ -89,16 +81,12 @@ void wasm_config_clear_envs(void);
  * # Examples (C Code)
  *
  * ```
- * wasm_config_add_env("TMP", "/tmp");
+ * wasm_config_env_add("config_id", "TMP", "/tmp");
  * ```
  */
-void wasm_config_add_env(const char *env,
-                         const char *value);
-
-/**
- * Clears all WASI preopened dirs for the Wasm module
- */
-void wasm_config_clear_dirs(void);
+int wasm_config_env_add(const char *config_id,
+                        const char *env,
+                        const char *value);
 
 /**
  * Add a WASI preopen dir for the Wasm module
@@ -112,15 +100,10 @@ void wasm_config_clear_dirs(void);
  * # Examples (C Code)
  *
  * ```
- * wasm_config_add_dir("/tmp");
+ * wasm_config_dir_add("config_id", "/tmp");
  * ```
  */
-void wasm_config_add_dir(const char *dir);
-
-/**
- * Clears all WASI propened dirs with mapping for the Wasm module
- */
-void wasm_config_clear_mapdirs(void);
+int wasm_config_dir_add(const char *config_id, const char *dir);
 
 /**
  * Add a WASI preopen dir with mapping for the Wasm module
@@ -134,13 +117,14 @@ void wasm_config_clear_mapdirs(void);
  * # Examples (C Code)
  *
  * ```
- * wasm_config_add_mapdir("./", ".");
- * wasm_config_add_mapdir("/wasmhome", "/home/wasm_user");
- * wasm_config_add_mapdir("/wasmlogs", "/var/log");
+ * wasm_config_mapdir_add("config_id", "./", ".");
+ * wasm_config_mapdir_add("config_id", "/wasmhome", "/home/wasm_user");
+ * wasm_config_mapdir_add("config_id", "/wasmlogs", "/var/log");
  * ```
  */
-void wasm_config_add_mapdir(const char *map,
-                            const char *dir);
+int wasm_config_mapdir_add(const char *config_id,
+                           const char *map,
+                           const char *dir);
 
 /**
  * Set the WASI stdin for the Wasm module

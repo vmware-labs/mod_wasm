@@ -14,7 +14,7 @@ use std::slice;
 use crate::ffi_utils::*;
 use crate::module::WasmModule;
 use crate::config::WasmConfig;
-use crate::wasm_engine::{run_module};
+use crate::wasm_engine::run_module;
 
 
 /// Load a Wasm Module from disk and assign it the given identifier.
@@ -39,30 +39,16 @@ pub extern "C" fn wasm_module_load(module_id: *const c_char, path: *const c_char
     let module_id_str = const_c_char_to_str(module_id);
     let path_str = const_c_char_to_str(path);
 
-    let result: c_int = match WasmModule::load_from_file(module_id_str, path_str) {
-        Ok(_) => {
-            0
-        },
+    match WasmModule::load_from_file(module_id_str, path_str) {
+        Ok(_) => 0,
         Err(e) => {
             eprintln!("C-API: Couldn't load Wasm module \"{}\": {}", module_id_str, e);
             -1
         }
-    };
-
-    result
+    }
 }
 
 
-/// Clears all WASI args for the Wasm module
-#[no_mangle]
-pub extern "C" fn wasm_config_clear_args() {
-    WASM_RUNTIME_CONFIG.write()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
-        .wasi_args
-        .clear();
-}
-
-/// Add a WASI arg for the Wasm module
 /// Add a new Wasm Config with the given unique identifier and for an existing Wasm Module.
 ///
 /// In order to successfully build a new Wasm Config:
@@ -83,20 +69,49 @@ pub extern "C" fn wasm_config_add(config_id: *const c_char, module_id: *const c_
     let config_id_str = const_c_char_to_str(config_id);
     let module_id_str = const_c_char_to_str(module_id);
 
-    let result: c_int = match WasmConfig::add_for_module(config_id_str, module_id_str) {
-        Ok(_) => {
-            0
-        },
+    match WasmConfig::add_for_module(config_id_str, module_id_str) {
+        Ok(_) => 0,
         Err(e) => {
             eprintln!("C-API: Couldn't add Wasm config \"{}\" for module \"{}\": {}", config_id_str, module_id_str, e);
             -1
         }
-    };
-
-    result
+    }
 }
 
-/// Set a WASI environment variable for the Wasm module
+
+/// Add a WASI argument for the given Wasm config
+///
+/// Wasm config must has been previously created.
+/// 
+/// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+/// So `arg` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+///
+/// In addition, `arg` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+/// Otherwise, the root directory will be an empty string.
+///
+/// # Examples (C Code)
+///
+/// ```
+/// wasm_config_arg_add("config_id", "--help");
+/// ```
+#[no_mangle]
+pub extern "C" fn wasm_config_arg_add(config_id: *const c_char, arg: *const c_char) -> c_int {
+    let config_id_str = const_c_char_to_str(config_id);
+    let arg_str = const_c_char_to_str(arg);
+
+    match WasmConfig::add_wasi_arg_for_config(config_id_str, arg_str) {
+        Ok(_) => 0,
+        Err(e) => {
+            eprintln!("C-API: Couldn't add arg \"{}\" for Wasm config \"{}\": {}",  arg_str, config_id_str, e);
+            -1
+        }
+    }
+}
+
+
+/// Add a WASI environment variable for the given Wasm config
+///
+/// Wasm config must has been previously created.
 ///
 /// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
 /// So `env` and `value` must be valid pointers to a null-terminated C char array. Otherwise, code might panic.
@@ -107,28 +122,23 @@ pub extern "C" fn wasm_config_add(config_id: *const c_char, module_id: *const c_
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_config_add_env("TMP", "/tmp");
+/// wasm_config_env_add("config_id", "TMP", "/tmp");
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_config_add_env(env: *const c_char, value: *const c_char) {
-    let env_str   = const_c_char_to_str(env);
-    let value_str = const_c_char_to_str(value);
+pub extern "C" fn wasm_config_env_add(config_id: *const c_char, env: *const c_char, value: *const c_char) -> c_int {
+    let config_id_str = const_c_char_to_str(config_id);
+    let env_str       = const_c_char_to_str(env);
+    let value_str     = const_c_char_to_str(value);
 
-    WASM_RUNTIME_CONFIG.write()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
-        .wasi_envs
-        .push((env_str.to_string(), value_str.to_string()));
-
+    match WasmConfig::add_wasi_env_for_config(config_id_str, env_str, value_str) {
+        Ok(_) => 0,
+        Err(e) => {
+            eprintln!("C-API: Couldn't add env \"{}\" for Wasm config \"{}\": {}",  env_str, config_id_str, e);
+            -1
+        }
+    }
 }
 
-/// Clears all WASI preopened dirs for the Wasm module
-#[no_mangle]
-pub extern "C" fn wasm_config_clear_dirs() {
-    WASM_RUNTIME_CONFIG.write()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
-        .wasi_dirs
-        .clear();
-}
 
 /// Add a WASI preopen dir for the Wasm module
 ///
@@ -141,25 +151,20 @@ pub extern "C" fn wasm_config_clear_dirs() {
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_config_add_dir("/tmp");
+/// wasm_config_dir_add("config_id", "/tmp");
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_config_add_dir(dir: *const c_char) {
-    let dir_str   = const_c_char_to_str(dir);
+pub extern "C" fn wasm_config_dir_add(config_id: *const c_char, dir: *const c_char) -> c_int {
+    let config_id_str = const_c_char_to_str(config_id);
+    let dir_str       = const_c_char_to_str(dir);
 
-    WASM_RUNTIME_CONFIG.write()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
-        .wasi_dirs
-        .push(dir_str.to_string());
-}
-
-/// Clears all WASI propened dirs with mapping for the Wasm module
-#[no_mangle]
-pub extern "C" fn wasm_config_clear_mapdirs() {
-    WASM_RUNTIME_CONFIG.write()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
-        .wasi_mapdirs
-        .clear();
+    match WasmConfig::add_wasi_dir_for_config(config_id_str, dir_str) {
+        Ok(_) => 0,
+        Err(e) => {
+            eprintln!("C-API: Couldn't add dir \"{}\" for Wasm config \"{}\": {}",  dir_str, config_id_str, e);
+            -1
+        }
+    }    
 }
 
 /// Add a WASI preopen dir with mapping for the Wasm module
@@ -173,19 +178,23 @@ pub extern "C" fn wasm_config_clear_mapdirs() {
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_config_add_mapdir("./", ".");
-/// wasm_config_add_mapdir("/wasmhome", "/home/wasm_user");
-/// wasm_config_add_mapdir("/wasmlogs", "/var/log");
+/// wasm_config_mapdir_add("config_id", "./", ".");
+/// wasm_config_mapdir_add("config_id", "/wasmhome", "/home/wasm_user");
+/// wasm_config_mapdir_add("config_id", "/wasmlogs", "/var/log");
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_config_add_mapdir(map: *const c_char, dir: *const c_char) {
-    let map_str = const_c_char_to_str(map);
-    let dir_str = const_c_char_to_str(dir);
+pub extern "C" fn wasm_config_mapdir_add(config_id: *const c_char, map: *const c_char, dir: *const c_char) -> c_int {
+    let config_id_str = const_c_char_to_str(config_id);
+    let map_str       = const_c_char_to_str(map);
+    let dir_str       = const_c_char_to_str(dir);
 
-    WASM_RUNTIME_CONFIG.write()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on write()")
-        .wasi_mapdirs
-        .push((map_str.to_string(), dir_str.to_string()));
+    match WasmConfig::add_wasi_mapdir_for_config(config_id_str, map_str, dir_str) {
+        Ok(_) => 0,
+        Err(e) => {
+            eprintln!("C-API: Couldn't add mapdir \"{}\" \"{}\" for Wasm config \"{}\": {}", map_str, dir_str, config_id_str, e);
+            -1
+        }
+    }  
 }
 
 
