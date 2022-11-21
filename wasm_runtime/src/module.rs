@@ -14,46 +14,33 @@ use std::sync::RwLock;
 use once_cell::sync::Lazy;
 use wasmtime::{Engine, Module};
 
-
 pub struct WasmModule {
     pub id:     String,
-    pub path:   PathBuf,
     pub engine: wasmtime::Engine,
     pub module: wasmtime::Module,
 }
 
 impl WasmModule {
-    /// Load a Wasm Module from file into memory
+    /// Load a Wasm Module from file into memory. The route serves as module ID.
     ///
-    /// It checks for double loads, duplicated `module_id` or wrong file format.
+    /// It checks for path or wrong file format.
     /// Returns Result<(), String>, so that in case of error the String will contain the reason.
     /// 
-    pub fn load_from_file(module_id: &str, path: &str) -> Result<(), String> {
+    pub fn load_from_file(path: &str) -> Result<(), String> {
 
         // get write access to the WasmModule HashMap
         let mut modules = WASM_RUNTIME_MODULES.write()
             .expect("ERROR! Poisoned RwLock WASM_RUNTIME_MODULES on write()");
 
-        // check for existing module_id in the loaded modules
-        if let Some(wasm_module) = modules.get(module_id) {
-            // same id?
-            if wasm_module.id == module_id {    // redundant but it's the WasmModule which really owns its ID, not the Key in the HashMap
-                // same path? then it's being loaded twice
-                if wasm_module.path == PathBuf::from(path) {
-                    // TO-DO: the commented lines below should be the right behaviour.
-                    // But since dry-run is not supported yet in mod_wasm.c, it's preferible to turn this check off
-                    // See issue #26: https://github.com/vmware-labs/mod_wasm/issues/26
-                    //
-                    // let error_msg = format!("Wasm module \'{}\' is already loaded, skipping", module_id);
-                    // return Err(error_msg);
-                    //
-                }
-                // different path? then module_id is already in use by another Wasm module
-                else {
-                    let error_msg = format!("Wasm module ID \'{}\' is already in use for: {}", module_id, wasm_module.path.display());
-                    return Err(error_msg);
-                }
-            }
+        // check if module was already loaded (path is used as key)
+        if modules.contains_key(path) {
+            // TO-DO: the commented lines below should be the right behaviour.
+            // But since dry-run is not supported yet in mod_wasm.c, it's preferible to turn this check off
+            // See issue #26: https://github.com/vmware-labs/mod_wasm/issues/26
+            //
+            // let error_msg = format!("Wasm module from \'{}\' is already loaded, skipping", path);
+            // return Err(error_msg);
+            return Ok(());
         }
         
         // check path is valid
@@ -70,24 +57,22 @@ impl WasmModule {
         let wasmtime_module = match Module::from_file(&module_engine, module_path.clone()) {
             Ok(m) => m,
             Err(e) => {
-                let error_msg = format!("Can't load module `{}`! {}", module_id, e);
+                let error_msg = format!("Can't load module from `{}`! {}", module_path.display(), e);
                 return Err(error_msg);  
             }
         };
         
         // build the WasmModule object
         let wasm_module = WasmModule {
-            id: module_id.to_string(),
-            path: module_path,
+            id: path.to_string(),
             engine: module_engine,
             module: wasmtime_module,
         };
 
-        // insert into the HasmMap
-        modules.insert(wasm_module.id.clone(), wasm_module);
+        // insert into the HasmMap (path is used as key)
+        modules.insert(path.to_string(), wasm_module);
 
         Ok(())
-
     }
 }
 

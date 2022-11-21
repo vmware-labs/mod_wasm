@@ -9,12 +9,11 @@
 #include "version.h"
 
 /**
- * Load a Wasm Module from disk and assign it the given identifier.
+ * Load a Wasm Module from disk.
  *
  * All successfully loaded Wasm modules are stored in a `HashMap`.
  * This implies that:
- *  - The `module_id` must be unique.
- *  - The `path` must point to an existing file.
+ *  - The `path` (also used as module's id) must point to an existing file.
  *  - The file must be a valid .wasm module.
  *
  * In case of error, the reason is printed to stderr and returns -1.
@@ -23,18 +22,15 @@
  * # Examples (C Code)
  *
  * ```
- * wasm_module_load("python", "/var/www/wasm/python3_11.wasm");
- * wasm_module_load("PHP", "/var/www/wasm/php8.wasm");
+ * wasm_module_load("/var/www/wasm/python3_11.wasm");
+ * wasm_module_load("/var/www/wasm/php8.wasm");
  * ```
  */
-int wasm_module_load(const char *module_id, const char *path);
+int wasm_module_load(const char *path);
 
 /**
- * Add a new Wasm Config with the given unique identifier and for an existing Wasm Module.
- *
- * In order to successfully build a new Wasm Config:
- *  - The `config_id` must be unique.
- *  - The `module_id` must refer to a previously loaded Wasm Module id.
+ * Creates a new Wasm Config given an identifier.
+ * The identifier must be unique.
  *
  * In case of error, the reason is printed to stderr and returns -1.
  * Otherwise, it returns 0.
@@ -42,11 +38,26 @@ int wasm_module_load(const char *module_id, const char *path);
  * # Examples (C Code)
  *
  * ```
- * wasm_config_add("Drupal", "PHP");
- * wasm_config_add("WordPress", "PHP");
+ * wasm_config_new("Drupal", "/var/www/php8.wasm");
+ * wasm_config_new("WordPress", "/var/www/php8.wasm");
  * ```
  */
-int wasm_config_add(const char *config_id, const char *module_id);
+int wasm_config_new(const char *config_id);
+
+/**
+ * Set a loaded Wasm Module to an existing Wasm Config.
+ *
+ * In case of error, the reason is printed to stderr and returns -1.
+ * Otherwise, it returns 0.
+ *
+ * # Examples (C Code)
+ *
+ * ```
+ * wasm_config_set_module("Drupal", "/var/www/php8.wasm");
+ * wasm_config_set_module("WordPress", "/var/www/php8.wasm");
+ * ```
+ */
+int wasm_config_set_module(const char *config_id, const char *module_id);
 
 /**
  * Add a WASI argument for the given Wasm config

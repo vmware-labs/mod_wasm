@@ -144,7 +144,7 @@ static void trace_nocontext(apr_pool_t *p, const char *file, int line,
 
 /*
  * This function gets called to create a per-directory configuration
- * record.  This will be called for the "default" server environment, and for
+ * record. This will be called for the "default" server environment, and for
  * each directory for which the parser finds any of our directives applicable.
  * If a directory doesn't have any of our directives involved (i.e., they
  * aren't in the .htaccess file, or a <Location>, <Directory>, or related
@@ -154,10 +154,9 @@ static void trace_nocontext(apr_pool_t *p, const char *file, int line,
  * The return value is a pointer to the created module-specific
  * structure.
  */
-static void *create_dir_config(apr_pool_t *p, char *dirspec)
+static void *create_dir_config(apr_pool_t *p, char *context)
 {
     x_cfg *cfg;
-    char *dname = dirspec;
     char *note;
 
     /*
@@ -177,10 +176,14 @@ static void *create_dir_config(apr_pool_t *p, char *dirspec)
     /*
      * Finally, add our trace to the callback list.
      */
-    dname = (dname != NULL) ? dname : "";
-    cfg->loc = apr_pstrcat(p, "DIR(", dname, ")", NULL);
-    note = apr_psprintf(p, "create_dir_config(p == %pp, dirspec == %s)",
-                        (void*) p, dirspec);
+    context = (context != NULL) ? context : "";
+    cfg->loc = apr_pstrcat(p, "DIR(", context, ")", NULL);
+    note = apr_psprintf(p, "create_dir_config(p == %pp, context == %s)",
+                        (void*) p, context);
+
+    // creates a new Wasm config for the current context
+    wasm_config_new(cfg->loc);
+
     return (void *) cfg;
 }
 
@@ -418,17 +421,18 @@ static void register_hooks(apr_pool_t *p)
 }
 
 
-#define WASM_DIRECTIVE_WASMLOADMODULE "WasmLoadModule"
-#define WASM_DIRECTIVE_WASMARG        "WasmArg"
-#define WASM_DIRECTIVE_WASMENV        "WasmEnv"
-#define WASM_DIRECTIVE_WASMDIR        "WasmDir"
-#define WASM_DIRECTIVE_WASMMAPDIR     "WasmMapDir"
-#define WASM_DIRECTIVE_ENABLECGI      "WasmEnableCGI"
+#define WASM_DIRECTIVE_WASMMODULE "WasmModule"
+#define WASM_DIRECTIVE_WASMARG    "WasmArg"
+#define WASM_DIRECTIVE_WASMENV    "WasmEnv"
+#define WASM_DIRECTIVE_WASMDIR    "WasmDir"
+#define WASM_DIRECTIVE_WASMMAPDIR "WasmMapDir"
+#define WASM_DIRECTIVE_ENABLECGI  "WasmEnableCGI"
 
-static const char *wasm_directive_WasmLoadModule(cmd_parms *cmd, void *mconfig, const char *word1, const char *word2)
+static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_module_load(word1, word2);
+    wasm_module_load(word1);
+    wasm_config_set_module(cfg->loc, word1);
     return NULL;
 }
 
@@ -443,6 +447,8 @@ static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const c
     arg->arg = apr_pstrdup(cmd->pool, word1);
     cfg->configArgs[cfg->configArgCount] = arg;
     cfg->configArgCount++;
+    wasm_config_arg_add(cfg->loc, word1);
+
     return NULL;
 }
 
@@ -458,6 +464,8 @@ static const char *wasm_directive_WasmEnv(cmd_parms *cmd, void *mconfig, const c
     env->value = apr_pstrdup(cmd->pool, word2);
     cfg->configEnvVars[cfg->configEnvVarCount] = env;
     cfg->configEnvVarCount++;
+    wasm_config_env_add(cfg->loc, word1, word2);
+
     return NULL;
 }
 
@@ -465,7 +473,7 @@ static const char *wasm_directive_WasmEnv(cmd_parms *cmd, void *mconfig, const c
 static const char *wasm_directive_WasmDir(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_config_add_dir(word1);
+    wasm_config_dir_add(cfg->loc, word1);
     return NULL;
 }
 
@@ -473,9 +481,10 @@ static const char *wasm_directive_WasmDir(cmd_parms *cmd, void *mconfig, const c
 static const char *wasm_directive_WasmMapDir(cmd_parms *cmd, void *mconfig, const char *word1, const char *word2)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_config_add_mapdir(word1, word2);
+    wasm_config_mapdir_add(cfg->loc, word1, word2);
     return NULL;
 }
+
 
 static const char *wasm_directive_WasmEnableCGI(cmd_parms *cmd, void *mconfig, int arg)
 {
@@ -484,17 +493,18 @@ static const char *wasm_directive_WasmEnableCGI(cmd_parms *cmd, void *mconfig, i
     return NULL;
 }
 
+
 /*
  * List of directives specific to our module.
  */
 static const command_rec directives[] =
 {
-    AP_INIT_TAKE2(
-        WASM_DIRECTIVE_WASMLOADMODULE,                                      /* directive name */
-        wasm_directive_WasmLoadModule,                                      /* config action routine */
-        NULL,                                                               /* argument to include in call */
-        OR_OPTIONS,                                                         /* where available */
-        "Load a Wasm Module from disk and assign it the given identifier"   /* directive description */
+    AP_INIT_TAKE1(
+        WASM_DIRECTIVE_WASMMODULE,       /* directive name */
+        wasm_directive_WasmModule,       /* config action routine */
+        NULL,                            /* argument to include in call */
+        OR_OPTIONS,                      /* where available */
+        "Load a Wasm Module from disk"   /* directive description */
     ),
     AP_INIT_TAKE1(
         WASM_DIRECTIVE_WASMARG,

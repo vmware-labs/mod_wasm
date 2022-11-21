@@ -25,37 +25,63 @@ pub struct WasmConfig {
 }
 
 impl WasmConfig {
-    /// Add a new configuration for a loaded module
+    /// Create a new configuration 
     ///
-    /// It checks for duplicated `config_id` or wrong `module_id`.
+    /// It checks for duplicated `config_id`.
     /// Returns Result<(), String>, so that in case of error the String will contain the reason.
     /// 
-    pub fn add_for_module(config_id: &str, module_id: &str) -> Result<(), String> {
+    pub fn new(config_id: &str) -> Result<(), String> {
                 
         // get write access to the WasmConfig HashMap
         let mut configs = WASM_RUNTIME_CONFIGS.write()
             .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIGS on write()");
 
         // check for existing config_id in the loaded configurations
-        if let Some(wasm_config) = configs.get(config_id) {
-            // same id?
-            if wasm_config.id == config_id {    // redundant but it's the WasmConfig which really owns its ID, not the Key in the HashMap
-                // same module? then WasmConfig it's being added twice
-                if wasm_config.module_id == module_id {
-                    // TO-DO: the commented lines below should be the right behaviour.
-                    // But since dry-run is not supported yet in mod_wasm.c, it's preferible to turn this check off
-                    // See issue #26: https://github.com/vmware-labs/mod_wasm/issues/26
-                    //                    
-                    // let error_msg = format!("Wasm config \'{}\' for module \'{}\' already exists, skipping", config_id, module_id);
-                    // return Err(error_msg);
-                }
-                // different module? then config_id is already in use by another WasmConfig 
-                else {
-                    let error_msg = format!("Wasm config \'{}\' is already in use for module \'{}\'", config_id, wasm_config.module_id);
-                    return Err(error_msg);
-                }
-            }
+        if configs.contains_key(config_id) {
+            // TO-DO: the commented lines below should be the right behaviour.
+            // But since dry-run is not supported yet in mod_wasm.c, it's preferible to turn this check off
+            // See issue #26: https://github.com/vmware-labs/mod_wasm/issues/26
+            //                    
+            // let error_msg = format!("Wasm config \'{}\' already exists, skipping", config_id, module_id);
+            // return Err(error_msg);
         }
+
+        // build the WasmConfig object
+        let wasm_config = WasmConfig {
+            id:           config_id.to_string(),
+            module_id:    String::new(),
+            wasi_args:    Vec::new(),
+            wasi_envs:    Vec::new(),
+            wasi_dirs:    Vec::new(),
+            wasi_mapdirs: Vec::new(),
+        };
+
+        // insert created WasmConfig object into the HasmMap
+        configs.insert(wasm_config.id.clone(), wasm_config);
+
+        Ok(())
+    }
+
+
+    /// Set a loaded Wasm Module to an existing Wasm config
+    ///
+    /// It checks for wrong `config_id` and non-loaded Wasm Modules
+    /// Returns Result<(), String>, so that in case of error the String will contain the reason.
+    /// 
+    pub fn set_wasm_module_for_config(config_id: &str, module_id: &str) -> Result<(), String> {
+        
+        // get write access to the WasmConfig HashMap
+        let mut configs = WASM_RUNTIME_CONFIGS.write()
+            .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIGS on write()");
+
+        // check for existing config_id in the loaded configurations
+        let wasm_config = match configs.get_mut(config_id) {
+            Some(c) => c,
+            None => {
+                let error_msg = format!("Wasm config \'{}\' not found while setting module \'{}\'", config_id, module_id);
+                return Err(error_msg);
+            }
+        };
 
         // get read access to the WasmModule HashMap
         let modules = WASM_RUNTIME_MODULES.read()
@@ -67,23 +93,13 @@ impl WasmConfig {
                 module_id
             },
             false => {
-                let error_msg = format!("Wasm module \'{}\' not loaded previously while adding Wasm config \'{}\'", module_id, config_id);
+                let error_msg = format!("Wasm module \'{}\' not loaded previously while setting to Wasm config \'{}\'", module_id, config_id);
                 return Err(error_msg);
             }
         };
 
-        // build the WasmConfig object
-        let wasm_config = WasmConfig {
-            id:           config_id.to_string(),
-            module_id:    wasm_module_id.to_string(),
-            wasi_args:    Vec::new(),
-            wasi_envs:    Vec::new(),
-            wasi_dirs:    Vec::new(),
-            wasi_mapdirs: Vec::new(),
-        };
-
-        // insert created WasmConfig object into the HasmMap
-        configs.insert(wasm_config.id.clone(), wasm_config);
+        // setting module in Wasm config
+        wasm_config.module_id = wasm_module_id.to_string();
 
         Ok(())
     }
