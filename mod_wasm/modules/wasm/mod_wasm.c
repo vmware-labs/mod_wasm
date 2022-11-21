@@ -220,9 +220,11 @@ static void *create_server_config(apr_pool_t *p, server_rec *s)
 
 // Add the provided key to the wasmtime runtime as an environment
 // variable.
-static int _wasm_config_add_env(void *h_, const char *key, const char *value)
+static int _wasm_executionctx_env_add(void* context, const char *key, const char *value)
 {
-    wasm_config_add_env(key, value);
+    if ( wasm_executionctx_env_add( (const char*)context, key, value) != OK )
+        trace_nocontext(NULL, __FILE__, __LINE__, "_wasm_executionctx_env_add() - ERROR! Couldn't add env variable to Wasm execution context!");
+
     return 1;
 }
 
@@ -335,7 +337,7 @@ static int content_handler(request_rec *r)
       // variables with an HTTP_ prefix.
       ap_add_common_vars(r);
       ap_add_cgi_vars(r);
-      apr_table_do(_wasm_config_add_env, NULL, r->subprocess_env, NULL);
+      apr_table_do(_wasm_executionctx_env_add, (void*)exec_ctx_id, r->subprocess_env, NULL);
 
       // read request body and store it as WASI Stdin
       apr_off_t body_size = 0;
@@ -346,13 +348,15 @@ static int content_handler(request_rec *r)
       }
       else 
       {
-        wasm_config_set_stdin(body_buffer, body_size);
+        if ( wasm_executionctx_stdin_set(exec_ctx_id, body_buffer, body_size) != OK )
+            trace_nocontext(NULL, __FILE__, __LINE__, "content_handler() - ERROR! Couldn't set HTTP Request Body as stdin!");
       }
     }
 
 
     // run Wasm module
     const char* module_response = wasm_runtime_run_module();
+
     if (dcfg->bEnableCGI) {
       // Retrieve the CGI variables and feed our own response with
       // them; write the response from the module as our own response;
@@ -368,7 +372,7 @@ static int content_handler(request_rec *r)
       // In order to not give the external consumer more information
       // than what is needed, map all responses to a 500 error.
       if (ret != 0 && ret != HTTP_OK) {
-        return_const_char_ownership(module_response);
+        wasm_return_const_char_ownership(module_response);
         return HTTP_INTERNAL_SERVER_ERROR;
       }
       if (termch != NULL) {
@@ -377,7 +381,13 @@ static int content_handler(request_rec *r)
     } else if (module_response != NULL) {
       ap_rprintf(r, "%s", module_response);
     }
-    return_const_char_ownership(module_response);
+
+    // return module response ownership to avoid leaking memory
+    wasm_return_const_char_ownership(module_response);
+
+    // deallocate execution context and return id ownership to avoid leaking memory
+    wasm_executionctx_deallocate(exec_ctx_id);
+    wasm_return_const_char_ownership(exec_ctx_id);
 
     return OK;
 }

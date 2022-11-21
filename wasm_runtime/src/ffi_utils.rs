@@ -8,7 +8,9 @@
 //! FFI stands for 'Foreign Function Interface'
 //! This file contains functions needed for offering a C ABI compatible API from Rust.
 
-use std::ffi::{CString, CStr, c_char};
+use std::ffi::{CString, CStr, c_char, c_uchar};
+use std::slice;
+
 
 // Coverts a `const char*` from C into a safe Rust string literal `&str``
 // Two steps:
@@ -63,3 +65,15 @@ pub fn deallocate_cstring(ptr: *const c_char) {
         drop(cstring_to_deallocate);
     };
 }
+
+// Converts a `c_uchar` buffer into a Vec<u8>
+// 
+// This funcion is unsafe and can fail if data within the buffer is not well aligned.
+// See more information at: https://doc.rust-lang.org/std/slice/fn.from_raw_parts.html for more information
+pub fn const_c_char_buffer_to_vec(buffer: *const c_uchar, size: usize) -> Vec<u8> {
+    let bytes = unsafe { slice::from_raw_parts(buffer, size) };
+    let bytes_vec: Vec<u8> = Vec::from(bytes);
+
+    bytes_vec
+}
+    

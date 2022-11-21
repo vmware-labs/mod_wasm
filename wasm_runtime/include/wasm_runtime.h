@@ -14,10 +14,14 @@
  * All successfully loaded Wasm modules are stored in a `HashMap`.
  * This implies that:
  *  - The `path` (also used as module's id) must point to an existing file.
- *  - The file must be a valid .wasm module.
+ *  - The file pointed by `path` must be a valid .wasm module.
  *
  * In case of error, the reason is printed to stderr and returns -1.
  * Otherwise, it returns 0.
+ *
+ * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+ * So `path` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ * In addition, `path` must contain valid ASCII chars that can be converted into UTF-8 encoding.
  *
  * # Examples (C Code)
  *
@@ -35,6 +39,10 @@ int wasm_module_load(const char *path);
  * In case of error, the reason is printed to stderr and returns -1.
  * Otherwise, it returns 0.
  *
+ * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+ * So `config_id` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ * In addition, `config_id` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+ *
  * # Examples (C Code)
  *
  * ```
@@ -50,6 +58,10 @@ int wasm_config_new(const char *config_id);
  * In case of error, the reason is printed to stderr and returns -1.
  * Otherwise, it returns 0.
  *
+ * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+ * So `config_id` and `module_id` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ * In addition, `config_id` and `module_id` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+ *
  * # Examples (C Code)
  *
  * ```
@@ -57,18 +69,20 @@ int wasm_config_new(const char *config_id);
  * wasm_config_set_module("WordPress", "/var/www/php8.wasm");
  * ```
  */
-int wasm_config_set_module(const char *config_id, const char *module_id);
+int wasm_config_set_module(const char *config_id,
+                           const char *module_id);
 
 /**
  * Add a WASI argument for the given Wasm config
  *
- * Wasm config must has been previously created.
+ * Wasm config must have been previously created.
+ *
+ * In case of error, the reason is printed to stderr and returns -1.
+ * Otherwise, it returns 0.
  *
  * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
- * So `arg` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
- *
- * In addition, `arg` must contain valid ASCII chars that can be converted into UTF-8 encoding.
- * Otherwise, the root directory will be an empty string.
+ * So `config_id` and `arg` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ * In addition, `config_id` and `arg` must contain valid ASCII chars that can be converted into UTF-8 encoding.
  *
  * # Examples (C Code)
  *
@@ -76,18 +90,20 @@ int wasm_config_set_module(const char *config_id, const char *module_id);
  * wasm_config_arg_add("config_id", "--help");
  * ```
  */
-int wasm_config_arg_add(const char *config_id, const char *arg);
+int wasm_config_arg_add(const char *config_id,
+                        const char *arg);
 
 /**
  * Add a WASI environment variable for the given Wasm config
  *
- * Wasm config must has been previously created.
+ * Wasm config must have been previously created.
+ *
+ * In case of error, the reason is printed to stderr and returns -1.
+ * Otherwise, it returns 0.
  *
  * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
- * So `env` and `value` must be valid pointers to a null-terminated C char array. Otherwise, code might panic.
- *
- * In addition, `env` and `value` must contain valid ASCII chars that can be converted into UTF-8 encoding.
- * Otherwise, they will trimmed to empty strings.
+ * So `config_id`, `env` and `value` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ * In addition, `config_id`, `env` and `value` must contain valid ASCII chars that can be converted into UTF-8 encoding.
  *
  * # Examples (C Code)
  *
@@ -102,11 +118,12 @@ int wasm_config_env_add(const char *config_id,
 /**
  * Add a WASI preopen dir for the Wasm module
  *
- * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
- * So `dir` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ * In case of error, the reason is printed to stderr and returns -1.
+ * Otherwise, it returns 0.
  *
- * In addition, `dir` must contain valid ASCII chars that can be converted into UTF-8 encoding.
- * Otherwise, the root directory will be an empty string.
+ * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+ * So `config_id` and `dir` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ * In addition, `config_id` and `dir` must contain valid ASCII chars that can be converted into UTF-8 encoding.
  *
  * # Examples (C Code)
  *
@@ -114,16 +131,18 @@ int wasm_config_env_add(const char *config_id,
  * wasm_config_dir_add("config_id", "/tmp");
  * ```
  */
-int wasm_config_dir_add(const char *config_id, const char *dir);
+int wasm_config_dir_add(const char *config_id,
+                        const char *dir);
 
 /**
  * Add a WASI preopen dir with mapping for the Wasm module
  *
- * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
- * So `map` and `dir` must be valid pointers to a null-terminated C char array. Otherwise, code might panic.
+ * In case of error, the reason is printed to stderr and returns -1.
+ * Otherwise, it returns 0.
  *
- * In addition, `map` and `dir` must contain valid ASCII chars that can be converted into UTF-8 encoding.
- * Otherwise, they will trimmed to empty strings.
+ * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+ * So `config_id`, `map` and `dir` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ * In addition, `config_id`, `map` and `dir` must contain valid ASCII chars that can be converted into UTF-8 encoding.
  *
  * # Examples (C Code)
  *
@@ -138,28 +157,102 @@ int wasm_config_mapdir_add(const char *config_id,
                            const char *dir);
 
 /**
- * Set the WASI stdin for the Wasm module
+ * Creates a new Wasm Execution Context for the given Wasm Config identifier.
+ *
+ * Returns a C string (const *char) with the the new generated Wasm Execution Context ID.
+ * Otherwise, trace the error and returns a string explaining the error.
  *
  * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
- * So `filename` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ * So `config_id` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ * In addition, `config_id` must contain valid ASCII chars that can be converted into UTF-8 encoding.
  *
- * In addition, `filename` must contain valid ASCII chars that can be converted into UTF-8 encoding.
- * Otherwise, the root directory will be an empty string.
+ * Finally, the execution context itself and the returned C string's containing the execution contex are owneed by Rust.
+ * So, in order to avoid leaking memory, C world must invoke `wasm_executionctx_deallocate()` and `wasm_return_const_char_ownership()`
+ * when the execution context and its ID are not needed anymore.
  *
  * # Examples (C Code)
  *
  * ```
- * wasm_config_set_stdin(body_buffer, body_size);
+ * const char* exec_ctx_id = wasm_executionctx_from_config("WordPress");
+ * ...
+ * // do some work with exec_ctx_id
+ * ...
+ * wasm_executionctx_deallocate(exec_ctx_id);
+ * wasm_return_const_char_ownership(exec_ctx_id);
  * ```
  */
-void wasm_config_set_stdin(const unsigned char *buffer,
-                           uintptr_t size);
+const char *wasm_executionctx_from_config(const char *config_id);
+
+/**
+ * Deallocates the given Wasm execution context
+ *
+ * Wasm execution context must have been previously created.
+ *
+ * In case of error, the reason is printed to stderr and returns -1.
+ * Otherwise, it returns 0.
+ *
+ * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+ * So `executionctx_id` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ * In addition, `executionctx_id` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+ *
+ * # Examples (C Code)
+ *
+ * ```
+ * wasm_executionctx_deallocate("12AB34DC");
+ * ```
+ */
+int wasm_executionctx_deallocate(const char *executionctx_id);
+
+/**
+ * Add a WASI environment variable for the given Wasm execution context
+ *
+ * Wasm execution context must have been previously created.
+ *
+ * In case of error, the reason is printed to stderr and returns -1.
+ * Otherwise, it returns 0.
+ *
+ * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+ * So `executionctx_id`, `env` and `value` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ * In addition, `executionctx_id`, `env` and `value` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+ *
+ * # Examples (C Code)
+ *
+ * ```
+ * wasm_executionctx_env_add("12AB34DC", "TMP", "/tmp");
+ * ```
+ */
+int wasm_executionctx_env_add(const char *executionctx_id,
+                              const char *env,
+                              const char *value);
+
+/**
+ * Set the WASI stdin for the given Wasm execution context
+ *
+ * Wasm execution context must have been previously created.
+ *
+ * In case of error, the reason is printed to stderr and returns -1.
+ * Otherwise, it returns 0.
+ *
+ * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+ * So `executionctx_id` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ * In addition, `executionctx_id` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+ * Finally, this funcion can fail if data within the `buffer` is not well aligned or not in sync with `size`.
+ *
+ * # Examples (C Code)
+ *
+ * ```
+ * wasm_executionctx_stdin_set("12AB34DC", buffer, buffer_size);
+ * ```
+ */
+int wasm_executionctx_stdin_set(const char *executionctx_id,
+                                const unsigned char *buffer,
+                                uintptr_t buffer_size);
 
 /**
  * Run the Wasm module
  *
  * Returns a string with the stdout from the module if execution was succesfuly.
- * Otherwise, trace the error and returns the string explaining the error.
+ * Otherwise, trace the error and returns a string explaining the error.
  *
  */
 const char *wasm_runtime_run_module(void);
@@ -172,4 +265,4 @@ const char *wasm_runtime_run_module(void);
  * Otherwise, memory will leak.
  *
  */
-void return_const_char_ownership(const char *ptr);
+void wasm_return_const_char_ownership(const char *ptr);

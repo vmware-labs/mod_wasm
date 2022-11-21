@@ -56,7 +56,7 @@ impl WasmConfig {
             wasi_mapdirs: Vec::new(),
         };
 
-        // insert created WasmConfig object into the HasmMap
+        // insert created WasmConfig object into the HashMap
         configs.insert(wasm_config.id.clone(), wasm_config);
 
         Ok(())
@@ -120,7 +120,7 @@ impl WasmConfig {
         let wasm_config = match configs.get_mut(config_id) {
             Some(c) => c,
             None => {
-                let error_msg = format!("Wasm config \'{}\' not loaded previously!", config_id);
+                let error_msg = format!("Wasm config \'{}\' not created previously!", config_id);
                 return Err(error_msg); 
             }
         };
@@ -146,7 +146,7 @@ impl WasmConfig {
         let wasm_config = match configs.get_mut(config_id) {
             Some(c) => c,
             None => {
-                let error_msg = format!("Wasm config \'{}\' not loaded previously!", config_id);
+                let error_msg = format!("Wasm config \'{}\' not created previously!", config_id);
                 return Err(error_msg); 
             }
         };
@@ -171,7 +171,7 @@ impl WasmConfig {
         let wasm_config = match configs.get_mut(config_id) {
             Some(c) => c,
             None => {
-                let error_msg = format!("Wasm config \'{}\' not loaded previously!", config_id);
+                let error_msg = format!("Wasm config \'{}\' not created previously!", config_id);
                 return Err(error_msg); 
             }
         };
@@ -197,7 +197,7 @@ impl WasmConfig {
         let wasm_config = match configs.get_mut(config_id) {
             Some(c) => c,
             None => {
-                let error_msg = format!("Wasm config \'{}\' not loaded previously!", config_id);
+                let error_msg = format!("Wasm config \'{}\' not created previously!", config_id);
                 return Err(error_msg); 
             }
         };

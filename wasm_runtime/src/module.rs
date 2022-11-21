@@ -69,7 +69,7 @@ impl WasmModule {
             module: wasmtime_module,
         };
 
-        // insert into the HasmMap (path is used as key)
+        // insert into the HashMap (path is used as key)
         modules.insert(path.to_string(), wasm_module);
 
         Ok(())
