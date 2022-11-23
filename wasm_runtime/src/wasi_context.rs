@@ -7,21 +7,31 @@
 //!
 //! 
 
-use anyhow::Result;
-use wasmtime_wasi::*;
+use std::path::PathBuf;
+
+use wasmtime_wasi::{ambient_authority, Dir, WasiCtx, WasiCtxBuilder};
 use wasi_common::pipe::{ReadPipe, WritePipe};
-use std::io::Cursor;
+use anyhow::Result;
 
-use crate::config::WASM_RUNTIME_CONFIG;
-use crate::stdio_buffers::STDOUT_BUFFER_RWLOCK;
+use crate::module::WasmModule;
+use crate::execution_ctx::WasmExecutionCtx;
 
+/// Builds a wasmtime_wasi::WasiCtx for the given Wasm execution context
+///
+pub fn build_wasi_ctx(wasm_executionctx: &WasmExecutionCtx, wasm_module: &WasmModule) -> WasiCtx {
+    let stdin_pipe = ReadPipe::from(wasm_executionctx.wasi_stdin.clone());
+    let stdout_pipe = WritePipe::from_shared(wasm_executionctx.wasi_stdout.clone());
+    let envs = wasm_executionctx.wasi_envs.clone();
+    let mut args = wasm_executionctx.wasi_args.clone();
 
-pub fn build_wasi_ctx() -> WasiCtx {
-    let stdin_pipe = build_stdin_pipe();
-    let stdout_pipe = build_stdout_pipe();
-    let args = build_wasi_args();
-    let envs = build_wasi_envs();
+    // ensure args includes the program binary (.wasm file) as the first position in the Vec<String>
+    if let Some(filename) = PathBuf::from(wasm_module.id.clone()).file_name() {
+        if let Some(filename_str) = filename.to_str() {
+            args.insert(0, filename_str.to_string());
+        }
+    }
 
+    // use WasiCtxBuilder to setup the WASI context
     let mut wasi_builder = WasiCtxBuilder::new()
         .stdin(Box::new(stdin_pipe))
         .stdout(Box::new(stdout_pipe))
@@ -29,53 +39,16 @@ pub fn build_wasi_ctx() -> WasiCtx {
         .args(&args).expect("ERROR! Wrong WASI args array Vector!")
         .envs(&envs).expect("ERROR! Wrong WASI envs array of duples Vector!");
 
-    wasi_builder = add_wasi_preopen_dirs(wasi_builder);
+    wasi_builder = add_wasi_preopen_dirs(wasm_executionctx, wasi_builder);
 
+    // build the WasiCtx object
     wasi_builder.build()
 }
 
-fn build_stdin_pipe() -> ReadPipe<Cursor<Vec<u8>>> {
-    let wasm_runtime_config = WASM_RUNTIME_CONFIG.read()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on read()");
 
-    ReadPipe::from(wasm_runtime_config.wasi_stdin.clone())
-}
-
-
-fn build_stdout_pipe() -> WritePipe<Vec<u8>> {
-    let stdout_mutex = STDOUT_BUFFER_RWLOCK.write()
-        .expect("ERROR! Poisoned RwLock STDOUT_BUFFER_RWLOCK on write()");
-    
-    WritePipe::from_shared((*stdout_mutex).clone())
-}
-
-
-fn build_wasi_args() -> Vec<String> {
-    let wasm_runtime_config = WASM_RUNTIME_CONFIG.read()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on read()");
-
-    let filename = wasm_runtime_config.file.clone();
-    let mut args = wasm_runtime_config.wasi_args.clone();
-
-    args.insert(0, filename); // adding wasm filename as args[0]
-
-    args
-}
-
-
-fn build_wasi_envs() -> Vec<(String, String)> {
-    let envs = WASM_RUNTIME_CONFIG.read()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on read()")
-        .wasi_envs
-        .clone();
-        
-    envs
-}
-
-
-fn add_wasi_preopen_dirs(mut wasi_builder: WasiCtxBuilder) -> WasiCtxBuilder{
-
-    for (map, dir) in collect_preopen_dirs()
+// helper function for preopen dirs
+fn add_wasi_preopen_dirs(wasm_executionctx: &WasmExecutionCtx, mut wasi_builder: WasiCtxBuilder) -> WasiCtxBuilder {
+    for (map, dir) in collect_preopen_dirs(wasm_executionctx)
         .expect("ERROR! Couldn't collect preopen directories!")
         .into_iter()
     {
@@ -86,15 +59,12 @@ fn add_wasi_preopen_dirs(mut wasi_builder: WasiCtxBuilder) -> WasiCtxBuilder{
     wasi_builder
 }
 
-
-fn collect_preopen_dirs() -> Result<Vec<(String, Dir)>> {
+// helper function to help collecting preopen dirs checking authorized access
+fn collect_preopen_dirs(wasm_executionctx: &WasmExecutionCtx) -> Result<Vec<(String, Dir)>> {
     let mut preopen_dirs = Vec::new();
 
-    let wasm_runtime_config = WASM_RUNTIME_CONFIG.read()
-        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIG on read()");
-
-    let dirs = &wasm_runtime_config.wasi_dirs;
-    let map_dirs = &wasm_runtime_config.wasi_mapdirs;
+    let dirs = wasm_executionctx.wasi_dirs.clone();
+    let map_dirs = wasm_executionctx.wasi_mapdirs.clone();
 
     // collect preopen directories (ie: --dir /tmp)
     for dir in dirs.iter() {
