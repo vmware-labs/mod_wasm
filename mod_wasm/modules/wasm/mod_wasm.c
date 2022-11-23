@@ -44,39 +44,6 @@
   */
 #define CONFIG_HTTP_REQUEST_BODY_MAX 16384
 
-/**
-  * Maximum number of arguments specified in the static configuration.
-  *
-  * If the user tries to set more arguments on the Apache
-  * configuration, this will raise an error. The main reason behind
-  * this limitation is to avoid performing reallocations.
-  *
-  * TODO: remove this limitation and reallocate as more arguments are defined.
-  */
-#define CONFIG_DEFINED_ARGS_MAX 32
-
-/**
-  * Maximum number of environment variables specified in the static configuration.
-  *
-  * If the user tries to set more environment variables on the Apache
-  * configuration, this will raise an error. The main reason behind
-  * this limitation is to avoid performing reallocations.
-  *
-  * TODO: remove this limitation and reallocate as more environment
-  * variables are defined.
-  */
-#define CONFIG_DEFINED_ENVVARS_MAX 32
-
-typedef struct configArg {
-  const char *arg;
-} configArg;
-
-typedef struct configEnvVar {
-  const char *key;
-  const char *value;
-} configEnvVar;
-
-
 /*
  * Configuration record. Used for both per-directory and per-server
  * configuration data.
@@ -107,11 +74,6 @@ typedef struct x_cfg {
     int bWasmEnableCGI;                                      /* Boolean: whether this module interfaces as if it was a CGI script */
     char *trace;                                             /* Pointer to trace string. */
     char *loc;                                               /* Location to which this record applies. */
-
-    configEnvVar *configEnvVars[CONFIG_DEFINED_ENVVARS_MAX]; /* Environment variables set in the static configuration */
-    int configEnvVarCount;                                   /* Count of environment variables set in the static configuration */
-    configArg *configArgs[CONFIG_DEFINED_ARGS_MAX];          /* Arguments set in the static configuration */
-    int configArgCount;                                      /* Count of arguments set in the static configuration */
 } x_cfg;
 
 /*
@@ -170,8 +132,6 @@ static void *create_dir_config(apr_pool_t *p, char *context)
     cfg->local = 0;
     cfg->congenital = 0;
     cfg->bWasmEnableCGI = 0;
-    cfg->configEnvVarCount = 0;
-    cfg->configArgCount = 0;
     cfg->cmode = CONFIG_MODE_DIRECTORY;
     /*
      * Finally, add our trace to the callback list.
