@@ -104,7 +104,7 @@ typedef struct x_cfg {
                                                               * here?
                                                               */
     int congenital;                                          /* Boolean: did we inherit an "Example"? */
-    int bEnableCGI;                                          /* Boolean: whether this module interfaces as if it was a CGI script */
+    int bWasmEnableCGI;                                      /* Boolean: whether this module interfaces as if it was a CGI script */
     char *trace;                                             /* Pointer to trace string. */
     char *loc;                                               /* Location to which this record applies. */
 
@@ -169,7 +169,7 @@ static void *create_dir_config(apr_pool_t *p, char *context)
      */
     cfg->local = 0;
     cfg->congenital = 0;
-    cfg->bEnableCGI = 0;
+    cfg->bWasmEnableCGI = 0;
     cfg->configEnvVarCount = 0;
     cfg->configArgCount = 0;
     cfg->cmode = CONFIG_MODE_DIRECTORY;
@@ -207,7 +207,7 @@ static void *create_server_config(apr_pool_t *p, server_rec *s)
     cfg = (x_cfg *) apr_pcalloc(p, sizeof(x_cfg));
     cfg->local = 0;
     cfg->congenital = 0;
-    cfg->bEnableCGI = 0;
+    cfg->bWasmEnableCGI = 0;
     cfg->cmode = CONFIG_MODE_SERVER;
     /*
      * Note that we were called in the trace list.
@@ -215,6 +215,10 @@ static void *create_server_config(apr_pool_t *p, server_rec *s)
     sname = (sname != NULL) ? sname : "";
     cfg->loc = apr_pstrcat(p, "SVR(", sname, ")", NULL);
     trace_nocontext(NULL, __FILE__, __LINE__, sname);
+
+    // creates a new Wasm config for the current context
+    wasm_config_new(cfg->loc);
+
     return (void *) cfg;
 }
 
@@ -226,25 +230,6 @@ static int _wasm_executionctx_env_add(void* context, const char *key, const char
         trace_nocontext(NULL, __FILE__, __LINE__, "_wasm_executionctx_env_add() - ERROR! Couldn't add env variable to Wasm execution context!");
 
     return 1;
-}
-
-// Populates the runtime with the arguments defined in the static
-// configuration.
-static void populate_runtime_with_config_defined_args(x_cfg *cfg)
-{
-    for (int i = 0; i < cfg->configArgCount; ++i) {
-        wasm_config_add_arg(cfg->configArgs[i]->arg);
-    }
-}
-
-// Populates the runtime with the environment variables defined in the
-// static configuration.
-static void populate_runtime_with_config_defined_envs(x_cfg *cfg)
-{
-    for (int i = 0; i < cfg->configEnvVarCount; ++i) {
-        configEnvVar *envVar = cfg->configEnvVars[i];
-        wasm_config_add_env(envVar->key, envVar->value);
-    }
 }
 
 /*
@@ -267,7 +252,6 @@ static int read_http_request_body(request_rec *r, const char **rbuf, apr_off_t *
     {
         return rc;
     }
-
 
     // can we read or abort?
     if ( ap_should_client_block(r) )
@@ -316,48 +300,34 @@ static int content_handler(request_rec *r)
         return OK;
     }
 
+    // get specific configuration for the given directory/location
     x_cfg *dcfg = ap_get_module_config(r->per_dir_config, &wasm_module);
 
-    // Reset initial state: to be revised with multiple
-    // workers/threads.
-    //
-    // This reset to initial state is crucial when the module is
-    // behaving as a CGI module, because arguments and environnent
-    // variables might be set depending on the data of the
-    // request. However, the user might have also added some static
-    // arguments and environment variables to the Apache
-    // configuration.
-    wasm_config_clear_args();
-    wasm_config_clear_envs();
-    populate_runtime_with_config_defined_args(dcfg);
-    populate_runtime_with_config_defined_envs(dcfg);
+    // creates a new Wasm execution context
+    const char* exec_ctx_id = wasm_executionctx_from_config(dcfg->loc);
 
-    if (dcfg->bEnableCGI) {
-      // On CGI mode, we set the request headers as environment
-      // variables with an HTTP_ prefix.
+    if (dcfg->bWasmEnableCGI) {
+      // On CGI mode, we set the request headers as environment variables with an HTTP_ prefix.
       ap_add_common_vars(r);
       ap_add_cgi_vars(r);
       apr_table_do(_wasm_executionctx_env_add, (void*)exec_ctx_id, r->subprocess_env, NULL);
 
-      // read request body and store it as WASI Stdin
+      // read HTTP Request body and set it as stdin for the Wasm module
       apr_off_t body_size = 0;
-      const char* body_buffer;
-
+      const char* body_buffer = NULL;
       if ( read_http_request_body(r, &body_buffer, &body_size) != OK ) {
-        trace_nocontext(NULL, __FILE__, __LINE__, "content_handler() - ERROR! Couldn't read HTTP Request Body!");
+        trace_nocontext(NULL, __FILE__, __LINE__, "content_handler() - ERROR! Couldn't read HTTP Request Body!\n");
       }
       else 
       {
         if ( wasm_executionctx_stdin_set(exec_ctx_id, body_buffer, body_size) != OK )
-            trace_nocontext(NULL, __FILE__, __LINE__, "content_handler() - ERROR! Couldn't set HTTP Request Body as stdin!");
+            trace_nocontext(NULL, __FILE__, __LINE__, "content_handler() - ERROR! Couldn't set HTTP Request Body as stdin!\n");
       }
     }
-
-
     // run Wasm module
-    const char* module_response = wasm_runtime_run_module();
+    const char* module_response = wasm_executionctx_run(exec_ctx_id);
 
-    if (dcfg->bEnableCGI) {
+    if (dcfg->bWasmEnableCGI) {
       // Retrieve the CGI variables and feed our own response with
       // them; write the response from the module as our own response;
       // which has the headers already stripped from it.
@@ -371,7 +341,11 @@ static int content_handler(request_rec *r)
       //     response does not meet request's conditions
       // In order to not give the external consumer more information
       // than what is needed, map all responses to a 500 error.
+
       if (ret != 0 && ret != HTTP_OK) {
+        if (r->content_type == NULL)
+            trace_nocontext(NULL, __FILE__, __LINE__, "ERROR! In WasmEnableCGI mode, HTTP headers are expected (i.e.: \"Content-type: text/html\n\n\")");
+
         wasm_return_const_char_ownership(module_response);
         return HTTP_INTERNAL_SERVER_ERROR;
       }
@@ -431,18 +405,18 @@ static void register_hooks(apr_pool_t *p)
 }
 
 
-#define WASM_DIRECTIVE_WASMMODULE "WasmModule"
-#define WASM_DIRECTIVE_WASMARG    "WasmArg"
-#define WASM_DIRECTIVE_WASMENV    "WasmEnv"
-#define WASM_DIRECTIVE_WASMDIR    "WasmDir"
-#define WASM_DIRECTIVE_WASMMAPDIR "WasmMapDir"
-#define WASM_DIRECTIVE_ENABLECGI  "WasmEnableCGI"
+#define WASM_DIRECTIVE_WASMMODULE     "WasmModule"
+#define WASM_DIRECTIVE_WASMARG        "WasmArg"
+#define WASM_DIRECTIVE_WASMENV        "WasmEnv"
+#define WASM_DIRECTIVE_WASMDIR        "WasmDir"
+#define WASM_DIRECTIVE_WASMMAPDIR     "WasmMapDir"
+#define WASM_DIRECTIVE_WASMENABLECGI  "WasmEnableCGI"
 
 static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_module_load(word1);
-    wasm_config_set_module(cfg->loc, word1);
+    wasm_module_load(word1);    // Wasm module is loaded and cached
+    wasm_config_set_module(cfg->loc, word1);    // Wasm config is implictly created for the current location and using the loaded module
     return NULL;
 }
 
@@ -450,15 +424,7 @@ static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, cons
 static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    if (cfg->configArgCount == CONFIG_DEFINED_ARGS_MAX) {
-      return apr_psprintf(cmd->pool, "WasmArg limit reached in the httpd configuration (maximum is %d)", CONFIG_DEFINED_ARGS_MAX);
-    }
-    configArg *arg = malloc(sizeof(configArg));
-    arg->arg = apr_pstrdup(cmd->pool, word1);
-    cfg->configArgs[cfg->configArgCount] = arg;
-    cfg->configArgCount++;
     wasm_config_arg_add(cfg->loc, word1);
-
     return NULL;
 }
 
@@ -466,16 +432,7 @@ static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const c
 static const char *wasm_directive_WasmEnv(cmd_parms *cmd, void *mconfig, const char *word1, const char *word2)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    if (cfg->configEnvVarCount == CONFIG_DEFINED_ENVVARS_MAX) {
-      return apr_psprintf(cmd->pool, "WasmEnv limit reached in the httpd configuration (maximum is %d)", CONFIG_DEFINED_ENVVARS_MAX);
-    }
-    configEnvVar *env = malloc(sizeof(configEnvVar));
-    env->key = apr_pstrdup(cmd->pool, word1);
-    env->value = apr_pstrdup(cmd->pool, word2);
-    cfg->configEnvVars[cfg->configEnvVarCount] = env;
-    cfg->configEnvVarCount++;
     wasm_config_env_add(cfg->loc, word1, word2);
-
     return NULL;
 }
 
@@ -499,7 +456,7 @@ static const char *wasm_directive_WasmMapDir(cmd_parms *cmd, void *mconfig, cons
 static const char *wasm_directive_WasmEnableCGI(cmd_parms *cmd, void *mconfig, int arg)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    cfg->bEnableCGI = arg;
+    cfg->bWasmEnableCGI = arg;
     return NULL;
 }
 
@@ -545,7 +502,7 @@ static const command_rec directives[] =
         "Preopen Dir with Mapping for the Wasm Module"
     ),
     AP_INIT_FLAG(
-        WASM_DIRECTIVE_ENABLECGI,
+        WASM_DIRECTIVE_WASMENABLECGI,
         wasm_directive_WasmEnableCGI,
         NULL,
         OR_OPTIONS,
