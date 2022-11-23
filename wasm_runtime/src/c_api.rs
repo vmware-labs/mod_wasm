@@ -43,7 +43,7 @@ pub extern "C" fn wasm_module_load(path: *const c_char) -> c_int {
     match WasmModule::load_from_file(path_str) {
         Ok(_) => 0,
         Err(e) => {
-            eprintln!("C-API: Couldn't load Wasm module at \"{}\": {}", path_str, e);
+            eprintln!("ERROR! C-API: Couldn't load Wasm module at \"{}\": {}", path_str, e);
             -1
         }
     }
@@ -73,7 +73,7 @@ pub extern "C" fn wasm_config_new(config_id: *const c_char) -> c_int {
     match WasmConfig::new(config_id_str) {
         Ok(_) => 0,
         Err(e) => {
-            eprintln!("C-API: Couldn't create Wasm Config \"{}\": {}", config_id_str, e);
+            eprintln!("ERROR! C-API: Couldn't create Wasm Config \"{}\": {}", config_id_str, e);
             -1
         }
     }
@@ -103,7 +103,7 @@ pub extern "C" fn wasm_config_set_module(config_id: *const c_char, module_id: *c
     match WasmConfig::set_wasm_module_for_config(config_id_str, module_id_str) {
         Ok(_) => 0,
         Err(e) => {
-            eprintln!("C-API: Couldn't set Wasm module \"{}\" for Wasm Config \"{}\": {}", module_id_str, config_id_str, e);
+            eprintln!("ERROR! C-API: Couldn't set Wasm module \"{}\" for Wasm Config \"{}\": {}", module_id_str, config_id_str, e);
             -1
         }
     }
@@ -134,7 +134,7 @@ pub extern "C" fn wasm_config_arg_add(config_id: *const c_char, arg: *const c_ch
     match WasmConfig::add_wasi_arg_for_config(config_id_str, arg_str) {
         Ok(_) => 0,
         Err(e) => {
-            eprintln!("C-API: Couldn't add arg \"{}\" for Wasm config \"{}\": {}",  arg_str, config_id_str, e);
+            eprintln!("ERROR! C-API: Couldn't add arg \"{}\" for Wasm config \"{}\": {}",  arg_str, config_id_str, e);
             -1
         }
     }
@@ -166,7 +166,7 @@ pub extern "C" fn wasm_config_env_add(config_id: *const c_char, env: *const c_ch
     match WasmConfig::add_wasi_env_for_config(config_id_str, env_str, value_str) {
         Ok(_) => 0,
         Err(e) => {
-            eprintln!("C-API: Couldn't add env \"{}\" for Wasm config \"{}\": {}",  env_str, config_id_str, e);
+            eprintln!("ERROR! C-API: Couldn't add env \"{}\" for Wasm config \"{}\": {}",  env_str, config_id_str, e);
             -1
         }
     }
@@ -195,7 +195,7 @@ pub extern "C" fn wasm_config_dir_add(config_id: *const c_char, dir: *const c_ch
     match WasmConfig::add_wasi_dir_for_config(config_id_str, dir_str) {
         Ok(_) => 0,
         Err(e) => {
-            eprintln!("C-API: Couldn't add dir \"{}\" for Wasm config \"{}\": {}",  dir_str, config_id_str, e);
+            eprintln!("ERROR! C-API: Couldn't add dir \"{}\" for Wasm config \"{}\": {}",  dir_str, config_id_str, e);
             -1
         }
     }    
@@ -226,7 +226,7 @@ pub extern "C" fn wasm_config_mapdir_add(config_id: *const c_char, map: *const c
     match WasmConfig::add_wasi_mapdir_for_config(config_id_str, map_str, dir_str) {
         Ok(_) => 0,
         Err(e) => {
-            eprintln!("C-API: Couldn't add mapdir \"{}\" \"{}\" for Wasm config \"{}\": {}", map_str, dir_str, config_id_str, e);
+            eprintln!("ERROR! C-API: Couldn't add mapdir \"{}\" \"{}\" for Wasm config \"{}\": {}", map_str, dir_str, config_id_str, e);
             -1
         }
     }  
@@ -251,7 +251,7 @@ pub extern "C" fn wasm_config_mapdir_add(config_id: *const c_char, map: *const c
 /// ```
 /// const char* exec_ctx_id = wasm_executionctx_from_config("WordPress");
 /// ...
-/// // do some work with exec_ctx_id
+/// // do some work with `exec_ctx_id`
 /// ...
 /// wasm_executionctx_deallocate(exec_ctx_id);
 /// wasm_return_const_char_ownership(exec_ctx_id);
@@ -263,7 +263,7 @@ pub extern "C" fn wasm_executionctx_from_config(config_id: *const c_char) -> *co
     let result = match WasmExecutionCtx::from_config(config_id_str) {
         Ok(s) => s,
         Err(e) => {
-            let error_msg = format!("ERROR: C-API: Can't build new Wasm execution context from Wasm config: \'{}\'! {:?}", config_id_str, e);
+            let error_msg = format!("ERROR! C-API: Can't build new Wasm execution context from Wasm config: \'{}\'! {:?}", config_id_str, e);
             eprintln!("{}", error_msg);
             error_msg
         }
@@ -296,7 +296,7 @@ pub extern "C" fn wasm_executionctx_deallocate(executionctx_id: *const c_char) -
     match WasmExecutionCtx::deallocate(executionctx_id_str) {
         Ok(_) => 0,
         Err(e) => {
-            eprintln!("C-API: Couldn't deallocate Wasm execution context \"{}\": {}", executionctx_id_str, e);
+            eprintln!("ERROR! C-API: Couldn't deallocate Wasm execution context \"{}\": {}", executionctx_id_str, e);
             -1
         }
     } 
@@ -327,7 +327,7 @@ pub extern "C" fn wasm_executionctx_env_add(executionctx_id: *const c_char, env:
     match WasmExecutionCtx::add_wasi_env_for_executionctx(executionctx_id_str, env_str, value_str) {
         Ok(_) => 0,
         Err(e) => {
-            eprintln!("C-API: Couldn't add env \"{}\"=\"{}\" for Wasm execution context \"{}\": {}", env_str, value_str, executionctx_id_str, e);
+            eprintln!("ERROR! C-API: Couldn't add env \"{}\"=\"{}\" for Wasm execution context \"{}\": {}", env_str, value_str, executionctx_id_str, e);
             -1
         }
     } 
@@ -359,7 +359,7 @@ pub extern "C" fn wasm_executionctx_stdin_set(executionctx_id: *const c_char, bu
     match WasmExecutionCtx::set_wasi_stdin_for_executionctx(executionctx_id_str, stdin_buffer) {
         Ok(_) => 0,
         Err(e) => {
-            eprintln!("C-API: Couldn't set stdin for Wasm execution context \"{}\": {}", executionctx_id_str, e);
+            eprintln!("ERROR! C-API: Couldn't set stdin for Wasm execution context \"{}\": {}", executionctx_id_str, e);
             -1
         }
     } 
@@ -376,7 +376,7 @@ pub extern "C" fn wasm_runtime_run_module() -> *const c_char {
     let result = match run_module() {
         Ok(s) => s,
         Err(e) => {
-            let error_msg = format!("ERROR: C-API: Can't run Wasm module! {:?}", e);
+            let error_msg = format!("ERROR: C-API: Can't run Wasm execution context \'{}\'! {:?}", executionctx_id_str, e);
             eprintln!("{}", error_msg);
             error_msg
         }
