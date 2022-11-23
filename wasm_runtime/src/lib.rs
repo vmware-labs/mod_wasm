@@ -12,6 +12,5 @@ mod config;
 mod execution_ctx;
 mod wasm_engine;
 mod wasi_context;
-mod stdio_buffers;
 mod ffi_utils;
 mod c_api;

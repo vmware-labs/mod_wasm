@@ -13,7 +13,6 @@ use crate::ffi_utils::*;
 use crate::module::WasmModule;
 use crate::config::WasmConfig;
 use crate::execution_ctx::WasmExecutionCtx;
-use crate::wasm_engine::run_module;
 
 
 /// Load a Wasm Module from disk.
@@ -366,15 +365,34 @@ pub extern "C" fn wasm_executionctx_stdin_set(executionctx_id: *const c_char, bu
 }
 
 
-/// Run the Wasm module
+/// Run the given Wasm execution context
 ///
-/// Returns a string with the stdout from the module if execution was succesfuly.
+/// Returns a string with the stdout from the Wasm module if execution was succesfuly.
 /// Otherwise, trace the error and returns a string explaining the error.
 ///
+/// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+/// So `executionctx_id` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+/// In addition, `executionctx_id` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+/// 
+/// Finally, the returned C string's containing the Wasm module stdout is owneed by Rust.
+/// So, in order to avoid leaking memory, C world must invoke `wasm_return_const_char_ownership()`
+/// when the Wasm module stdout is not needed anymore.
+///
+/// # Examples (C Code)
+///
+/// ```
+/// const char* module_output = wasm_executionctx_run("12AB34DC");
+/// ...
+/// // do some work with `module_output`
+/// ...
+/// wasm_return_const_char_ownership(module_output);
+/// ```
 #[no_mangle]
-pub extern "C" fn wasm_runtime_run_module() -> *const c_char {
-    let result = match run_module() {
-        Ok(s) => s,
+pub extern "C" fn wasm_executionctx_run(executionctx_id: *const c_char) -> *const c_char {
+    let executionctx_id_str = const_c_char_to_str(executionctx_id);
+
+    let result = match WasmExecutionCtx::run(executionctx_id_str) {
+        Ok(output) => output,
         Err(e) => {
             let error_msg = format!("ERROR: C-API: Can't run Wasm execution context \'{}\'! {:?}", executionctx_id_str, e);
             eprintln!("{}", error_msg);

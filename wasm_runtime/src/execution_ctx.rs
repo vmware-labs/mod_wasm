@@ -7,13 +7,16 @@
 //
 // Struct to store the Wasm Execution Context
 
-use crate::config::WASM_RUNTIME_CONFIGS;
-
 use std::collections::HashMap;
-use std::sync::RwLock;
+use std::sync::{Arc,RwLock};
 
 use rand::Rng;
 use once_cell::sync::Lazy;
+use anyhow::Result;
+
+use crate::config::WASM_RUNTIME_CONFIGS;
+use crate::wasm_engine;
+
 
 pub struct WasmExecutionCtx {
     pub id:           String,
@@ -24,11 +27,12 @@ pub struct WasmExecutionCtx {
     pub wasi_dirs:    Vec<String>,
     pub wasi_mapdirs: Vec<(String, String)>,
     pub wasi_stdin:   Vec<u8>,
+    pub wasi_stdout:  Arc<RwLock<Vec<u8>>>,
 }
 
 impl WasmExecutionCtx {
     /// Create a new Execution Context 
-    //
+    ///
     /// Returns Result<String, String>, with the ID for the new execution context.
     /// Or in case of invalid `config_id`, it returns a String explaing the error.
     /// 
@@ -64,6 +68,7 @@ impl WasmExecutionCtx {
             wasi_dirs:    wasm_config.wasi_dirs.clone(),
             wasi_mapdirs: wasm_config.wasi_mapdirs.clone(),
             wasi_stdin:   Vec::new(),
+            wasi_stdout:  Arc::new(RwLock::new(Vec::new())),
         };
 
         // insert created WasmExecutionCtx object into the HashMap
@@ -146,11 +151,43 @@ impl WasmExecutionCtx {
         Ok(())
     }
 
-
-    /// Helper functon to generate random hex IDs for the given length
+    /// Run the given Execution Context 
     ///
-    /// Returns String with the generated identifier.
-    ///  
+    /// It checks for wrong `executionctx_id`.
+    /// Returns Result<String, String>, with the contents of stdout.
+    /// In case something goes wrong (including invalid `conexecutionctx_id`), it returns a String explaing the error.
+    /// 
+    pub fn run(executionctx_id: &str) -> Result<String, String> {
+
+        // get read access to the WasmExecutionCtx HashMap
+        let executionctxs = WASM_RUNTIME_EXECUTIONCTXS.read()
+            .expect("ERROR! Poisoned RwLock WASM_RUNTIME_EXECUTIONCTXS on read()");
+
+        // get the given WasmExecutionCtx object
+        let wasm_executionctx = match executionctxs.get(executionctx_id) {
+            Some(exectx) => exectx,
+            None => {
+                let error_msg = format!("Wasm execution context \'{}\' not created previously!", executionctx_id);
+                return Err(error_msg); 
+            }
+        };
+        
+        // invoke "_start" function for the given Wasm execution context
+        if let Err(e) = wasm_engine::invoke_wasm_function(wasm_executionctx, "_start") {
+            return Err(e);
+        }
+
+        // read stdout from the Wasm execution context and return it
+        match Self::read_stdout(wasm_executionctx) {
+            Ok(output) => Ok(output),
+            Err(e) => Err(e),
+        }
+    }
+
+    // Helper function to generate random hex IDs for the given length
+    //
+    // Returns String with the generated identifier.
+    //  
     fn generate_random_hex_id(len: usize) -> String {
         const CHARSET: &[u8] = b"0123456789ABCDEF"; // only hex digits
         let mut rng = rand::thread_rng();
@@ -163,6 +200,26 @@ impl WasmExecutionCtx {
             .collect();
 
         id
+    }
+
+    // Helper function to read stdout from the Wasm execution context
+    //  
+    // Returns Result<String, String> with the succesfully converted stdtout, or a String explaining the error if failure.
+    //
+    fn read_stdout(wasm_executionctx: &WasmExecutionCtx) -> Result<String, String> {
+        let stdout_buf = wasm_executionctx.wasi_stdout.read()
+            .expect("ERROR! Poisoned RwLock stdout_buf on read()");
+
+        // read stdout
+        let out_string = match String::from_utf8((*stdout_buf).clone()) {
+            Ok(s) => s,
+            Err(e) => {
+                let error_msg = format!("ERROR! Can't convert stdout to UTF-8 string! {}", e);
+                return Err(error_msg);
+            }
+        };
+    
+        Ok(out_string)
     }
 }
 

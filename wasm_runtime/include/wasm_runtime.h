@@ -175,7 +175,7 @@ int wasm_config_mapdir_add(const char *config_id,
  * ```
  * const char* exec_ctx_id = wasm_executionctx_from_config("WordPress");
  * ...
- * // do some work with exec_ctx_id
+ * // do some work with `exec_ctx_id`
  * ...
  * wasm_executionctx_deallocate(exec_ctx_id);
  * wasm_return_const_char_ownership(exec_ctx_id);
@@ -249,13 +249,30 @@ int wasm_executionctx_stdin_set(const char *executionctx_id,
                                 uintptr_t buffer_size);
 
 /**
- * Run the Wasm module
+ * Run the given Wasm execution context
  *
- * Returns a string with the stdout from the module if execution was succesfuly.
+ * Returns a string with the stdout from the Wasm module if execution was succesfuly.
  * Otherwise, trace the error and returns a string explaining the error.
  *
+ * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+ * So `executionctx_id` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ * In addition, `executionctx_id` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+ *
+ * Finally, the returned C string's containing the Wasm module stdout is owneed by Rust.
+ * So, in order to avoid leaking memory, C world must invoke `wasm_return_const_char_ownership()`
+ * when the Wasm module stdout is not needed anymore.
+ *
+ * # Examples (C Code)
+ *
+ * ```
+ * const char* module_output = wasm_executionctx_run("12AB34DC");
+ * ...
+ * // do some work with `module_output`
+ * ...
+ * wasm_return_const_char_ownership(module_output);
+ * ```
  */
-const char *wasm_runtime_run_module(void);
+const char *wasm_executionctx_run(const char *executionctx_id);
 
 /**
  * Returns raw pointer's ownership
