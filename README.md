@@ -46,29 +46,42 @@ The **mod_wasm** project is composed by two different libraries:
 
 ![alt Architecture](https://raw.githubusercontent.com/vmware-labs/mod_wasm/main/docs/slides/architecture.png)
 
+### Apache Configuration
+
+To enable **mod_wasm** in Apache, simply define your `<Location>` with the `wasm-handler` and the file path to the Wasm binary in `httpd.conf`:
+
+```conf
+LoadModule wasm_module modules/mod_wasm.so
+
+<Location /hello-wasm>
+  SetHandler wasm-handler
+  WasmModule /var/www/modules/hello_wasm.wasm
+</Location>
+```
+
+**mod_wasm** supports multiple `<Location>` definitions, each of them with its own configuration. In addition, multiple configurations can share the same .wasm file. **mod_wasm** will automatically cache Wasm modules and use only one instance on memory.
 
 ### New Directives
 
-To setup and manage WebAssembly binaries, **mod_wasm** offers new directives to the `httpd.conf` configuration file:
+To setup and manage WebAssembly binaries and their [WASI](https://wasi.dev/) contexts, **mod_wasm** offers new directives to the `httpd.conf` configuration file:
 
-| Directive       | Description |
-| --------------- | ----------- |
-| `WasmRoot`      | Set the root directory for Wasm modules. |
-| `WasmModule`    | Set the Wasm module file name. |
-| `WasmDir`       | Pre-open a host directory for the Wasm context. |
-| `WasmMapDir`    | Pre-open a host directory for the Wasm context and mount into a given directory. |
-| `WasmArg`       | Set an argument to be passed to the Wasm module context. |
-| `WasmEnv`       | Set an environment variable to be passed to the Wasm module context. |
-| `WasmEnableCGI` | Enable/Disable CGI emulation mode for HTTP requests. |
+| Directive                 | Description |
+| ------------------------- | ----------- |
+| `WasmModule <path>`       | Specifies the Wasm module file path. |
+| `WasmDir <dir>`           | Pre-open a host directory for the Wasm context. |
+| `WasmMapDir <map> <dir>`  | Pre-open a host directory for the Wasm context and mount into a mapping directory. |
+| `WasmArg <arg>`           | Set an argument to be passed to the Wasm module context. |
+| `WasmEnv <env> <value>`   | Set an environment variable to be passed to the Wasm module context. |
+| `WasmEnableCGI {On\|Off}` | Enable/Disable CGI emulation mode. Default is `Off`. |
 
 
 ### Workflow
 
 **mod_wasm** plays a role in two different stages of the Apache Server workflow:
-1. The different `WasmXXX` directives are read from `httpd.conf` during the boot up sequence. Once the configuration if fully processed, mod_wasm requests to the Wasm runtime to start loading the Wasm binaries. This is by far the most expensive operation and that is why it is executed only once during the Apache boot up sequence. When completed, the Apache Sever is ready to response to incoming HTTP requests.
+1. The different `WasmXXX` directives are read from `httpd.conf` during the boot up sequence. When a `WasmModule` directive is found, the Wasm runtime tries to load the given Wasm binary from disk into memory. This is an expensive operation so that is why it is executed only once during the Apache boot up sequence. In addition, a Wasm modules cache is in place, so the same Wasm module can be shared among different configuration with only one instance loaded into memory. Once all Wasm binaries are loaded, the Apache Sever is ready to response to incoming HTTP requests.
 2. For each HTTP request, mod_wasm builds the WASI context for the already-loaded Wasm binary. Next, the Wasm module is instantiated and the entry point is executed. The `stdout` from the Wasm module is redirected to the HTTP response, and the `stderr` is appended to Apache Server's trace (usually at `<httpd_dir>/dist/logs/error_log`). 
 
-**mod_wasm** also offers the ability to build a specific execution context per HTTP request. When setting up `WasmEnableCGI On`, mod_wasm will pass HTTP headers as environtment variables to the Wasm module (they will be prefixed as `HTTP_`). In addition, URL parameters are also passed in the environment variable `QUERY_STRING`.
+**mod_wasm** also offers the ability to build a specific execution context per HTTP request. When setting up `WasmEnableCGI On`, mod_wasm will pass the HTTP headers as environtment variables to the Wasm module (they will be prefixed as `HTTP_`). Also, URL parameters are passed in the environment variable `QUERY_STRING`. And finally, the HTTP request body is passed as the *stdin* to the module. 
 
 ![alt Workflow](https://raw.githubusercontent.com/vmware-labs/mod_wasm/main/docs/slides/workflow.png)
 
