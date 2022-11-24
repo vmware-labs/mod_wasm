@@ -62,14 +62,14 @@ pub extern "C" fn wasm_module_load(path: *const c_char) -> c_int {
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_config_new("Drupal", "/var/www/php8.wasm");
-/// wasm_config_new("WordPress", "/var/www/php8.wasm");
+/// wasm_config_create("Drupal", "/var/www/php8.wasm");
+/// wasm_config_create("WordPress", "/var/www/php8.wasm");
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_config_new(config_id: *const c_char) -> c_int {
+pub extern "C" fn wasm_config_create(config_id: *const c_char) -> c_int {
     let config_id_str = const_c_char_to_str(config_id);
 
-    match WasmConfig::new(config_id_str) {
+    match WasmConfig::create(config_id_str) {
         Ok(_) => 0,
         Err(e) => {
             eprintln!("ERROR! C-API: Couldn't create Wasm Config \"{}\": {}", config_id_str, e);
@@ -248,7 +248,7 @@ pub extern "C" fn wasm_config_mapdir_add(config_id: *const c_char, map: *const c
 /// # Examples (C Code)
 ///
 /// ```
-/// const char* exec_ctx_id = wasm_executionctx_from_config("WordPress");
+/// const char* exec_ctx_id = wasm_executionctx_create_from_config("WordPress");
 /// ...
 /// // do some work with `exec_ctx_id`
 /// ...
@@ -256,10 +256,10 @@ pub extern "C" fn wasm_config_mapdir_add(config_id: *const c_char, map: *const c
 /// wasm_return_const_char_ownership(exec_ctx_id);
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_executionctx_from_config(config_id: *const c_char) -> *const c_char {
+pub extern "C" fn wasm_executionctx_create_from_config(config_id: *const c_char) -> *const c_char {
     let config_id_str = const_c_char_to_str(config_id);
 
-    let result = match WasmExecutionCtx::from_config(config_id_str) {
+    let result = match WasmExecutionCtx::create_from_config(config_id_str) {
         Ok(s) => s,
         Err(e) => {
             let error_msg = format!("ERROR! C-API: Can't build new Wasm execution context from Wasm config: \'{}\'! {:?}", config_id_str, e);

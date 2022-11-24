@@ -21,7 +21,7 @@ pub struct WasmModule {
 }
 
 impl WasmModule {
-    /// Load a Wasm Module from file into memory. The route serves as module ID.
+    /// Load a Wasm Module from file into memory and store it in the WasmModule HashMap (the route serves as module ID)
     ///
     /// It checks for path or wrong file format.
     /// Returns Result<(), String>, so that in case of error the String will contain the reason.

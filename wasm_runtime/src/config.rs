@@ -25,12 +25,12 @@ pub struct WasmConfig {
 }
 
 impl WasmConfig {
-    /// Create a new configuration 
+    /// Create a new Wasm configuration (WasmConfig) and store it in the WasmConfig HashMap
     ///
     /// It checks for duplicated `config_id`.
     /// Returns Result<(), String>, so that in case of error the String will contain the reason.
     /// 
-    pub fn new(config_id: &str) -> Result<(), String> {
+    pub fn create(config_id: &str) -> Result<(), String> {
                 
         // get write access to the WasmConfig HashMap
         let mut configs = WASM_RUNTIME_CONFIGS.write()

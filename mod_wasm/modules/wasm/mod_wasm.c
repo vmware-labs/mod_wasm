@@ -142,7 +142,7 @@ static void *create_dir_config(apr_pool_t *p, char *context)
                         (void*) p, context);
 
     // creates a new Wasm config for the current context
-    wasm_config_new(cfg->loc);
+    wasm_config_create(cfg->loc);
 
     return (void *) cfg;
 }
@@ -177,7 +177,7 @@ static void *create_server_config(apr_pool_t *p, server_rec *s)
     trace_nocontext(NULL, __FILE__, __LINE__, sname);
 
     // creates a new Wasm config for the current context
-    wasm_config_new(cfg->loc);
+    wasm_config_create(cfg->loc);
 
     return (void *) cfg;
 }
@@ -264,7 +264,7 @@ static int content_handler(request_rec *r)
     x_cfg *dcfg = ap_get_module_config(r->per_dir_config, &wasm_module);
 
     // creates a new Wasm execution context
-    const char* exec_ctx_id = wasm_executionctx_from_config(dcfg->loc);
+    const char* exec_ctx_id = wasm_executionctx_create_from_config(dcfg->loc);
 
     if (dcfg->bWasmEnableCGI) {
       // On CGI mode, we set the request headers as environment variables with an HTTP_ prefix.

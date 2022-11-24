@@ -31,12 +31,12 @@ pub struct WasmExecutionCtx {
 }
 
 impl WasmExecutionCtx {
-    /// Create a new Execution Context 
+    /// Create a new Wasm execution context (WasmExecutionCtx) and store it in the WasmExecutionCtx HashMap
     ///
     /// Returns Result<String, String>, with the ID for the new execution context.
     /// Or in case of invalid `config_id`, it returns a String explaing the error.
     /// 
-    pub fn from_config(config_id: &str) -> Result<String, String> {
+    pub fn create_from_config(config_id: &str) -> Result<String, String> {
 
         // get write access to the WasmExecutionCtx HashMap
         let mut executionctxs = WASM_RUNTIME_EXECUTIONCTXS.write()

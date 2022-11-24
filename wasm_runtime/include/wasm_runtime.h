@@ -46,11 +46,11 @@ int wasm_module_load(const char *path);
  * # Examples (C Code)
  *
  * ```
- * wasm_config_new("Drupal", "/var/www/php8.wasm");
- * wasm_config_new("WordPress", "/var/www/php8.wasm");
+ * wasm_config_create("Drupal", "/var/www/php8.wasm");
+ * wasm_config_create("WordPress", "/var/www/php8.wasm");
  * ```
  */
-int wasm_config_new(const char *config_id);
+int wasm_config_create(const char *config_id);
 
 /**
  * Set a loaded Wasm Module to an existing Wasm Config.
@@ -173,7 +173,7 @@ int wasm_config_mapdir_add(const char *config_id,
  * # Examples (C Code)
  *
  * ```
- * const char* exec_ctx_id = wasm_executionctx_from_config("WordPress");
+ * const char* exec_ctx_id = wasm_executionctx_create_from_config("WordPress");
  * ...
  * // do some work with `exec_ctx_id`
  * ...
@@ -181,7 +181,7 @@ int wasm_config_mapdir_add(const char *config_id,
  * wasm_return_const_char_ownership(exec_ctx_id);
  * ```
  */
-const char *wasm_executionctx_from_config(const char *config_id);
+const char *wasm_executionctx_create_from_config(const char *config_id);
 
 /**
  * Deallocates the given Wasm execution context
