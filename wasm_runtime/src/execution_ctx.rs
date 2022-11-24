@@ -173,9 +173,7 @@ impl WasmExecutionCtx {
         };
         
         // invoke "_start" function for the given Wasm execution context
-        if let Err(e) = wasm_engine::invoke_wasm_function(wasm_executionctx, "_start") {
-            return Err(e);
-        }
+        wasm_engine::invoke_wasm_function(wasm_executionctx, "_start")?;
 
         // read stdout from the Wasm execution context and return it
         match Self::read_stdout(wasm_executionctx) {
