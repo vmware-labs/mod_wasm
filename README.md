@@ -50,7 +50,7 @@ The **mod_wasm** project is composed by two different libraries:
 
 To enable **mod_wasm** in Apache, simply define your `<Location>` with the `wasm-handler` and the file path to the Wasm binary in `httpd.conf`:
 
-```conf
+```apache
 LoadModule wasm_module modules/mod_wasm.so
 
 <Location /hello-wasm>
