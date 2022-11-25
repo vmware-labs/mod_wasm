@@ -43,7 +43,7 @@ pub fn const_c_char_to_str(const_c_char: *const c_char) -> &'static str {
 //      Otherwise, the CString will leak the memory used.
 //      More info at: https://doc.rust-lang.org/alloc/ffi/struct.CString.html#method.from_raw
 pub fn str_to_c_char(string: &str) -> *const c_char {
-    let cstring = match CString::new(string) {
+    let safe_cstring = match CString::new(string) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("ERROR: Can't convert String into CString due to a NULL character found in the String type! {:?}", e);
@@ -51,7 +51,7 @@ pub fn str_to_c_char(string: &str) -> *const c_char {
         }
     };
 
-    cstring.into_raw()
+    safe_cstring.into_raw()
 }
 
 

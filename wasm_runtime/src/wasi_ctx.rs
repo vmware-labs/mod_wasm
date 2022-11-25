@@ -18,7 +18,7 @@ use crate::execution_ctx::WasmExecutionCtx;
 
 /// Builds a `wasmtime_wasi::WasiCtx` for the given Wasm execution context
 ///
-pub fn build(wasm_executionctx: &WasmExecutionCtx, wasm_module: &WasmModule) -> WasiCtx {
+pub fn build(wasm_executionctx: &WasmExecutionCtx, wasm_module: &WasmModule) -> Result<WasiCtx, String> {
     let stdin_pipe = ReadPipe::from(wasm_executionctx.wasi_stdin.clone());
     let stdout_pipe = WritePipe::from_shared(wasm_executionctx.wasi_stdout.clone());
     let envs = wasm_executionctx.wasi_envs.clone();
@@ -36,31 +36,31 @@ pub fn build(wasm_executionctx: &WasmExecutionCtx, wasm_module: &WasmModule) -> 
         .stdin(Box::new(stdin_pipe))
         .stdout(Box::new(stdout_pipe))
         .inherit_stderr()
-        .args(&args).expect("ERROR! Wrong WASI args array Vector!")
-        .envs(&envs).expect("ERROR! Wrong WASI envs array of duples Vector!");
+        .args(&args).expect("FATAL! Wrong WASI args array Vector format!")
+        .envs(&envs).expect("FATAL! Wrong WASI envs array of duples Vector format!");
 
-    wasi_builder = add_wasi_preopen_dirs(wasm_executionctx, wasi_builder);
+    wasi_builder = add_wasi_preopen_dirs(wasm_executionctx, wasi_builder)?;
 
     // build the WasiCtx object
-    wasi_builder.build()
+    Ok(wasi_builder.build())
 }
 
 
 // helper function for preopen dirs
-fn add_wasi_preopen_dirs(wasm_executionctx: &WasmExecutionCtx, mut wasi_builder: WasiCtxBuilder) -> WasiCtxBuilder {
-    for (map, dir) in collect_preopen_dirs(wasm_executionctx)
-        .expect("ERROR! Couldn't collect preopen directories!")
-        .into_iter()
+fn add_wasi_preopen_dirs(wasm_executionctx: &WasmExecutionCtx, mut wasi_builder: WasiCtxBuilder) -> Result<WasiCtxBuilder, String> {
+    let collected_preopen_dirs = collect_preopen_dirs(wasm_executionctx)?;
+
+    for (map, dir) in collected_preopen_dirs
     {
         wasi_builder = wasi_builder.preopened_dir(dir, map)
             .expect("ERROR! Can't build WASI context due to preopen directories!");
     } 
 
-    wasi_builder
+    Ok(wasi_builder)
 }
 
 // helper function to help collecting preopen dirs checking authorized access
-fn collect_preopen_dirs(wasm_executionctx: &WasmExecutionCtx) -> Result<Vec<(String, Dir)>> {
+fn collect_preopen_dirs(wasm_executionctx: &WasmExecutionCtx) -> Result<Vec<(String, Dir)>, String> {
     let mut preopen_dirs = Vec::new();
 
     let dirs = wasm_executionctx.wasi_dirs.clone();
@@ -73,8 +73,8 @@ fn collect_preopen_dirs(wasm_executionctx: &WasmExecutionCtx) -> Result<Vec<(Str
             match Dir::open_ambient_dir(dir, ambient_authority()) {
                 Ok(d) => d,
                 Err(e) => {
-                    eprintln!("ERROR! Failed to open host directory '{}' for preopen! {}", dir.as_str(), e);
-                    continue;
+                    let msg_err = format!("ERROR! Failed to open host directory '{}' for preopen! {}", dir.as_str(), e);
+                    return Err(msg_err);
                 }
             }
         );
@@ -88,8 +88,8 @@ fn collect_preopen_dirs(wasm_executionctx: &WasmExecutionCtx) -> Result<Vec<(Str
             match Dir::open_ambient_dir(host, ambient_authority()) {
                 Ok(d) => d,
                 Err(e) => {
-                    eprintln!("ERROR! Failed to open host directory '{}' for preopen! {}", host.as_str(), e);
-                    continue;
+                    let msg_err = format!("ERROR! Failed to open host directory '{}' for preopen with mapping to '{}'! {}", host.as_str(), map.as_str(), e);
+                    return Err(msg_err);
                 }
             }
         );

@@ -62,8 +62,16 @@ pub fn invoke_wasm_function(wasm_executionctx: &WasmExecutionCtx, function_name:
         }
     };
 
-    // build WasiCtx and Store
-    let wasi_ctx = wasi_ctx::build(wasm_executionctx, wasm_module);
+    // build WasiCtx
+    let wasi_ctx = match wasi_ctx::build(wasm_executionctx, wasm_module) {
+        Ok(ctx) => ctx,
+        Err(e) => {
+            let error_msg = format!("ERROR! Couldn't build WASI Context for \'{}\'! {}", wasm_executionctx.config_id, e);
+            return Err(error_msg); 
+        }
+    };
+
+    // build Store
     let mut store: Store<WasiCtx> = Store::new(&wasm_module.engine, wasi_ctx);
 
     // build Linker (with WASI extensions)
