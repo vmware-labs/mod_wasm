@@ -21,6 +21,7 @@ SCRIPT_DIR=$( cd -- "$(dirname -- "$0")" &> /dev/null && pwd )
 MOD_WASM_DIR=${MOD_WASM_DIR:-$(realpath "${SCRIPT_DIR}/modules/wasm")}
 WASM_RUNTIME_PATH=${WASM_RUNTIME_PATH:-$(realpath "${SCRIPT_DIR}/../wasm_runtime")}
 DIST_DIR=${DIST_DIR:-$(realpath "${SCRIPT_DIR}/../dist")}
+HTTPD_DIR=$(realpath "${SCRIPT_DIR}/../httpd")
 ARCH=$(uname -m)
 
 echo "[Deleting binaries]"
@@ -39,12 +40,11 @@ echo "[Building mod_wasm]"
 
 echo "[mod_wasm: compiling]"
 cd ${MOD_WASM_DIR}
-/usr/share/apr-1.0/build/libtool --verbose --mode=compile ${ARCH}-linux-gnu-gcc -DLINUX -D_REENTRANT -D_GNU_SOURCE \
-     -I/usr/include/apache2 \
+
+/usr/share/apr-1.0/build/libtool --verbose --mode=compile ${ARCH}-linux-gnu-gcc \
+     -I${HTTPD_DIR}/dist/include \
      $(pkg-config --cflags apr-1 apr-util-1) \
-     -I/usr/include \
-     -I/usr/include/mod_wasm \
-     -I${WASM_RUNTIME_PATH}/src \
+     -I${WASM_RUNTIME_PATH}/include \
      -shared \
      -c mod_wasm.c && touch mod_wasm.slo
 
