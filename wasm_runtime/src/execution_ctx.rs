@@ -31,7 +31,7 @@ pub struct WasmExecutionCtx {
 }
 
 impl WasmExecutionCtx {
-    /// Create a new Wasm execution context (WasmExecutionCtx) and store it in the WasmExecutionCtx HashMap
+    /// Create a new Wasm execution context (`WasmExecutionCtx`) and store it into the corresponding `HashMap`
     ///
     /// Returns Result<String, String>, with the ID for the new execution context.
     /// Or in case of invalid `config_id`, it returns a String explaing the error.

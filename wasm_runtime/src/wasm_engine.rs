@@ -63,7 +63,7 @@ pub fn invoke_wasm_function(wasm_executionctx: &WasmExecutionCtx, function_name:
     };
 
     // build WasiCtx and Store
-    let wasi_ctx = wasi_ctx::build_wasi_ctx(wasm_executionctx, wasm_module);
+    let wasi_ctx = wasi_ctx::build(wasm_executionctx, wasm_module);
     let mut store: Store<WasiCtx> = Store::new(&wasm_module.engine, wasi_ctx);
 
     // build Linker (with WASI extensions)

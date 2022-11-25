@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-//! wasi_context.rs
+//! `wasi_context.rs`
 //!
 //! 
 
@@ -16,9 +16,9 @@ use anyhow::Result;
 use crate::module::WasmModule;
 use crate::execution_ctx::WasmExecutionCtx;
 
-/// Builds a wasmtime_wasi::WasiCtx for the given Wasm execution context
+/// Builds a `wasmtime_wasi::WasiCtx` for the given Wasm execution context
 ///
-pub fn build_wasi_ctx(wasm_executionctx: &WasmExecutionCtx, wasm_module: &WasmModule) -> WasiCtx {
+pub fn build(wasm_executionctx: &WasmExecutionCtx, wasm_module: &WasmModule) -> WasiCtx {
     let stdin_pipe = ReadPipe::from(wasm_executionctx.wasi_stdin.clone());
     let stdout_pipe = WritePipe::from_shared(wasm_executionctx.wasi_stdout.clone());
     let envs = wasm_executionctx.wasi_envs.clone();
@@ -67,7 +67,7 @@ fn collect_preopen_dirs(wasm_executionctx: &WasmExecutionCtx) -> Result<Vec<(Str
     let map_dirs = wasm_executionctx.wasi_mapdirs.clone();
 
     // collect preopen directories (ie: --dir /tmp)
-    for dir in dirs.iter() {
+    for dir in &dirs {
         let preopen_dir = (
             dir.clone(), 
             match Dir::open_ambient_dir(dir, ambient_authority()) {
@@ -82,7 +82,7 @@ fn collect_preopen_dirs(wasm_executionctx: &WasmExecutionCtx) -> Result<Vec<(Str
     }
     
     // collect preopen directories with mapping (ie: --mapdir /wasmhome /home/wasm_user)
-    for (map, host) in map_dirs.iter() {
+    for (map, host) in &map_dirs {
         let preopen_mapdir = (
             map.clone(),
             match Dir::open_ambient_dir(host, ambient_authority()) {

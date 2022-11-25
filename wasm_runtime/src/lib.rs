@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-//! **wasm_runtime** is a Rust library intended to:
+//! **`wasm_runtime`** is a Rust library intended to:
 //! * Integrate with Wasm engines (such as [Wasmtime](https://github.com/bytecodealliance/wasmtime)). 
 //! * Provide a thin C API for instantiating, running, and managing Wasm modules.
 

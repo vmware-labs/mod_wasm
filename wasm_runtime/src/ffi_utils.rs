@@ -18,20 +18,20 @@ use std::slice;
 //   2) From CStr to &str
 pub fn const_c_char_to_str(const_c_char: *const c_char) -> &'static str {
     // unsafe conversion from C const char* to a safe CStr
-    let cstr = unsafe {
+    let safe_cstr = unsafe {
         CStr::from_ptr(const_c_char)
     };
 
     // safe conversion from CStr to &str
-    let str = match cstr.to_str() {
+    let str_literal = match safe_cstr.to_str() {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("ERROR: Can't parse '{:?}' due to UTF-8 encoding error! {:?}", cstr, e);
+            eprintln!("ERROR: Can't parse '{:?}' due to UTF-8 encoding error! {:?}", safe_cstr, e);
             ""
         }
     };
 
-    str
+    str_literal
 }
 
 // Coverts a Rust String slice into a null-terminated C `const char*`

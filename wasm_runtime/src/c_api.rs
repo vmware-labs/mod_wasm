@@ -9,10 +9,10 @@
 
 use std::ffi::{c_int, c_char, c_uchar};
 
-use crate::ffi_utils::*;
 use crate::module::WasmModule;
 use crate::config::WasmConfig;
 use crate::execution_ctx::WasmExecutionCtx;
+use crate::ffi_utils::{const_c_char_buffer_to_vec, const_c_char_to_str, deallocate_cstring, str_to_c_char};
 
 
 /// Load a Wasm Module from disk.

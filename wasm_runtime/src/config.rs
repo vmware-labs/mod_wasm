@@ -25,7 +25,7 @@ pub struct WasmConfig {
 }
 
 impl WasmConfig {
-    /// Create a new Wasm configuration (WasmConfig) and store it in the WasmConfig HashMap
+    /// Create a new Wasm configuration (`WasmConfig`) and store it into the corresponding `HashMap`
     ///
     /// It checks for duplicated `config_id`.
     /// Returns Result<(), String>, so that in case of error the String will contain the reason.
@@ -182,7 +182,7 @@ impl WasmConfig {
         Ok(())
     }
 
-    /// Add a WASI MapDir for an existing Wasm config
+    /// Add a WASI `MapDir` for an existing Wasm config
     ///
     /// It checks for wrong `config_id`.
     /// Returns Result<(), String>, so that in case of error the String will contain the reason.
