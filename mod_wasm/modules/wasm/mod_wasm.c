@@ -67,10 +67,6 @@ typedef struct x_cfg {
 #define CONFIG_MODE_SERVER 1
 #define CONFIG_MODE_DIRECTORY 2
 #define CONFIG_MODE_COMBO 3                                  /* Shouldn't ever happen. */
-    int local;                                               /* Boolean: "Example" directive declared
-                                                              * here?
-                                                              */
-    int congenital;                                          /* Boolean: did we inherit an "Example"? */
     int bWasmEnableCGI;                                      /* Boolean: whether this module interfaces as if it was a CGI script */
     char *trace;                                             /* Pointer to trace string. */
     char *loc;                                               /* Location to which this record applies. */
@@ -129,8 +125,6 @@ static void *create_dir_config(apr_pool_t *p, char *context)
      * Now fill in the defaults.  If there are any `parent' configuration
      * records, they'll get merged as part of a separate callback.
      */
-    cfg->local = 0;
-    cfg->congenital = 0;
     cfg->bWasmEnableCGI = 0;
     cfg->cmode = CONFIG_MODE_DIRECTORY;
     /*
@@ -142,7 +136,8 @@ static void *create_dir_config(apr_pool_t *p, char *context)
                         (void*) p, context);
 
     // creates a new Wasm config for the current context
-    wasm_config_create(cfg->loc);
+    if ( wasm_config_create(cfg->loc) != OK )
+        trace_nocontext(NULL, __FILE__, __LINE__, "wasm_config_create() - ERROR! Couldn't create Wasm config!");
 
     return (void *) cfg;
 }
@@ -165,8 +160,6 @@ static void *create_server_config(apr_pool_t *p, server_rec *s)
      * in an empty record.
      */
     cfg = (x_cfg *) apr_pcalloc(p, sizeof(x_cfg));
-    cfg->local = 0;
-    cfg->congenital = 0;
     cfg->bWasmEnableCGI = 0;
     cfg->cmode = CONFIG_MODE_SERVER;
     /*
@@ -174,10 +167,10 @@ static void *create_server_config(apr_pool_t *p, server_rec *s)
      */
     sname = (sname != NULL) ? sname : "";
     cfg->loc = apr_pstrcat(p, "SVR(", sname, ")", NULL);
-    trace_nocontext(NULL, __FILE__, __LINE__, sname);
 
     // creates a new Wasm config for the current context
-    wasm_config_create(cfg->loc);
+    if ( wasm_config_create(cfg->loc) != OK )
+        trace_nocontext(NULL, __FILE__, __LINE__, "wasm_config_create() - ERROR! Couldn't create Wasm config!");
 
     return (void *) cfg;
 }
@@ -302,7 +295,7 @@ static int content_handler(request_rec *r)
       // In order to not give the external consumer more information
       // than what is needed, map all responses to a 500 error.
 
-      if (ret != 0 && ret != HTTP_OK) {
+      if (ret != OK && ret != HTTP_OK) {
         if (r->content_type == NULL)
             trace_nocontext(NULL, __FILE__, __LINE__, "ERROR! In WasmEnableCGI mode, HTTP headers are expected (i.e.: \"Content-type: text/html\n\n\")");
 
@@ -375,8 +368,13 @@ static void register_hooks(apr_pool_t *p)
 static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_module_load(word1);    // Wasm module is loaded and cached
-    wasm_config_set_module(cfg->loc, word1);    // Wasm config is implictly created for the current location and using the loaded module
+
+    if ( wasm_module_load(word1) != OK )    // Wasm module is loaded and cached
+        trace_nocontext(NULL, __FILE__, __LINE__, "wasm_directive_WasmModule() - ERROR! Couldn't load Wasm Module!");
+
+    if ( wasm_config_set_module(cfg->loc, word1) != OK )    // Wasm config is implictly created for the current location and using the loaded module
+        trace_nocontext(NULL, __FILE__, __LINE__, "wasm_directive_WasmModule() - ERROR! Couldn't set Wasm Module to a Wasm config!");
+
     return NULL;
 }
 
@@ -384,7 +382,10 @@ static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, cons
 static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_config_arg_add(cfg->loc, word1);
+    
+    if ( wasm_config_arg_add(cfg->loc, word1) != OK )
+        trace_nocontext(NULL, __FILE__, __LINE__, "wasm_directive_WasmArg() - ERROR! Couldn't add arg!");
+
     return NULL;
 }
 
@@ -392,7 +393,10 @@ static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const c
 static const char *wasm_directive_WasmEnv(cmd_parms *cmd, void *mconfig, const char *word1, const char *word2)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_config_env_add(cfg->loc, word1, word2);
+
+    if ( wasm_config_env_add(cfg->loc, word1, word2) != OK )
+        trace_nocontext(NULL, __FILE__, __LINE__, "wasm_directive_WasmEnv() - ERROR! Couldn't add environment variable!");
+
     return NULL;
 }
 
@@ -400,7 +404,10 @@ static const char *wasm_directive_WasmEnv(cmd_parms *cmd, void *mconfig, const c
 static const char *wasm_directive_WasmDir(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_config_dir_add(cfg->loc, word1);
+
+    if ( wasm_config_dir_add(cfg->loc, word1) != OK )
+        trace_nocontext(NULL, __FILE__, __LINE__, "wasm_directive_WasmDir() - ERROR! Couldn't add preopen dir!");
+
     return NULL;
 }
 
@@ -408,7 +415,10 @@ static const char *wasm_directive_WasmDir(cmd_parms *cmd, void *mconfig, const c
 static const char *wasm_directive_WasmMapDir(cmd_parms *cmd, void *mconfig, const char *word1, const char *word2)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    wasm_config_mapdir_add(cfg->loc, word1, word2);
+
+    if ( wasm_config_mapdir_add(cfg->loc, word1, word2) != OK )
+        trace_nocontext(NULL, __FILE__, __LINE__, "wasm_directive_WasmMapDir() - ERROR! Couldn't add preopen dir with mapping!");
+
     return NULL;
 }
 

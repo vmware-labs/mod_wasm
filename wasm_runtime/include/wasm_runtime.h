@@ -46,8 +46,8 @@ int wasm_module_load(const char *path);
  * # Examples (C Code)
  *
  * ```
- * wasm_config_create("Drupal", "/var/www/php8.wasm");
- * wasm_config_create("WordPress", "/var/www/php8.wasm");
+ * wasm_config_create("Drupal");
+ * wasm_config_create("WordPress");
  * ```
  */
 int wasm_config_create(const char *config_id);

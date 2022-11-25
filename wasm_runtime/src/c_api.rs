@@ -62,8 +62,8 @@ pub extern "C" fn wasm_module_load(path: *const c_char) -> c_int {
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_config_create("Drupal", "/var/www/php8.wasm");
-/// wasm_config_create("WordPress", "/var/www/php8.wasm");
+/// wasm_config_create("Drupal");
+/// wasm_config_create("WordPress");
 /// ```
 #[no_mangle]
 pub extern "C" fn wasm_config_create(config_id: *const c_char) -> c_int {
