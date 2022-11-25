@@ -65,14 +65,14 @@ LoadModule wasm_module modules/mod_wasm.so
 
 To setup and manage WebAssembly binaries and their [WASI](https://wasi.dev/) contexts, **mod_wasm** offers new directives to the `httpd.conf` configuration file:
 
-| Directive                 | Description |
-| ------------------------- | ----------- |
-| `WasmModule <path>`       | Specifies the Wasm module file path. |
-| `WasmDir <dir>`           | Pre-open a host directory for the Wasm context. |
-| `WasmMapDir <map> <dir>`  | Pre-open a host directory for the Wasm context and mount into a mapping directory. |
-| `WasmArg <arg>`           | Set an argument to be passed to the Wasm module context. |
-| `WasmEnv <env> <value>`   | Set an environment variable to be passed to the Wasm module context. |
-| `WasmEnableCGI {On\|Off}` | Enable/Disable CGI emulation mode. Default is `Off`. |
+| Directive                      | Description |
+| ------------------------------ | ----------- |
+| `WasmModule <path>`            | Specifies the Wasm module file path. |
+| `WasmDir <dir>`                | Pre-open a host directory for the Wasm context. |
+| `WasmMapDir <map> <dir>`       | Pre-open a host directory for the Wasm context and mount into a mapping directory. |
+| `WasmArg <arg>`                | Set an argument to be passed to the Wasm module context. |
+| `WasmEnv <env> <value>`        | Set an environment variable to be passed to the Wasm module context. |
+| `WasmEnableCGI {On\|Off}`      | Enable/Disable CGI emulation mode. Default is `Off`. |
 
 
 ### Workflow
