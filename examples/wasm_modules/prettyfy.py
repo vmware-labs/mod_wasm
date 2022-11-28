@@ -13,7 +13,7 @@ print("Content-Type: text/html")
 print("")
 
 print("<!DOCTYPE html><HTML><HEAD>")
-print("<TITLE>SpaceFlare</TITLE><meta charset=\"utf-8\">")
+print("<TITLE>PrettyFy</TITLE><meta charset=\"utf-8\">")
 print("<style>body{font-family:-apple-system,BlinkMacSystemFont,avenir next,avenir,segoe ui,helvetica neue,helvetica,Cantarell,Ubuntu,roboto,noto,arial,sans-serif;background-color:#fff;margin:0}main{margin-bottom:0.1rem}header{padding:0.1rem;background:linear-gradient(60deg,#d1ebff,#99c2ff);margin-bottom:0.1rem}.content{max-width:1300px;margin:0 auto;padding:0 1rem}h1{text-align:center}h2{border-bottom:1px solid #aaa;padding-bottom:.5rem}pre{padding:0.5rem;border:1px solid #ccc;font-size:.9rem;border-radius:5px;background-color:#f6f6f6;font-family:Menlo,Consolas,Monaco,Liberation Mono,Lucida Console,monospace;white-space:pre-wrap}.var{font-weight:700}</style>")
 print("</HEAD><BODY><main>")
 print('<header><h1>💻 PrettyFy 🎨</h1></header>')
@@ -42,12 +42,16 @@ file = form.getvalue("file")
 if file:
     filepath=path+file
     print('<h2>Try opening file: \'' + filepath + '\'</h2>')
+    
+    input_stream = None
     try:
-        file = open(filepath, 'r')
+        input_stream = open(filepath, 'r')
     except Exception as e:
-        print("ERROR! " + str(e))
-    if file:
-        code = file.read()
+        print(str(e))
+        print("ERROR! " + str(e), file=sys.stderr)
+
+    if input_stream:
+        code = input_stream.read()
         lexer = get_lexer_by_name("python", stripall=True)
         style = get_style_by_name('colorful')
         formatter = HtmlFormatter(style='colorful')
