@@ -4,6 +4,63 @@
 
 -
 
+## 0.10.0 (2022/11/28)
+
+- In this version, among other improvements, we introduce two major features implementing #6, #7, and #16.
+  1. **Wasm multi-module support:**
+   
+     Now you can specify different Wasm modules to be used in different routes. For instance, now it’s possible with one-single Apache instance to load simultaneously the Wasm builds for the [PHP](https://github.com/vmware-labs/webassembly-language-runtimes/releases) and [Python](https://github.com/tiran/cpython-wasm-test/releases) interpreters (and any other languages that compile to Wasm now or in the future). 
+
+  2. **Shared Wasm modules:** 
+   
+     Now you can specify different per-route configurations to the same Wasm module. The Wasm binary is loaded in memory only once, and the different configurations are applied to the Wasm module per-HTTP request. Also, now each Wasm execution owns its own `stdout` buffer, so there are no interlocks between executions anymore.
+
+
+  Combining all together, you can now have a more flexible configuration such as: 
+
+    ```apache
+    <Location /wordpress> 
+        SetHandler wasm-handler 
+        WasmModule /var/www/modules/php7.4.32.wasm 
+        WasmDir    /tmp 
+        … 
+    </Location> 
+
+    <Location /python-app> 
+        SetHandler wasm-handler 
+        WasmModule /var/www/modules/python3.11.wasm 
+        WasmArg    /var/www/python-app/app.py 
+        … 
+    </Location> 
+
+    <Location /python-app2> 
+        SetHandler wasm-handler 
+        WasmModule /var/www/modules/python3.11.wasm 
+        WasmArg    /var/www/python-app2/app2.py 
+        … 
+    </Location> 
+    ```
+
+### `mod_wasm.so`
+- Removed the `WasmRoot` directive. Now, `WasmModule` accepts the full Wasm module *filepath*.
+- Removed legacy code:
+  - In previous versions, given the only-one Wasm module limitation, `mod_wasm.c` implemented a mechanism to reset the WASI context for each HTTP request. This is not needed anymore.
+  - Old code inherited from `mod_example_hooks.c` and not used.
+
+### `libwasm_runtime.so`
+- C-API:
+  - Reorganized functions and their names to be compliant with the new features and to be more idiomatic (🚨 breaks backwards compatibility 🚨).
+  - Removed any kind of logic different from C <---> Rust FFI data transformation.
+  - Improved error messages with more information.
+- Fixed most suggestions from `cargo clippy -- -W clippy::pedantic`.
+- Dependencies:
+  - Bump version dependencies:
+    - `wasmtime` to `3.0.0`.
+    - `once_cell` to `1.16.0`.
+  - New dependency:
+    - `rand` to `0.8.5`.
+  - Updated `cargo.lock` dependencies via `cargo update`.
+
 ## 0.8.0 (2022/11/14)
 
 - Updated documentation.
@@ -11,11 +68,11 @@
 - Added version check mechanism when building `mod_wasm.so`. Now it checks `libwasm_runtime.so` version is compatible and the minimum required.
   
 ### `mod_wasm.so`
-- Fixed directory hierarchy to be compliant with Apache Server (httpd)
+- Fixed directory hierarchy to be compliant with Apache Server (httpd).
   
 ### `libwasm_runtime.so`
 - Bump version dependencies:
-    - `wasmtime` to `2.0.2` (and other related Wasmtime crates)
+    - `wasmtime` to `2.0.2` (and other related Wasmtime crates).
 
 ## 0.7.0 (2022/11/03)
 
@@ -31,9 +88,9 @@
 
 ### `libwasm_runtime.so`
 - Bump version dependencies:
-    - `wasmtime` to `2.0.0`
-    - `anyhow` to `1.0.66`
-    - `once_cell` to `1.15.0`
+    - `wasmtime` to `2.0.0`.
+    - `anyhow` to `1.0.66`.
+    - `once_cell` to `1.15.0`.
 
 ## 0.1.0 (2022/10/04)
 
