@@ -34,7 +34,7 @@
 <modulesynopsis metafile="mod_wasm.xml.meta">
 
     <name>mod_wasm</name>
-    <description>Runs Wasm modules via Wasmtime engine
+    <description>Runs WebAssembly (Wasm) binaries
     </description>
     <status>Experimental</status>
     <sourcefile>mod_wasm.c</sourcefile>
@@ -43,7 +43,7 @@
     <summary>
         <p>
             <module>mod_wasm</module> offers a secure enclave to run untrusted 3rd party software.
-            It allows <a href="https://webassembly.org/">WebAssembly (Wasm)</a> modules to be executed within the Apache Server.
+            It allows <a href="https://webassembly.org/">WebAssembly (Wasm)</a> binaries to be executed within the Apache Server.
             Code runs in a secure environment at almost native speed.
             The <em>Wasm Capabilities Model</em> offers a secure-by-design approach to limit access to system resources.
             No capabilities are enabled by default. To enable such capabilities, new directives are provided for <code>httpd.conf</code>.
@@ -70,19 +70,15 @@
         <p>
             Below is a minimal configuration sample of the directives needed in <code>httpd.conf</code> to use <module>mod_wasm</module>. 
         </p><p>
-            Just set the <code>wasm-handler</code> to the desired route, and point to a Wasm module via <directive module="mod_wasm">WasmRoot</directive> and <directive module="mod_wasm">WasmModule</directive>.
+            Just set the <code>wasm-handler</code> to the desired route, and point to a Wasm module via <directive module="mod_wasm">WasmModule</directive>.
         </p>
         <highlight language="config">
 LoadModule wasm_module modules/mod_wasm.so
 
-&lt;Location /wasm-module>
+&lt;Location /hello-world>
   SetHandler wasm-handler
+  WasmModule /var/www/wasm_modules/hello.wasm
 &lt;/Location>
-
-&lt;IfModule wasm_module>
-  WasmRoot   /var/www/wasm_modules
-  WasmModule hello.wasm
-&lt;/IfModule>
         </highlight>
     </section>
 
@@ -101,26 +97,22 @@ LoadModule wasm_module modules/mod_wasm.so
             Also, such directories must be pre-opened and available in the Wasm context via <directive module="mod_wasm">WasmDir</directive> or <directive module="mod_wasm">WasmMapDir</directive>.
         </p><p>
             Finally, CGI mode is activated using <directive module="mod_wasm">WasmEnableCGI</directive>.
-            This way, HTTP headers and URL parameters from the incoming request are passed to the Wasm module
-            as environmental variables. In this mode, it is expected that responses from the Wasm module
+            This way, HTTP headers and body, and URL parameters from the incoming request are passed to the Wasm module
+            as environmental variables and <em>stdin</em>. In this mode, it is expected that responses from the Wasm module
             start with the HTTP response header (i.e.: <code>Content-Type: text/html</code>).
         </p>
         <highlight language="config">
 LoadModule wasm_module modules/mod_wasm.so
 
-&lt;Location /wasm-module>
-  SetHandler wasm-handler
-&lt;/Location>
-
-&lt;IfModule wasm_module>
-  WasmRoot   	/var/www/wasm_modules
-  WasmModule 	python3.11.wasm
-  WasmMapDir 	/python /usr/lib/python3.11
-  WasmArg	 	/python/hello.py
-  WasmEnv	 	PYTHONHOME /python/wasi-python/lib/python3.11
-  WasmEnv	 	PYTHONPATH /python/wasi-python/lib/python3.11
+&lt;Location /python-app>
+  SetHandler    wasm-handler
+  WasmModule    /var/www/wasm_modules/python3.11.wasm
+  WasmMapDir    /python /usr/lib/python3.11
+  WasmArg       /python/hello.py
+  WasmEnv       PYTHONHOME /python/wasi-python/lib/python3.11
+  WasmEnv       PYTHONPATH /python/wasi-python/lib/python3.11
   WasmEnableCGI On
-&lt;/IfModule>
+&lt;/Location>
         </highlight>
     </section>
 
@@ -132,7 +124,6 @@ LoadModule wasm_module modules/mod_wasm.so
         </p>
             <table>
                 <tr><th>Directive</th></tr>
-                <tr><td><directive module="mod_wasm">WasmRoot</directive></td></tr>
                 <tr><td><directive module="mod_wasm">WasmModule</directive></td></tr>
                 <tr><td><directive module="mod_wasm">WasmDir</directive></td></tr>
                 <tr><td><directive module="mod_wasm">WasmMapDir</directive></td></tr>
@@ -144,30 +135,10 @@ LoadModule wasm_module modules/mod_wasm.so
     	</p>
     </section>
 
-    <!-- *************************** WasmRoot ****************************** -->
-    <directivesynopsis>
-        <name>WasmRoot</name>
-        <description>Define the root directory for Wasm modules.</description>
-        <syntax>WasmRoot <em>directory</em></syntax>
-        <contextlist>
-            <context>server config</context>
-        </contextlist>
-        <usage>
-            <p>
-                <code>WasmRoot</code> is the base directory where all Wasm modules should be installed.
-            </p>
-            <example><title>Example</title>
-                <highlight language="config">
-WasmRoot /var/www/wasm_modules
-                </highlight>
-            </example>
-        </usage>
-    </directivesynopsis>
-
     <!-- ************************** WasmModule **************************** -->
     <directivesynopsis>
         <name>WasmModule</name>
-        <description>Define the Wasm module file name.</description>
+        <description>Define the Wasm module file path.</description>
         <syntax>WasmModule <em>filename</em></syntax>
         <contextlist>
             <context>server config</context>
@@ -178,7 +149,7 @@ WasmRoot /var/www/wasm_modules
             </p>
             <example><title>Example</title>
                 <highlight language="config">
-WasmModule hello.wasm
+WasmModule /var/www/wasm_modules/hello.wasm
                 </highlight>
             </example>
         </usage>
@@ -293,7 +264,7 @@ WasmEnv WEBAPP_DEBUG false
     <!-- ************************** WasmEnableCGI ************************* -->
     <directivesynopsis>
         <name>WasmEnableCGI</name>
-        <description>Enable/Disable CGI emulation mode for HTTP headers.</description>
+        <description>Enable/Disable CGI emulation mode for HTTP requests.</description>
         <syntax>WasmEnableCGI <em>On|Off</em></syntax>
         <contextlist>
             <context>server config</context>
@@ -303,8 +274,9 @@ WasmEnv WEBAPP_DEBUG false
                 <directive>WasmEnableCGI</directive> allows <module>mod_wasm</module> to connect the HTTP requests with the Wasm module in a CGI-like way:
                 <ul>
                     <li>HTTP headers from the request are passed to the Wasm module as environmental variables.</li>
+                    <li>HTTP request body is passed to the Wasm module as <em>stdin</em>.</li>
                     <li>URL query parameters are passed as <code>QUERY_STRING</code> environmental variable.</li>
-                    <li>Output from the Wasm module (stdout) will be parsed and headers such as <code>Content-Type:</code> will be
+                    <li>Output from the Wasm module (<em>stdout</em>) will be parsed and headers such as <code>Content-Type:</code> will be
                     incorporated into the response headers.</li>
                 </ul>
                 Default value is <em>Off</em>.
