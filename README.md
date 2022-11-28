@@ -78,8 +78,10 @@ To setup and manage WebAssembly binaries and their [WASI](https://wasi.dev/) con
 ### Workflow
 
 **mod_wasm** plays a role in two different stages of the Apache Server workflow:
-1. The different `WasmXXX` directives are read from `httpd.conf` during the boot up sequence. When a `WasmModule` directive is found, the Wasm runtime tries to load the given Wasm binary from disk into memory. This is an expensive operation so that is why it is executed only once during the Apache boot up sequence. In addition, a Wasm modules cache is in place, so the same Wasm module can be shared among different configuration with only one instance loaded into memory. Once all Wasm binaries are loaded, the Apache Sever is ready to response to incoming HTTP requests.
-2. For each HTTP request, mod_wasm builds the WASI context for the already-loaded Wasm binary. Next, the Wasm module is instantiated and the entry point is executed. The `stdout` from the Wasm module is redirected to the HTTP response, and the `stderr` is appended to Apache Server's trace (usually at `<httpd_dir>/dist/logs/error_log`). 
+1. On the boot up sequence, the different `WasmXXX` directives are read from `httpd.conf`:
+   * When a `WasmModule` directive is found, the Wasm runtime tries to load the given Wasm binary from disk into memory. This is an expensive operation so that is why it is executed only once during the Apache boot up sequence. In addition, a cache is used to store the different Wasm modules, so a specific Wasm module can be shared among different configurations with only one instance loaded into memory.
+   * The remaining `WasmXXX` directives define different configuration aspects. A new configuration instance is created for each `<Location>` and it will be later used during execution as a template.
+2. On each incoming HTTP request, **mod_wasm** builds a new WASI context for the already-loaded Wasm binary. Next, the Wasm module is instantiated and the entry point is executed. The `stdout` from the Wasm module is redirected to the HTTP response, and the `stderr` is appended to Apache Server's trace (usually at `<httpd_dir>/dist/logs/error_log`). 
 
 **mod_wasm** also offers the ability to build a specific execution context per HTTP request. When setting up `WasmEnableCGI On`, mod_wasm will pass the HTTP headers as environtment variables to the Wasm module (they will be prefixed as `HTTP_`). Also, URL parameters are passed in the environment variable `QUERY_STRING`. And finally, the HTTP request body is passed as the *stdin* to the module. 
 
