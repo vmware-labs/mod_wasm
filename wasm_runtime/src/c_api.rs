@@ -91,11 +91,11 @@ pub extern "C" fn wasm_config_create(config_id: *const c_char) -> c_int {
 /// # Examples (C Code)
 ///
 /// ```
-/// wasm_config_set_module("Drupal", "/var/www/php8.wasm");
-/// wasm_config_set_module("WordPress", "/var/www/php8.wasm");
+/// wasm_config_module_set("Drupal", "/var/www/php8.wasm");
+/// wasm_config_module_set("WordPress", "/var/www/php8.wasm");
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_config_set_module(config_id: *const c_char, module_id: *const c_char) -> c_int {
+pub extern "C" fn wasm_config_module_set(config_id: *const c_char, module_id: *const c_char) -> c_int {
     let config_id_str = const_c_char_to_str(config_id);
     let module_id_str = const_c_char_to_str(module_id);
 

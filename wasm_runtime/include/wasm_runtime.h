@@ -65,11 +65,11 @@ int wasm_config_create(const char *config_id);
  * # Examples (C Code)
  *
  * ```
- * wasm_config_set_module("Drupal", "/var/www/php8.wasm");
- * wasm_config_set_module("WordPress", "/var/www/php8.wasm");
+ * wasm_config_module_set("Drupal", "/var/www/php8.wasm");
+ * wasm_config_module_set("WordPress", "/var/www/php8.wasm");
  * ```
  */
-int wasm_config_set_module(const char *config_id,
+int wasm_config_module_set(const char *config_id,
                            const char *module_id);
 
 /**

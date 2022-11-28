@@ -372,7 +372,7 @@ static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, cons
     if ( wasm_module_load(word1) != OK )    // Wasm module is loaded and cached
         trace_nocontext(NULL, __FILE__, __LINE__, "wasm_directive_WasmModule() - ERROR! Couldn't load Wasm Module!");
 
-    if ( wasm_config_set_module(cfg->loc, word1) != OK )    // Wasm config is implictly created for the current location and using the loaded module
+    if ( wasm_config_module_set(cfg->loc, word1) != OK )    // Wasm config is implictly created for the current location and using the loaded module
         trace_nocontext(NULL, __FILE__, __LINE__, "wasm_directive_WasmModule() - ERROR! Couldn't set Wasm Module to a Wasm config!");
 
     return NULL;
