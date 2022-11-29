@@ -6,7 +6,7 @@
 
 ## 0.10.0 (2022/11/28)
 
-- In this version, among other improvements, we introduce two major features implementing #6, #7, and #16.
+- In this version, among other improvements, we introduce two major features implementing [#6](https://github.com/vmware-labs/mod_wasm/issues/6), [#7](https://github.com/vmware-labs/mod_wasm/issues/7), and [#16](https://github.com/vmware-labs/mod_wasm/issues/16).
   1. **Wasm multi-module support:**
    
      Now you can specify different Wasm modules to be used in different routes. For instance, now it’s possible with one-single Apache instance to load simultaneously the Wasm builds for the [PHP](https://github.com/vmware-labs/webassembly-language-runtimes/releases) and [Python](https://github.com/tiran/cpython-wasm-test/releases) interpreters (and any other languages that compile to Wasm now or in the future). 
