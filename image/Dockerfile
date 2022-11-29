@@ -32,7 +32,9 @@ LABEL org.opencontainers.image.source https://github.com/vmware-labs/mod_wasm
 ARG WASM_RUNTIME_PATH=/usr/src/wasm_runtime
 ARG MOD_WASM_PATH=/usr/src/mod_wasm
 ARG DIST_DIR=$MOD_WASM_PATH/dist
+RUN rm -rf /usr/local/apache2/htdocs
 COPY ./examples/wasm_modules/ /usr/local/apache2/wasm_modules/
+COPY ./examples/wasm_modules/php-scripts/wp-demo/ /usr/local/apache2/htdocs/
 COPY --from=builder-rs $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so /usr/lib
 COPY --from=builder-apache $DIST_DIR/modules /usr/local/apache2/modules
 COPY --from=builder-apache $DIST_DIR/conf/httpd.conf /usr/local/apache2/conf/
