@@ -6,14 +6,14 @@
 ARG IMAGE_REPOSITORY=docker.io
 
 # Build wasm_runtime in release mode
-FROM $IMAGE_REPOSITORY/library/rust:1.65.0-slim@sha256:913d615dfab7df8e1b56bed268a8eb056c34f8a4317fc2cd31ba61b31f8744e5 as builder-rs
+FROM $IMAGE_REPOSITORY/library/rust:1.65.0-slim as builder-rs
 ARG WASM_RUNTIME_PATH=/usr/src/wasm_runtime
 WORKDIR $WASM_RUNTIME_PATH
 COPY ./wasm_runtime ./
 RUN cargo build --release
 
 # Build mod_wasm Apache module
-FROM $IMAGE_REPOSITORY/library/httpd:2.4@sha256:5d1b0bd4333abe51e4631564bffb7c56f08f449757615c42d9676c807ccea8bd as builder-apache
+FROM $IMAGE_REPOSITORY/library/httpd:2.4 as builder-apache
 ARG WASM_RUNTIME_PATH=/usr/src/wasm_runtime
 ARG MOD_WASM_PATH=/usr/src/mod_wasm
 ARG DIST_DIR=$MOD_WASM_PATH/dist
@@ -27,7 +27,7 @@ RUN mkdir -p $MOD_WASM_PATH/dist/conf $DIST_DIR/modules
 RUN HTTPD_DIR=/usr/local/apache2 ./build.sh
 
 # Distribute wasm_runtime, mod_wasm and a default configuration
-FROM $IMAGE_REPOSITORY/library/httpd:2.4@sha256:5d1b0bd4333abe51e4631564bffb7c56f08f449757615c42d9676c807ccea8bd
+FROM $IMAGE_REPOSITORY/library/httpd:2.4
 LABEL org.opencontainers.image.source https://github.com/vmware-labs/mod_wasm
 ARG WASM_RUNTIME_PATH=/usr/src/wasm_runtime
 ARG MOD_WASM_PATH=/usr/src/mod_wasm
