@@ -57,8 +57,8 @@ define( 'SECURE_AUTH_SALT', 'put your unique phrase here' );
 define( 'LOGGED_IN_SALT',   'put your unique phrase here' );
 define( 'NONCE_SALT',       'put your unique phrase here' );
 
-define( 'WP_HOME', 'http://' . $_SERVER['HTTP_HOST'] );
-define( 'WP_SITEURL', 'http://' . $_SERVER['HTTP_HOST'] . '/' );
+define( 'WP_HOME', 'http://' . $_SERVER['HTTP_HOST'] . '/wordpress' );
+define( 'WP_SITEURL', 'http://' . $_SERVER['HTTP_HOST'] . '/wordpress' );
 
 /**#@-*/
 
