@@ -17,7 +17,8 @@ FROM $IMAGE_REPOSITORY/library/httpd:2.4 as builder-apache
 ARG WASM_RUNTIME_PATH=/usr/src/wasm_runtime
 ARG MOD_WASM_PATH=/usr/src/mod_wasm
 ARG DIST_DIR=$MOD_WASM_PATH/dist
-RUN apt-get update && apt-get install apache2-dev build-essential pkg-config libtool libapr1-dev libaprutil1-dev make gcc libtool-bin libxml2-dev libpcre2-dev subversion pkg-config -y
+RUN apt-get update && apt-get install apache2-dev build-essential pkg-config libtool libapr1-dev libaprutil1-dev make gcc libtool-bin libxml2-dev libpcre2-dev subversion pkg-config wget -y
+RUN wget -P /tmp https://wordpress.org/wordpress-6.0.2.tar.gz
 WORKDIR $MOD_WASM_PATH
 COPY ./mod_wasm $MOD_WASM_PATH
 COPY ./dist $DIST_DIR
@@ -34,8 +35,11 @@ ARG MOD_WASM_PATH=/usr/src/mod_wasm
 ARG DIST_DIR=$MOD_WASM_PATH/dist
 RUN rm -rf /usr/local/apache2/htdocs
 COPY ./examples/wasm_modules/ /usr/local/apache2/wasm_modules/
+COPY --from=builder-apache /tmp/wordpress-6.0.2.tar.gz /tmp/wordpress-6.0.2.tar.gz
 RUN mkdir -p /usr/local/apache2/htdocs/wordpress
-COPY ./examples/wasm_modules/php-scripts/wp-demo/ /usr/local/apache2/htdocs/wordpress
+RUN tar -xzf /tmp/wordpress-6.0.2.tar.gz --directory /usr/local/apache2/htdocs
+RUN rm -rf /tmp/wordpress-6.0.2.tar.gz
+COPY ./examples/wasm_modules/php-scripts/wordpress-patch/ /usr/local/apache2/htdocs/wordpress
 COPY ./examples/wasm_modules/php-scripts/php-hello /usr/local/apache2/htdocs/php-hello
 COPY --from=builder-rs $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so /usr/lib
 COPY --from=builder-apache $DIST_DIR/modules /usr/local/apache2/modules
