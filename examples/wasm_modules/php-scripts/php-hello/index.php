@@ -1,7 +1,9 @@
 <html>
 <body>
-<h1>Hello from php on wasm</h1>
 <?php
+
+print "<h1>Hello from PHP on Wasm!</h1>";
+
 $date = getdate();
 
 $message = "Today, ";
@@ -17,8 +19,10 @@ $message .= $date['minutes'] . ":";
 $message .= $date['seconds'];
 
 $message .= " we greet you with this message!";
-
 print $message;
+
+print "<h1>Output from phpinfo():</h1>";
+phpinfo();
 ?>
 </body>
 </html>

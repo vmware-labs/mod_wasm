@@ -18,7 +18,7 @@ ARG WASM_RUNTIME_PATH=/usr/src/wasm_runtime
 ARG MOD_WASM_PATH=/usr/src/mod_wasm
 ARG DIST_DIR=$MOD_WASM_PATH/dist
 RUN apt-get update && apt-get install apache2-dev build-essential pkg-config libtool libapr1-dev libaprutil1-dev make gcc libtool-bin libxml2-dev libpcre2-dev subversion pkg-config -y
-WORKDIR /usr/src/mod_wasm
+WORKDIR $MOD_WASM_PATH
 COPY ./mod_wasm $MOD_WASM_PATH
 COPY ./dist $DIST_DIR
 COPY --from=builder-rs $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so
@@ -36,6 +36,7 @@ RUN rm -rf /usr/local/apache2/htdocs
 COPY ./examples/wasm_modules/ /usr/local/apache2/wasm_modules/
 RUN mkdir -p /usr/local/apache2/htdocs/wordpress
 COPY ./examples/wasm_modules/php-scripts/wp-demo/ /usr/local/apache2/htdocs/wordpress
+COPY ./examples/wasm_modules/php-scripts/php-hello /usr/local/apache2/htdocs/php-hello
 COPY --from=builder-rs $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so /usr/lib
 COPY --from=builder-apache $DIST_DIR/modules /usr/local/apache2/modules
 COPY --from=builder-apache $DIST_DIR/conf/httpd.conf /usr/local/apache2/conf/
