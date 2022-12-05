@@ -44,12 +44,21 @@ FROM $IMAGE_REPOSITORY/library/debian:bullseye-slim as builder-demos
 RUN apt-get update && apt-get install wget unzip -y
 WORKDIR /tmp
 # PHP
-RUN wget -P /tmp https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F7.3.33%2B20221124-2159d1c/php-cgi-7.3.33.speed-optimized.wasm
-RUN wget -P /tmp https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F7.4.32%2B20221124-2159d1c/php-cgi-7.4.32.speed-optimized.wasm
+ENV PHP_7_3_33_SHA1 a1daaeebc6cf27819ab9fde7ebf8e1df2e0df832
+RUN wget -P /tmp https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F7.3.33%2B20221124-2159d1c/php-cgi-7.3.33.speed-optimized.wasm \
+    && echo $PHP_7_3_33_SHA1 php-cgi-7.3.33.speed-optimized.wasm | sha1sum -c -
+ENV PHP_7_4_32_SHA1 a8bdc8aeb5aff73c2ad8fc5a494e718850814702
+RUN wget -P /tmp https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F7.4.32%2B20221124-2159d1c/php-cgi-7.4.32.speed-optimized.wasm \
+    && echo $PHP_7_4_32_SHA1 php-cgi-7.4.32.speed-optimized.wasm | sha1sum -c -
 # Python
-RUN wget -P /tmp https://github.com/tiran/cpython-wasm-test/releases/download/v3.11.0/Python-3.11.0-wasm32-wasi-16.zip
+ENV PYTHON_3_11_0_SHA1 89e8a27c7da1d23dd8d1a9eb14b32983ac5db0d2
+RUN wget -P /tmp https://github.com/tiran/cpython-wasm-test/releases/download/v3.11.0/Python-3.11.0-wasm32-wasi-16.zip \
+    && echo $PYTHON_3_11_0_SHA1 Python-3.11.0-wasm32-wasi-16.zip | sha1sum -c -
 RUN unzip /tmp/Python-3.11.0-wasm32-wasi-16.zip
-RUN wget -P /tmp https://github.com/pygments/pygments/archive/refs/tags/2.13.0.tar.gz
+# Python Pygments
+ENV PYGMENTS_SHA1 b064cdbb380869e4f42ae07f22a499d4a3cec099
+RUN wget -P /tmp https://github.com/pygments/pygments/archive/refs/tags/2.13.0.tar.gz \
+    && echo $PYGMENTS_SHA1 2.13.0.tar.gz | sha1sum -c -
 RUN tar -xzf /tmp/2.13.0.tar.gz
 # WordPress
 ENV WORDPRESS_SHA1 9348f0757c21504d085a6c866ccbb86573b39d6f
