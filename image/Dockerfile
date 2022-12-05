@@ -38,11 +38,13 @@ RUN HTTPD_DIR=/usr/local/apache2 ./build.sh
 
 
 ################################################################################
-# [Demos Builder]
+# [Runtimes and Demos Builder]
 ################################################################################
 FROM $IMAGE_REPOSITORY/library/debian:bullseye-slim as builder-demos
 RUN apt-get update && apt-get install wget unzip -y
 WORKDIR /tmp
+RUN wget -P /tmp https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F7.3.33%2B20221124-2159d1c/php-cgi-7.3.33.speed-optimized.wasm
+RUN wget -P /tmp https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F7.4.32%2B20221124-2159d1c/php-cgi-7.4.32.speed-optimized.wasm
 RUN wget -P /tmp https://github.com/tiran/cpython-wasm-test/releases/download/v3.11.0/Python-3.11.0-wasm32-wasi-16.zip
 RUN unzip /tmp/Python-3.11.0-wasm32-wasi-16.zip
 RUN wget -P /tmp https://github.com/pygments/pygments/archive/refs/tags/2.13.0.tar.gz
@@ -70,6 +72,8 @@ COPY --from=builder-demos /tmp/pygments-2.13.0/pygments /usr/local/apache2/wasm_
 
 # PHP Examples
 ## PHP-Hello
+COPY --from=builder-demos /tmp/php-cgi-7.3.33.speed-optimized.wasm /usr/local/apache2/wasm_modules/php-wasm/php-cgi-7.3.33.speed-optimized.wasm
+COPY --from=builder-demos /tmp/php-cgi-7.4.32.speed-optimized.wasm /usr/local/apache2/wasm_modules/php-wasm/php-cgi-7.4.32.speed-optimized.wasm
 COPY ./examples/wasm_modules/php-scripts/php-hello /usr/local/apache2/htdocs/php-hello
 ## WordPress
 RUN mkdir -p /usr/local/apache2/htdocs/wordpress
