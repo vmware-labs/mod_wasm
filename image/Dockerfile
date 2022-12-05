@@ -43,13 +43,18 @@ RUN HTTPD_DIR=/usr/local/apache2 ./build.sh
 FROM $IMAGE_REPOSITORY/library/debian:bullseye-slim as builder-demos
 RUN apt-get update && apt-get install wget unzip -y
 WORKDIR /tmp
+# PHP
 RUN wget -P /tmp https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F7.3.33%2B20221124-2159d1c/php-cgi-7.3.33.speed-optimized.wasm
 RUN wget -P /tmp https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F7.4.32%2B20221124-2159d1c/php-cgi-7.4.32.speed-optimized.wasm
+# Python
 RUN wget -P /tmp https://github.com/tiran/cpython-wasm-test/releases/download/v3.11.0/Python-3.11.0-wasm32-wasi-16.zip
 RUN unzip /tmp/Python-3.11.0-wasm32-wasi-16.zip
 RUN wget -P /tmp https://github.com/pygments/pygments/archive/refs/tags/2.13.0.tar.gz
 RUN tar -xzf /tmp/2.13.0.tar.gz
-RUN wget -P /tmp https://wordpress.org/wordpress-6.0.2.tar.gz
+# WordPress
+ENV WORDPRESS_SHA1 9348f0757c21504d085a6c866ccbb86573b39d6f
+RUN wget -P /tmp https://wordpress.org/wordpress-6.0.2.tar.gz \
+    && echo $WORDPRESS_SHA1 wordpress-6.0.2.tar.gz | sha1sum -c -
 RUN tar -xzf /tmp/wordpress-6.0.2.tar.gz 
 
 
