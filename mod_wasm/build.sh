@@ -21,7 +21,10 @@ SCRIPT_DIR=$( cd -- "$(dirname -- "$0")" &> /dev/null && pwd )
 MOD_WASM_DIR=${MOD_WASM_DIR:-$(realpath "${SCRIPT_DIR}/modules/wasm")}
 WASM_RUNTIME_PATH=${WASM_RUNTIME_PATH:-$(realpath "${SCRIPT_DIR}/../wasm_runtime")}
 DIST_DIR=${DIST_DIR:-$(realpath "${SCRIPT_DIR}/../dist")}
-HTTPD_DIR=$(realpath "${SCRIPT_DIR}/../httpd")
+if [ -z ${HTTPD_DIR+x} ]
+then
+    HTTPD_DIR=$(realpath ../httpd)
+fi
 ARCH=$(uname -m)
 
 echo "[Deleting binaries]"
@@ -42,7 +45,7 @@ echo "[mod_wasm: compiling]"
 cd ${MOD_WASM_DIR}
 
 /usr/share/apr-1.0/build/libtool --verbose --mode=compile ${ARCH}-linux-gnu-gcc \
-     -I${HTTPD_DIR}/dist/include \
+     -I${HTTPD_DIR}/include \
      $(pkg-config --cflags apr-1 apr-util-1) \
      -I${WASM_RUNTIME_PATH}/include \
      -shared \

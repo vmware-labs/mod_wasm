@@ -8,5 +8,4 @@ ARG BASE_IMAGE=projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:l
 FROM $BASE_IMAGE as build-dev-image
 RUN apt-get update && apt-get install python3 python3-pip -y && pip3 install pygments
 
-RUN mkdir -p /usr/local/apache2/wasm_modules
-COPY ./examples/wasm_modules/ /usr/local/apache2/wasm_modules/
+COPY ./examples/conf/cgi_demo.conf /usr/local/apache2/conf/
