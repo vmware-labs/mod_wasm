@@ -13,29 +13,37 @@ The first version ([v0.1.0](https://github.com/vmware-labs/mod_wasm/blob/main/CH
 * The Wasm capabilities model allows to enable/disable capabilites per HTTP request.
 
 
-
 ### ▶️ Quick Demo
 
 1. Run the container:
 ```console
-docker run -p 8080:8080 projects.registry.vmware.com/wasmlabs/containers/httpd-mod-wasm:latest
+docker run -p 8080:8080 ghcr.io/vmware-labs/httpd-mod-wasm:latest
 ```
 
 2. Open browser at:
-[http://localhost:8080/wasm-module-endpoint](http://localhost:8080/wasm-module-endpoint)
 
-More details about the ['PrettyFy' WebApp Demo](#-prettyfy-webapp-demo) below.
+| Demo                   | Wasm Module  | URL                               |
+| ---------------------- | ------------ | --------------------------------- |
+| WordPress              | [PHP 7.3.33](https://github.com/vmware-labs/webassembly-language-runtimes/releases/tag/php%2F7.3.33%2B20221124-2159d1c) | [http://localhost:8080/wordpress](http://localhost:8080/wordpress) |
+| HTTP Request Viewer    | [Python 3.11](https://github.com/tiran/cpython-wasm-test/releases/tag/v3.11.0) | [http://localhost:8080/http-request-viewer](http://localhost:8080/http-request-viewer) |
 
 
 ## 📔 Contents
 
-* [Overview](#-overview)
-* ['PrettyFy' WebApp Demo](#-prettyfy-webapp-demo)
-* [Examples](#%EF%B8%8F-examples)
-* [Building mod_wasm](#%EF%B8%8F-building-mod_wasm)
-* [Building the container image](#-building-the-container-image)
-* [Troubleshooting](#%EF%B8%8F-troubleshooting)
-* [Debugging](#-debugging)
+- [mod\_wasm](#mod_wasm)
+    - [✅ Features](#-features)
+    - [▶️ Quick Demo](#️-quick-demo)
+  - [📔 Contents](#-contents)
+  - [🔭 Overview](#-overview)
+    - [Apache Configuration](#apache-configuration)
+    - [New Directives](#new-directives)
+    - [Workflow](#workflow)
+  - [🕹️ Examples](#️-examples)
+  - [🏗️ Building mod\_wasm](#️-building-mod_wasm)
+  - [📦 Building the container image](#-building-the-container-image)
+  - [⚠️ Troubleshooting](#️-troubleshooting)
+    - [Cannot load `modules/mod_wasm.so` into server](#cannot-load-modulesmod_wasmso-into-server)
+  - [🐛 Debugging](#-debugging)
 
 
 ## 🔭 Overview
@@ -86,18 +94,6 @@ To setup and manage WebAssembly binaries and their [WASI](https://wasi.dev/) con
 **mod_wasm** also offers the ability to build a specific execution context per HTTP request. When setting up `WasmEnableCGI On`, mod_wasm will pass the HTTP headers as environtment variables to the Wasm module (they will be prefixed as `HTTP_`). Also, URL parameters are passed in the environment variable `QUERY_STRING`. And finally, the HTTP request body is passed as the *stdin* to the module. 
 
 ![alt Workflow](https://raw.githubusercontent.com/vmware-labs/mod_wasm/main/docs/slides/workflow.png)
-
-
-## ⭐ 'PrettyFy' WebApp Demo
-
-The 'PrettyFy' demo is a simple one-script, Python-based WebApp (see [Examples](#%EF%B8%8F-examples)).
-* The Python interpreter has been compiled to WebAssembly.
-* Note how the system platform is identified: `sys.platform = WASI`.
-* The app accepts `file=` as URL parameter to highlight a previously uploaded file:
-  * [http://localhost:8080/wasm-module-endpoint?file=uploaded_text.txt](http://localhost:8080/wasm-module-endpoint?file=uploaded_text.txt)
-  * [http://localhost:8080/wasm-module-endpoint?file=cgi_hello_python.py](http://localhost:8080/wasm-module-endpoint?file=cgi_hello_python.py)
-* Now, if you try a basic [path traversal](https://owasp.org/www-community/attacks/Path_Traversal) attack, it won't be succesful thanks to the WebAssembly sandboxed model where the Python interpreter is running:
-  * [http://localhost:8080/wasm-module-endpoint?file=../../conf/httpd.conf](http://localhost:8080/wasm-module-endpoint?file=../../conf/httpd.conf)
 
 
 ## 🕹️ Examples

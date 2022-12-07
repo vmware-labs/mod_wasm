@@ -15,8 +15,10 @@ ARG WASM_RUNTIME_PATH=/usr/src/wasm_runtime
 RUN apt-get update && apt-get install make
 WORKDIR $WASM_RUNTIME_PATH
 COPY ./wasm_runtime ./
-RUN cargo install cbindgen
-RUN make clean
+ENV CARGO_UNSTABLE_SPARSE_REGISTRY=true
+RUN rustup update nightly
+RUN cargo +nightly -Z sparse-registry install cbindgen
+RUN make clean_all
 RUN make all
 
 
