@@ -13,7 +13,7 @@ docker run -p 8080:8080 ghcr.io/vmware-labs/httpd-mod-wasm:latest
 | Demo                   | Wasm Module  | URL                               | Description |
 | ---------------------- | ------------ | --------------------------------- | ----------- |
 | WordPress              | [PHP 7.3.33](https://github.com/vmware-labs/webassembly-language-runtimes/releases/tag/php%2F7.3.33%2B20221124-2159d1c) | [http://localhost:8080/wordpress](http://localhost:8080/wordpress) | This is WordPress running on a Wasm build of the PHP interpreter. |
-| PrettyFy App    | [Python 3.11](https://github.com/tiran/cpython-wasm-test/releases/tag/v3.11.0) | [http://localhost:8080/prettyfy](http://localhost:8080/prettyfy) | This demo runs on a Python Wasm build and demonstrates the WebAssembly capabilities model. Detailed info [below](#prettyfy-webapp-demo). |
+| HTTP Request Viewer | [Python 3.11](https://github.com/tiran/cpython-wasm-test/releases/tag/v3.11.0) | [http://localhost:8080/http-request-viewer](http://localhost:8080/http-request-viewer) | A Python App showing WASI capabilities. Try providing a complex query with URL query parameters, headers and a body. |
 
 3. Other examples:
 
@@ -21,7 +21,7 @@ docker run -p 8080:8080 ghcr.io/vmware-labs/httpd-mod-wasm:latest
 | ---------------------- | ------------ | --------------------------------- | ----------- |
 | Hello Wasm | [`hello_wasm.wasm`](https://github.com/vmware-labs/mod_wasm/blob/v0.10.0/examples/rust-src/hello_wasm/src/main.rs) | [http://localhost:8080/hello-wasm](http://localhost:8080/hello-wasm) | A simple *Hello Wasm* example developed in Rust that prints out to the `stdout` and `stderr` (piped into Apache's log at `/usr/local/apache2/logs/error_log`). |
 | PHP Hello              | [PHP 7.4.32](https://github.com/vmware-labs/webassembly-language-runtimes/releases/tag/php%2F7.4.32%2B20221124-2159d1c) | [http://localhost:8080/php-hello/](http://localhost:8080/php-hello/) | A simple PHP App showing current time and printing `phpinfo()`. |
-| HTTP Request Viewer | [Python 3.11](https://github.com/tiran/cpython-wasm-test/releases/tag/v3.11.0) | [http://localhost:8080/http-request-viewer](http://localhost:8080/http-request-viewer) | A Python App showing WASI capabilities. Try providing a complex query with URL query parameters, headers and a body. |
+| PrettyFy App    | [Python 3.11](https://github.com/tiran/cpython-wasm-test/releases/tag/v3.11.0) | [http://localhost:8080/prettyfy](http://localhost:8080/prettyfy) | This demo runs on a Python Wasm build and demonstrates the WebAssembly capabilities model. Detailed info [below](#prettyfy-webapp-demo). |
 
 ## Running in a container
 
