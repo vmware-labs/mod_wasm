@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
 #include "httpd.h"
 #include "http_config.h"
 #include "http_core.h"
@@ -26,7 +25,6 @@
 #include "mod_wasm.h"
 #include "wasm_runtime.h"
 
-
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
 /* Data declarations.                                                       */
@@ -36,12 +34,12 @@
 /*                                                                          */
 /*--------------------------------------------------------------------------*/
 
-/**
-  * Maximum number of bytes to allocate the body from an HTTP Request.
-  *
-  * 16KB (16*1024 = 16384)
-  *
-  */
+/*
+ * Maximum number of bytes to allocate the body from an HTTP Request.
+ *
+ * 16KB (16*1024 = 16384)
+ *
+ */
 #define CONFIG_HTTP_REQUEST_BODY_MAX 16384
 
 /*
@@ -84,7 +82,6 @@ static const char *trace = NULL;
  */
 module AP_MODULE_DECLARE_DATA wasm_module;
 
-
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
 /* These routines are strictly internal to this module, and support its     */
@@ -98,7 +95,6 @@ static void trace_nocontext(apr_pool_t *p, const char *file, int line,
 {
     ap_log_perror(file, line, APLOG_MODULE_INDEX, APLOG_NOTICE, 0, p, "%s", note);
 }
-
 
 /*
  * This function gets called to create a per-directory configuration
@@ -135,7 +131,7 @@ static void *create_dir_config(apr_pool_t *p, char *context)
     note = apr_psprintf(p, "create_dir_config(p == %pp, context == %s)",
                         (void*) p, context);
 
-    // creates a new Wasm config for the current context
+    /* creates a new Wasm config for the current context */
     if ( wasm_config_create(cfg->loc) != OK )
         trace_nocontext(NULL, __FILE__, __LINE__, "wasm_config_create() - ERROR! Couldn't create Wasm config!");
 
@@ -144,14 +140,13 @@ static void *create_dir_config(apr_pool_t *p, char *context)
 
 /*
  * This function gets called to create a per-server configuration
- * record.  It will always be called for the "default" server.
+ * record. It will always be called for the "default" server.
  *
  * The return value is a pointer to the created module-specific
  * structure.
  */
 static void *create_server_config(apr_pool_t *p, server_rec *s)
 {
-
     x_cfg *cfg;
     char *sname = s->server_hostname;
 
@@ -168,15 +163,16 @@ static void *create_server_config(apr_pool_t *p, server_rec *s)
     sname = (sname != NULL) ? sname : "";
     cfg->loc = apr_pstrcat(p, "SVR(", sname, ")", NULL);
 
-    // creates a new Wasm config for the current context
+    /* creates a new Wasm config for the current context */
     if ( wasm_config_create(cfg->loc) != OK )
         trace_nocontext(NULL, __FILE__, __LINE__, "wasm_config_create() - ERROR! Couldn't create Wasm config!");
 
     return (void *) cfg;
 }
 
-// Add the provided key to the wasmtime runtime as an environment
-// variable.
+/*
+ * Add the provided key to the wasmtime runtime as an environment variable.
+ */
 static int _wasm_executionctx_env_add(void* context, const char *key, const char *value)
 {
     if ( wasm_executionctx_env_add( (const char*)context, key, value) != OK )
@@ -198,15 +194,15 @@ static int _wasm_executionctx_env_add(void* context, const char *key, const char
  */
 static int read_http_request_body(request_rec *r, const char **rbuf, apr_off_t *size)
 {
-    int rc = DECLINED; // return code ('DECLINED' by default)
+    int rc = DECLINED; /* return code ('DECLINED' by default) */
 
-    // setup the client to allow Apache to read the request body
+    /* setup the client to allow Apache to read the request body */
     if ( (rc = ap_setup_client_block(r, REQUEST_CHUNKED_ERROR)) != OK )
     {
         return rc;
     }
 
-    // can we read or abort?
+    /* can we read or abort? */
     if ( ap_should_client_block(r) )
     {
         char argsbuffer[CONFIG_HTTP_REQUEST_BODY_MAX];
@@ -253,19 +249,19 @@ static int content_handler(request_rec *r)
         return OK;
     }
 
-    // get specific configuration for the given directory/location
+    /* get specific configuration for the given directory/location */
     x_cfg *dcfg = ap_get_module_config(r->per_dir_config, &wasm_module);
 
-    // creates a new Wasm execution context
+    /* creates a new Wasm execution context */
     const char* exec_ctx_id = wasm_executionctx_create_from_config(dcfg->loc);
 
     if (dcfg->bWasmEnableCGI) {
-      // On CGI mode, we set the request headers as environment variables with an HTTP_ prefix.
+      /* On CGI mode, we set the request headers as environment variables with an HTTP_ prefix. */
       ap_add_common_vars(r);
       ap_add_cgi_vars(r);
       apr_table_do(_wasm_executionctx_env_add, (void*)exec_ctx_id, r->subprocess_env, NULL);
 
-      // read HTTP Request body and set it as stdin for the Wasm module
+      /* read HTTP Request body and set it as stdin for the Wasm module */
       apr_off_t body_size = 0;
       const char* body_buffer = NULL;
       if ( read_http_request_body(r, &body_buffer, &body_size) != OK ) {
@@ -277,23 +273,27 @@ static int content_handler(request_rec *r)
             trace_nocontext(NULL, __FILE__, __LINE__, "content_handler() - ERROR! Couldn't set HTTP Request Body as stdin!\n");
       }
     }
-    // run Wasm module
+    /* run Wasm module */
     const char* module_response = wasm_executionctx_run(exec_ctx_id);
 
     if (dcfg->bWasmEnableCGI) {
-      // Retrieve the CGI variables and feed our own response with
-      // them; write the response from the module as our own response;
-      // which has the headers already stripped from it.
+      /*
+       * Retrieve the CGI variables and feed our own response with
+       * them; write the response from the module as our own response;
+       * which has the headers already stripped from it.
+       */
       const char *termch;
       int termarg;
       int ret = ap_scan_script_header_err_strs(r, NULL, &termch, &termarg, module_response, NULL);
-      // ap_scan_script_header_err_strs can return either:
-      //   - HTTP_OK: success
-      //   - HTTP_INTERNAL_SERVER_ERROR: failure
-      //   - HTTP_NOT_MODIFIED or HTTP_PRECONDITION_FAILED: script
-      //     response does not meet request's conditions
-      // In order to not give the external consumer more information
-      // than what is needed, map all responses to a 500 error.
+      /*
+       * ap_scan_script_header_err_strs can return either:
+       *   - HTTP_OK: success
+       *   - HTTP_INTERNAL_SERVER_ERROR: failure
+       *   - HTTP_NOT_MODIFIED or HTTP_PRECONDITION_FAILED: script
+       *     response does not meet request's conditions
+       * In order to not give the external consumer more information
+       * than what is needed, map all responses to a 500 error.
+       */
 
       if (ret != OK && ret != HTTP_OK) {
         if (r->content_type == NULL)
@@ -309,16 +309,15 @@ static int content_handler(request_rec *r)
       ap_rprintf(r, "%s", module_response);
     }
 
-    // return module response ownership to avoid leaking memory
+    /* return module response ownership to avoid leaking memory */
     wasm_return_const_char_ownership(module_response);
 
-    // deallocate execution context and return id ownership to avoid leaking memory
+    /* deallocate execution context and return id ownership to avoid leaking memory */
     wasm_executionctx_deallocate(exec_ctx_id);
     wasm_return_const_char_ownership(exec_ctx_id);
 
     return OK;
 }
-
 
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
@@ -357,7 +356,6 @@ static void register_hooks(apr_pool_t *p)
     ap_hook_handler(content_handler, NULL, NULL, APR_HOOK_MIDDLE);
 }
 
-
 #define WASM_DIRECTIVE_WASMMODULE     "WasmModule"
 #define WASM_DIRECTIVE_WASMARG        "WasmArg"
 #define WASM_DIRECTIVE_WASMENV        "WasmEnv"
@@ -378,7 +376,6 @@ static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, cons
     return NULL;
 }
 
-
 static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
@@ -388,7 +385,6 @@ static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const c
 
     return NULL;
 }
-
 
 static const char *wasm_directive_WasmEnv(cmd_parms *cmd, void *mconfig, const char *word1, const char *word2)
 {
@@ -400,7 +396,6 @@ static const char *wasm_directive_WasmEnv(cmd_parms *cmd, void *mconfig, const c
     return NULL;
 }
 
-
 static const char *wasm_directive_WasmDir(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
@@ -410,7 +405,6 @@ static const char *wasm_directive_WasmDir(cmd_parms *cmd, void *mconfig, const c
 
     return NULL;
 }
-
 
 static const char *wasm_directive_WasmMapDir(cmd_parms *cmd, void *mconfig, const char *word1, const char *word2)
 {
@@ -422,14 +416,12 @@ static const char *wasm_directive_WasmMapDir(cmd_parms *cmd, void *mconfig, cons
     return NULL;
 }
 
-
 static const char *wasm_directive_WasmEnableCGI(cmd_parms *cmd, void *mconfig, int arg)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
     cfg->bWasmEnableCGI = arg;
     return NULL;
 }
-
 
 /*
  * List of directives specific to our module.
@@ -480,8 +472,6 @@ static const command_rec directives[] =
     ),
     {NULL}
 };
-
-
 
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
