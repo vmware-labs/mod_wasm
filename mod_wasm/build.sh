@@ -51,7 +51,7 @@ echo "[mod_wasm: compiling]"
 cd ${MOD_WASM_DIR}
 
 /usr/share/apr-1.0/build/libtool --verbose --mode=compile ${ARCH}-linux-gnu-gcc \
-     -I${HTTPD_DIR}/dist/include \
+     -I${HTTPD_DIR}/include \
      $(pkg-config --cflags apr-1 apr-util-1) \
      -I${WASM_RUNTIME_PATH}/include \
      -shared \
