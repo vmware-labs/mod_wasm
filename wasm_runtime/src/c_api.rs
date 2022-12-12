@@ -234,7 +234,7 @@ pub extern "C" fn wasm_config_mapdir_add(config_id: *const c_char, map: *const c
 
 /// Creates a new Wasm Execution Context for the given Wasm Config identifier.
 ///
-/// Returns a C string (const *char) with the the new generated Wasm Execution Context ID.
+/// Returns a C string (const *char) with the new generated Wasm Execution Context ID.
 /// Otherwise, trace the error and returns a string explaining the error.
 ///
 /// Due to String management differences between C and Rust, this function uses `unsafe {}` code.

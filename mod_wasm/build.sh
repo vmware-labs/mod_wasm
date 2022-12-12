@@ -1,5 +1,11 @@
 #!/bin/sh
 
+#################################################################################
+# mod_wasm should be compiled in the Apache environment using Autoconf/Automake.
+#
+# This build.sh script is just a shortcut for development purposes.
+#################################################################################
+
 env
 set -x
 
@@ -59,10 +65,10 @@ echo "[mod_wasm: linking]"
      -module -avoid-version mod_wasm.lo
 
 echo "[Installing module]"
-mkdir -p "${DIST_DIR}/modules/" "${DIST_DIR}/conf/"
+mkdir -p "${DIST_DIR}/modules/" 
 cp -v .libs/mod_wasm.so "${DIST_DIR}/modules/"
 
 echo "[Installing httpd.conf]"
 cd ${SCRIPT_DIR}
+mkdir -p "${DIST_DIR}/conf/"
 cp -v httpd.conf "${DIST_DIR}/conf/"
-
