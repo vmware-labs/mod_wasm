@@ -90,12 +90,6 @@ module AP_MODULE_DECLARE_DATA wasm_module;
 /*                                                                          */
 /*--------------------------------------------------------------------------*/
 
-static void trace_nocontext(apr_pool_t *p, const char *file, int line,
-                            const char *note)
-{
-    ap_log_perror(file, line, APLOG_MODULE_INDEX, APLOG_NOTICE, 0, p, "%s", note);
-}
-
 /*
  * This function gets called to create a per-directory configuration
  * record. This will be called for the "default" server environment, and for
@@ -132,8 +126,10 @@ static void *create_dir_config(apr_pool_t *p, char *context)
                         (void*) p, context);
 
     /* creates a new Wasm config for the current context */
-    if ( wasm_config_create(cfg->loc) != OK )
-        trace_nocontext(NULL, __FILE__, __LINE__, "wasm_config_create() - ERROR! Couldn't create Wasm config!");
+    int ret = wasm_config_create(cfg->loc); 
+    if ( ret != OK )
+        ap_log_perror(APLOG_MARK, APLOG_ERR, ret, p,
+            "wasm_config_create() - ERROR! Couldn't create Wasm config for context '%s' !", cfg->loc);
 
     return (void *) cfg;
 }
@@ -164,19 +160,23 @@ static void *create_server_config(apr_pool_t *p, server_rec *s)
     cfg->loc = apr_pstrcat(p, "SVR(", sname, ")", NULL);
 
     /* creates a new Wasm config for the current context */
-    if ( wasm_config_create(cfg->loc) != OK )
-        trace_nocontext(NULL, __FILE__, __LINE__, "wasm_config_create() - ERROR! Couldn't create Wasm config!");
+    int ret = wasm_config_create(cfg->loc); 
+    if ( ret != OK )
+        ap_log_perror(APLOG_MARK, APLOG_ERR, ret, p,
+            "wasm_config_create() - ERROR! Couldn't create Wasm config for context '%s' !", cfg->loc);
 
     return (void *) cfg;
 }
 
 /*
- * Add the provided key to the wasmtime runtime as an environment variable.
+ * Add the provided key to the Wasm runtime as an environment variable.
  */
 static int _wasm_executionctx_env_add(void* context, const char *key, const char *value)
 {
-    if ( wasm_executionctx_env_add( (const char*)context, key, value) != OK )
-        trace_nocontext(NULL, __FILE__, __LINE__, "_wasm_executionctx_env_add() - ERROR! Couldn't add env variable to Wasm execution context!");
+    int ret = wasm_executionctx_env_add((const char*)context, key, value);
+    if ( ret != OK )
+        ap_log_error(APLOG_MARK, APLOG_ERR, ret, NULL,
+            "wasm_executionctx_env_add() - ERROR! Couldn't add env variable '%s = %s' to Wasm execution context!", key, value);
 
     return 1;
 }
@@ -213,12 +213,10 @@ static int read_http_request_body(request_rec *r, const char **rbuf, apr_off_t *
         *size = length;
         while ( (len_read = ap_get_client_block(r, argsbuffer, sizeof(argsbuffer))) > 0 )
         {
-            if ( (rpos + len_read) > length )
-            {
+            if ( (rpos + len_read) > length ) {
                 rsize = length - rpos;
             }
-            else
-            {
+            else {
                 rsize = len_read;
             }
 
@@ -264,13 +262,17 @@ static int content_handler(request_rec *r)
       /* read HTTP Request body and set it as stdin for the Wasm module */
       apr_off_t body_size = 0;
       const char* body_buffer = NULL;
-      if ( read_http_request_body(r, &body_buffer, &body_size) != OK ) {
-        trace_nocontext(NULL, __FILE__, __LINE__, "content_handler() - ERROR! Couldn't read HTTP Request Body!\n");
+
+      int ret = read_http_request_body(r, &body_buffer, &body_size);
+      if ( ret != OK ) {
+        ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
+            "content_handler() - ERROR! Couldn't read HTTP Request Body!");
       }
-      else 
-      {
-        if ( wasm_executionctx_stdin_set(exec_ctx_id, body_buffer, body_size) != OK )
-            trace_nocontext(NULL, __FILE__, __LINE__, "content_handler() - ERROR! Couldn't set HTTP Request Body as stdin!\n");
+      else { /* read_http_request_body() was successfull */
+        ret = wasm_executionctx_stdin_set(exec_ctx_id, body_buffer, body_size);
+        if ( ret != OK )
+            ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
+                "content_handler() - ERROR! Couldn't set HTTP Request Body as stdin!");
       }
     }
     /* run Wasm module */
@@ -297,7 +299,8 @@ static int content_handler(request_rec *r)
 
       if (ret != OK && ret != HTTP_OK) {
         if (r->content_type == NULL)
-            trace_nocontext(NULL, __FILE__, __LINE__, "ERROR! In WasmEnableCGI mode, HTTP headers are expected (i.e.: \"Content-type: text/html\n\n\")");
+            ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
+                "content_handler() - ERROR! In WasmEnableCGI mode, HTTP headers are expected (i.e.: \"Content-type: text/html\n\n\")");
 
         wasm_return_const_char_ownership(module_response);
         return HTTP_INTERNAL_SERVER_ERROR;
@@ -313,7 +316,11 @@ static int content_handler(request_rec *r)
     wasm_return_const_char_ownership(module_response);
 
     /* deallocate execution context and return id ownership to avoid leaking memory */
-    wasm_executionctx_deallocate(exec_ctx_id);
+    int ret = wasm_executionctx_deallocate(exec_ctx_id);
+    if ( ret != OK )
+        ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
+            "content_handler() - ERROR! Couldn't deallocate Wasm execution context: '%s'", exec_ctx_id);
+
     wasm_return_const_char_ownership(exec_ctx_id);
 
     return OK;
@@ -366,12 +373,19 @@ static void register_hooks(apr_pool_t *p)
 static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
+    int ret;
 
-    if ( wasm_module_load(word1) != OK )    // Wasm module is loaded and cached
-        trace_nocontext(NULL, __FILE__, __LINE__, "wasm_directive_WasmModule() - ERROR! Couldn't load Wasm Module!");
+    /* Wasm module is loaded and cached */
+    ret = wasm_module_load(word1);
+    if ( ret != OK )
+        ap_log_error(APLOG_MARK, APLOG_ERR, ret, NULL,
+            "wasm_directive_WasmModule() - ERROR! Couldn't load Wasm Module '%s'!", word1);
 
-    if ( wasm_config_module_set(cfg->loc, word1) != OK )    // Wasm config is implictly created for the current location and using the loaded module
-        trace_nocontext(NULL, __FILE__, __LINE__, "wasm_directive_WasmModule() - ERROR! Couldn't set Wasm Module to a Wasm config!");
+    /* Wasm config is implictly created for the current location and using the loaded module */
+    ret = wasm_config_module_set(cfg->loc, word1);
+    if ( ret != OK )
+        ap_log_error(APLOG_MARK, APLOG_ERR, ret, NULL,
+            "wasm_directive_WasmModule() - ERROR! Couldn't set Wasm Module '%s' to Wasm config '%s'!", word1, cfg->loc);
 
     return NULL;
 }
@@ -380,8 +394,10 @@ static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const c
 {
     x_cfg *cfg = (x_cfg *) mconfig;
     
-    if ( wasm_config_arg_add(cfg->loc, word1) != OK )
-        trace_nocontext(NULL, __FILE__, __LINE__, "wasm_directive_WasmArg() - ERROR! Couldn't add arg!");
+    int ret = wasm_config_arg_add(cfg->loc, word1);
+    if ( ret != OK )
+        ap_log_error(APLOG_MARK, APLOG_ERR, ret, NULL,
+            "wasm_directive_WasmArg() - ERROR! Couldn't add arg '%s' to Wasm config '%s'!", word1, cfg->loc);
 
     return NULL;
 }
@@ -390,8 +406,10 @@ static const char *wasm_directive_WasmEnv(cmd_parms *cmd, void *mconfig, const c
 {
     x_cfg *cfg = (x_cfg *) mconfig;
 
-    if ( wasm_config_env_add(cfg->loc, word1, word2) != OK )
-        trace_nocontext(NULL, __FILE__, __LINE__, "wasm_directive_WasmEnv() - ERROR! Couldn't add environment variable!");
+    int ret = wasm_config_env_add(cfg->loc, word1, word2);
+    if ( ret != OK )
+        ap_log_error(APLOG_MARK, APLOG_ERR, ret, NULL,
+            "wasm_directive_WasmEnv() - ERROR! Couldn't add env var '%s=%s' to Wasm config '%s'!", word1, word2, cfg->loc);
 
     return NULL;
 }
@@ -400,8 +418,10 @@ static const char *wasm_directive_WasmDir(cmd_parms *cmd, void *mconfig, const c
 {
     x_cfg *cfg = (x_cfg *) mconfig;
 
-    if ( wasm_config_dir_add(cfg->loc, word1) != OK )
-        trace_nocontext(NULL, __FILE__, __LINE__, "wasm_directive_WasmDir() - ERROR! Couldn't add preopen dir!");
+    int ret = wasm_config_dir_add(cfg->loc, word1);
+    if ( ret != OK )
+        ap_log_error(APLOG_MARK, APLOG_ERR, ret, NULL,
+            "wasm_directive_WasmDir() - ERROR! Couldn't preopen dir '%s' for Wasm config '%s'!", word1, cfg->loc);
 
     return NULL;
 }
@@ -410,8 +430,10 @@ static const char *wasm_directive_WasmMapDir(cmd_parms *cmd, void *mconfig, cons
 {
     x_cfg *cfg = (x_cfg *) mconfig;
 
-    if ( wasm_config_mapdir_add(cfg->loc, word1, word2) != OK )
-        trace_nocontext(NULL, __FILE__, __LINE__, "wasm_directive_WasmMapDir() - ERROR! Couldn't add preopen dir with mapping!");
+    int ret = wasm_config_mapdir_add(cfg->loc, word1, word2); 
+    if ( ret != OK )
+        ap_log_error(APLOG_MARK, APLOG_ERR, ret, NULL,
+            "wasm_directive_WasmMapDir() - ERROR! Couldn't preopen dir '%s' with mapping to '%s' for Wasm config '%s'!", word2, word1, cfg->loc);            
 
     return NULL;
 }
