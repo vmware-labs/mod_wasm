@@ -4,6 +4,19 @@
 
 -
 
+## 0.10.1 (2022/12/12)
+
+### `mod_wasm.so`
+- All logging is now properly route to `ap_log_error()`, `ap_log_perror()` and `ap_log_rerror()`.
+- Apache-2.0 extended license headers.
+- Only C89 comments (/* */).
+
+### `libwasm_runtime.so`
+- Dependencies:
+  - Bump version dependencies:
+    - `wasmtime` to `3.0.1`.
+  - Updated `cargo.lock` dependencies via `cargo update`.
+
 ## 0.10.0 (2022/11/28)
 
 - In this version, among other improvements, we introduce two major features implementing [#6](https://github.com/vmware-labs/mod_wasm/issues/6), [#7](https://github.com/vmware-labs/mod_wasm/issues/7), and [#16](https://github.com/vmware-labs/mod_wasm/issues/16).
