@@ -115,7 +115,6 @@ module AP_MODULE_DECLARE_DATA wasm_module;
 static void *create_dir_config(apr_pool_t *p, char *context)
 {
     x_cfg *cfg;
-    char *note;
 
     /*
      * Allocate the space for our record from the pool supplied.
@@ -132,8 +131,6 @@ static void *create_dir_config(apr_pool_t *p, char *context)
      */
     context = (context != NULL) ? context : "";
     cfg->loc = apr_pstrcat(p, "DIR(", context, ")", NULL);
-    note = apr_psprintf(p, "create_dir_config(p == %pp, context == %s)",
-                        (void*) p, context);
 
     /* creates a new Wasm config for the current context */
     int ret = wasm_config_create(cfg->loc); 
