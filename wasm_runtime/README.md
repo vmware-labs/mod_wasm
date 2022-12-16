@@ -2,23 +2,13 @@
 
 The steps below show how to build wasm_runtime. Rust will target the host platform, building `libwasm_runtime.so` on Linux and `wasm_runtime.dll` on Windows.
 
-The only requirements are:
+### Requirements
 
-- [Rust](https://www.rust-lang.org/) 
+- [Rust](https://www.rust-lang.org/): Go to the [getting started](https://www.rust-lang.org/learn/get-started) section and follow instructions for your platform.
+- [cbindgen](https://github.com/eqrion/cbindgen): Execute `cargo install cbindgen` once Rust is installed.
 
-```console
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-- [cbindgen](https://github.com/eqrion/cbindgen)
-
-```console
-cargo install cbindgen
-```
-
-Next, execute `make all` in this folder, and it will invoke `cargo` with the proper tags and parameters.
-```console
-make all
-```
+### Build
+Execute `make all` in this folder, and it will invoke `cargo` with the proper tags and parameters.
 
 ### ⚠️ Dealing with the runtime linker
 
