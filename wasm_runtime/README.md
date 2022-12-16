@@ -1,6 +1,8 @@
 # 🏗️ Building wasm_runtime
 
-The steps below show how to build wasm_runtime. Rust will target the host platform, building `libwasm_runtime.so` on Linux and `wasm_runtime.dll` on Windows.
+The steps below show how to build **wasm_runtime**.
+
+Rust will automatically target the host platform, building `libwasm_runtime.so` on Linux and `wasm_runtime.dll` on Windows.
 
 ### Requirements
 
