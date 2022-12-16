@@ -74,23 +74,25 @@ At this point, Apache Server and mod_wasm are built (see `dist/bin` and `dist/mo
 
 ## Building for Windows
 
-The only requirment for building mod_wasm on Windows are:
+The only requirments for building mod_wasm on Windows are:
 * [Microsoft Visual Studio](https://visualstudio.microsoft.com/).
   * Make sure you install MSVC C++ x64/x86 build tools and Windows SDK components.
 * [Apache for Windows](https://www.apachelounge.com/download/VS17/binaries/httpd-2.4.54-win64-VS17.zip) (from [Apache Lounge](https://www.apachelounge.com)).
   
-Set `APACHE` and `WASM_RUNTIME` environment variables to the corresponding routes in your system:
+Next, follow the compiling and linking steps:
+
+1) Set `APACHE` and `WASM_RUNTIME` environment variables to the corresponding routes in your system:
 ```console
 set APACHE=C:\Apache24
 set WASM_RUNTIME=C:\mod_wasm\wasm_runtime
 ```
 
-Compile `mod_wasm.c` and get the object file (`mod_wasm.obj`):
+2) Compile `mod_wasm.c` and get the object file (`mod_wasm.obj`):
 ```console
 "c:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.34.31933\bin\Hostx64\x64\cl.exe" /nologo /MD /O2 /LD /W3 -DWIN32 -D_WIN32 -I%APACHE%\include -I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.20348.0\um" -I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.20348.0\shared" -I"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.34.31933\include" -I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.20348.0\ucrt" -I"%WASM_RUNTIME%\include" /c /Fomod_wasm.obj mod_wasm.c
 ```
 
-Link to get `mod_wasm.so`:
+3) Link to get `mod_wasm.so`:
 ```console
 "c:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.34.31933\bin\Hostx64\x64\link.exe" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.20348.0\um\x64\kernel32.lib" "%APACHE%\lib\libhttpd.lib" "%APACHE%\lib\libapr-1.lib" "%APACHE%\lib\libaprutil-1.lib" "%WASM_RUNTIME%\target\release\wasm_runtime.dll.lib" /LIBPATH:"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.34.31933\lib\x64" /LIBPATH:"C:\Program Files (x86)\Windows Kits\10\Lib\10.0.20348.0\ucrt\x64" /nologo /subsystem:windows /dll /out:mod_wasm.so mod_wasm.obj
 ```
