@@ -94,7 +94,7 @@ pub fn invoke_wasm_function(wasm_executionctx: &WasmExecutionCtx, function_name:
     };
 
     // get typed function from instance
-    let typed_function: TypedFunc<(), ()> = match instance.get_typed_func::<(), (), _>(&mut store, function_name) {
+    let typed_function: TypedFunc<(), ()> = match instance.get_typed_func::<(), ()>(&mut store, function_name) {
         Ok(tp) => tp,
         Err(e) => {
             let error_msg = format!("ERROR! Can't get typed function '{}' from instance! {}", function_name, e);

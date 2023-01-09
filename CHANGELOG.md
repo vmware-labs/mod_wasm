@@ -4,6 +4,18 @@
 
 -
 
+## 0.10.2 (2023/01/09)
+
+### `libwasm_runtime.so`
+- Dependencies:
+  - Bump version dependencies:
+    - `wasmtime` to `4.0.0`.
+      - As a consequence, update code to invoke `get_typed_func<Params, Results>()` with only two arguments.
+    - `anyhow` to `1.0.66`.
+    - `once_cell` to `1.17.0`.
+  - Updated `cargo.lock` dependencies via `cargo update`.
+
+
 ## 0.10.1 (2022/12/12)
 
 ### `mod_wasm.so`
