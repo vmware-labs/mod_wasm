@@ -22,5 +22,6 @@ clean:
 	rm -rf target/release/libwasm_runtime.*
 
 clean_all: clean
+	cargo clean --release
 	rm -rf wasm_runtime.h
 

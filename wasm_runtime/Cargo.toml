@@ -17,11 +17,11 @@ crate-type = ["cdylib"]      # Creates dynamic lib
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wasmtime = "4.0.0"
-wasmtime-wasi = "4.0.0"
-wasi-common = "4.0.0"
-wasi-cap-std-sync = "4.0.0"
-anyhow = "1.0.68"
+wasmtime = "5.0.0"
+wasmtime-wasi = "5.0.0"
+wasi-common = "5.0.0"
+wasi-cap-std-sync = "5.0.0"
+anyhow = "1.0.69"
 once_cell = "1.17.0"
 rand = "0.8.5"
 
