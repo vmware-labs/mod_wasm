@@ -157,7 +157,7 @@ impl WasmExecutionCtx {
     /// Returns Result<String, String>, with the contents of stdout.
     /// In case something goes wrong (including invalid `conexecutionctx_id`), it returns a String explaing the error.
     /// 
-    pub fn run(executionctx_id: &str) -> Result<String, String> {
+    pub fn run(executionctx_id: &str) -> Result<Vec<u8>, String> {
 
         // get read access to the WasmExecutionCtx HashMap
         let executionctxs = WASM_RUNTIME_EXECUTIONCTXS.read()
@@ -176,10 +176,7 @@ impl WasmExecutionCtx {
         wasm_engine::invoke_wasm_function(wasm_executionctx, "_start")?;
 
         // read stdout from the Wasm execution context and return it
-        match Self::read_stdout(wasm_executionctx) {
-            Ok(output) => Ok(output),
-            Err(e) => Err(e),
-        }
+        Ok(Self::read_stdout(wasm_executionctx))
     }
 
     // Helper function to generate random hex IDs for the given length
@@ -202,22 +199,13 @@ impl WasmExecutionCtx {
 
     // Helper function to read stdout from the Wasm execution context
     //  
-    // Returns Result<String, String> with the succesfully converted stdtout, or a String explaining the error if failure.
+    // Returns a Vec<u8> with the stdout buffer
     //
-    fn read_stdout(wasm_executionctx: &WasmExecutionCtx) -> Result<String, String> {
+    fn read_stdout(wasm_executionctx: &WasmExecutionCtx) -> Vec<u8> {
         let stdout_buf = wasm_executionctx.wasi_stdout.read()
             .expect("ERROR! Poisoned RwLock stdout_buf on read()");
 
-        // read stdout
-        let out_string = match String::from_utf8((*stdout_buf).clone()) {
-            Ok(s) => s,
-            Err(e) => {
-                let error_msg = format!("ERROR! Can't convert stdout to UTF-8 string! {}", e);
-                return Err(error_msg);
-            }
-        };
-    
-        Ok(out_string)
+        stdout_buf.clone()
     }
 }
 

@@ -7,12 +7,12 @@
 //!
 //! This file contains the API functions for the C language
 
-use std::ffi::{c_int, c_char, c_uchar};
+use std::ffi::{c_int, c_char, c_uchar, CString};
 
 use crate::module::WasmModule;
 use crate::config::WasmConfig;
 use crate::execution_ctx::WasmExecutionCtx;
-use crate::ffi_utils::{const_c_char_buffer_to_vec, const_c_char_to_str, deallocate_cstring, str_to_c_char};
+use crate::ffi_utils::*;
 
 
 /// Load a Wasm Module from disk.
@@ -392,15 +392,17 @@ pub extern "C" fn wasm_executionctx_run(executionctx_id: *const c_char) -> *cons
     let executionctx_id_str = const_c_char_to_str(executionctx_id);
 
     let result = match WasmExecutionCtx::run(executionctx_id_str) {
-        Ok(output) => output,
+        Ok(output) => vec_u8_to_const_c_char(output),
         Err(e) => {
-            let error_msg = format!("ERROR: C-API: Can't run Wasm execution context \'{}\'! {:?}", executionctx_id_str, e);
+            let error_msg = format!("ERROR! C-API: Can't run Wasm execution context \'{}\'! {:?}", executionctx_id_str, e);
             eprintln!("{}", error_msg);
-            error_msg
+            CString::new(error_msg)
+                .expect("ERROR! C-API: Can't convert into CString!")
+                .into_raw()
         }
     };
 
-    str_to_c_char(&result)
+    result
 }
 
 

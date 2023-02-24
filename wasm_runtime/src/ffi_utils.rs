@@ -76,4 +76,14 @@ pub fn const_c_char_buffer_to_vec(buffer: *const c_uchar, size: usize) -> Vec<u8
 
     bytes_vec
 }
+
+// Converts a Vec<u8> into a null-terminated C `const char*`
+// 
+// This funcion is unsafe and can fail if data within the buffer is not well aligned.
+// See more information at: https://doc.rust-lang.org/std/slice/fn.from_raw_parts.html for more information
+pub fn vec_u8_to_const_c_char(buffer: Vec<u8>) -> *const c_char {
+    let safe_cstring = unsafe { CString::from_vec_unchecked(buffer) };
+
+    safe_cstring.into_raw()
+}
     
