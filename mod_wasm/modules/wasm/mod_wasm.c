@@ -291,9 +291,10 @@ static int content_handler(request_rec *r)
        * them; write the response from the module as our own response;
        * which has the headers already stripped from it.
        */
+      char *buffer = 0;
       const char *termch;
       int termarg;
-      int ret = ap_scan_script_header_err_strs(r, NULL, &termch, &termarg, module_response, NULL);
+      int ret = ap_scan_script_header_err_strs(r, buffer, &termch, &termarg, module_response, NULL);
       /*
        * ap_scan_script_header_err_strs can return either:
        *   - HTTP_OK: success
@@ -304,10 +305,14 @@ static int content_handler(request_rec *r)
        * than what is needed, map all responses to a 500 error.
        */
 
-      if (ret != OK && ret != HTTP_OK) {
+      if (ret != OK && ret != HTTP_OK)
+      {
+        if (buffer != 0)
+            ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r, "ERROR! In response headers: %s", buffer);
+
         if (r->content_type == NULL)
             ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
-                "content_handler() - ERROR! In WasmEnableCGI mode, HTTP headers are expected (i.e.: \"Content-type: text/html\n\n\")");
+                "ERROR! Couldn't identify mandatory HTTP headers (i.e.: \"Content-type: text/html\n\n\")");
 
         wasm_return_const_char_ownership(module_response);
         return HTTP_INTERNAL_SERVER_ERROR;
