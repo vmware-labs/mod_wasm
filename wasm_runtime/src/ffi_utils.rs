@@ -69,7 +69,7 @@ pub fn deallocate_cstring(ptr: *const c_char) {
 // Converts a `c_uchar` buffer into a Vec<u8>
 // 
 // This funcion is unsafe and can fail if data within the buffer is not well aligned.
-// See more information at: https://doc.rust-lang.org/std/slice/fn.from_raw_parts.html for more information
+// See more information at: https://doc.rust-lang.org/std/slice/fn.from_raw_parts.html
 pub fn const_c_char_buffer_to_vec(buffer: *const c_uchar, size: usize) -> Vec<u8> {
     let bytes = unsafe { slice::from_raw_parts(buffer, size) };
     let bytes_vec: Vec<u8> = Vec::from(bytes);
@@ -79,8 +79,7 @@ pub fn const_c_char_buffer_to_vec(buffer: *const c_uchar, size: usize) -> Vec<u8
 
 // Converts a Vec<u8> into a null-terminated C `const char*`
 // 
-// This funcion is unsafe and can fail if data within the buffer is not well aligned.
-// See more information at: https://doc.rust-lang.org/std/slice/fn.from_raw_parts.html for more information
+// See more information at: https://doc.rust-lang.org/std/ffi/struct.CString.html#method.from_vec_unchecked
 pub fn vec_u8_to_const_c_char(buffer: Vec<u8>) -> *const c_char {
     let safe_cstring = unsafe { CString::from_vec_unchecked(buffer) };
 

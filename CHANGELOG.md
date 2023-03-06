@@ -4,6 +4,33 @@
 
 -
 
+## 0.11.0 (2023/03/06)
+
+- In this version, now Wasm modules can return any output type via stdout (convertible to UTF-8 or not).
+- Also added some minor improvements for building scripts and error management.
+
+### `mod_wasm.so`
+- Better error management when invoking `ap_scan_script_header_err_strs()`.
+- Some improvements in `build.sh` per [#36](https://github.com/vmware-labs/mod_wasm/issues/36).
+
+### `libwasm_runtime.so`
+- Now the `stdout` result is modelled as a `Vec<u8>` instead of a `String`:
+  - This prevents an exception when a module emits a non UTF-8 output.
+- Better `clean_all` target in Makefile.
+- Dependencies:
+  - Bump version dependencies:
+    - `wasmtime` to `6.0.0`.
+    - `anyhow` to `1.0.69`.
+    - `once_cell` to `1.17.1`.
+  - Updated `cargo.lock` dependencies via `cargo update`.
+
+### `httpd-mod-wasm` demo container
+- Enabling `mod_rewrite`.
+- Adding `/php-hello-slim` demo.
+- Adding `WasmEnv TMPDIR /tmp` directive to all PHP-related demos.
+- Adding stubs for Drupal and Drupal-Zero demos (still WIP).
+
+
 ## 0.10.2 (2023/01/09)
 
 ### `libwasm_runtime.so`
@@ -14,7 +41,6 @@
     - `anyhow` to `1.0.66`.
     - `once_cell` to `1.17.0`.
   - Updated `cargo.lock` dependencies via `cargo update`.
-
 
 ## 0.10.1 (2022/12/12)
 
