@@ -123,3 +123,8 @@ RUN mkdir -p /usr/local/apache2/htdocs/drupal
 COPY --from=builder-demos /tmp/drupal /usr/local/apache2/htdocs/drupal
 COPY ./examples/wasm_modules/php-scripts/drupal-patch/ /usr/local/apache2/htdocs/drupal
 RUN chmod -R go+w /usr/local/apache2/htdocs/drupal/sites/default/files
+## Drupal-zero
+RUN mkdir -p /usr/local/apache2/htdocs/drupal-zero
+COPY --from=builder-demos /tmp/drupal /usr/local/apache2/htdocs/drupal-zero
+COPY ./examples/wasm_modules/php-scripts/drupal-zero-patch/ /usr/local/apache2/htdocs/drupal-zero
+RUN chmod -R go+w /usr/local/apache2/htdocs/drupal-zero/sites/default/files
