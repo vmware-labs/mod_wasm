@@ -4,6 +4,22 @@
 
 -
 
+## 0.10.3 (2023/03/08)
+
+This is a security update to bump Wasmtime to 6.0.1 given the two CVE published (one critical) and addressed in:
+ - [GHSA-ff4p-7xrq-q5r8 (CVE-2023-26489)](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-ff4p-7xrq-q5r8)
+ - [GHSA-xm67-587q-r2vw (CVE-2023-27477)](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-xm67-587q-r2vw)
+
+
+### `libwasm_runtime.so`
+- Dependencies:
+  - Bump version dependencies:
+    - `wasmtime` to `6.0.1`.
+    - `anyhow` to `1.0.69`.
+    - `once_cell` to `1.17.1`.
+  - Updated `cargo.lock` dependencies via `cargo update`.
+
+
 ## 0.10.2 (2023/01/09)
 
 ### `libwasm_runtime.so`
