@@ -81,11 +81,11 @@ RUN wget -P /tmp https://wordpress.org/wordpress-6.0.2.tar.gz \
 RUN tar -xzf /tmp/wordpress-6.0.2.tar.gz 
 
 # Drupal
-ENV DRUPAL_SHA1 538f78d4084fcb92aca1394522a05791cfb7c289
-RUN wget -P /tmp https://ftp.drupal.org/files/projects/drupal-10.0.3.tar.gz \
-    && echo $DRUPAL_SHA1 drupal-10.0.3.tar.gz | sha1sum -c -
-RUN tar -xzf /tmp/drupal-10.0.3.tar.gz 
-RUN mv /tmp/drupal-10.0.3 /tmp/drupal 
+ENV DRUPAL_SHA1 4632633de1cdfbb78e0af9eb32cf8819fce62007
+RUN wget -P /tmp https://ftp.drupal.org/files/projects/drupal-10.0.4.tar.gz \
+    && echo $DRUPAL_SHA1 drupal-10.0.4.tar.gz | sha1sum -c -
+RUN tar -xzf /tmp/drupal-10.0.4.tar.gz 
+RUN mv /tmp/drupal-10.0.4    /tmp/drupal 
 
 
 ################################################################################
