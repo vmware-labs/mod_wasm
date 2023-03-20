@@ -4,7 +4,7 @@
 
 -
 
-## 0.11.0 (2023/03/20)
+## 0.11.0 (2023/03/21)
 
 - In this version, Wasm modules can now return any output type via stdout, including binaries with non UTF-8 bytes sequences or `\0` NULL terminators in the middle.
 - Also added some minor improvements for error management and building scripts.
@@ -22,6 +22,7 @@
 - Better `clean_all` target in Makefile.
 - Dependencies:
   - Bump version dependencies:
+    - `wasmtime` to `7.0.0`.
     - `anyhow` to `1.0.70`.
   - Updated `cargo.lock` dependencies via `cargo update`.
 
