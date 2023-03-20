@@ -166,7 +166,7 @@ int wasm_config_mapdir_add(const char *config_id,
  * So `config_id` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
  * In addition, `config_id` must contain valid ASCII chars that can be converted into UTF-8 encoding.
  *
- * Finally, the execution context itself and the returned C string's containing the execution contex are owneed by Rust.
+ * Finally, the execution context itself and the returned C string's containing the execution contex are owned by Rust.
  * So, in order to avoid leaking memory, C world must invoke `wasm_executionctx_deallocate()` and `wasm_return_const_char_ownership()`
  * when the execution context and its ID are not needed anymore.
  *
@@ -251,14 +251,23 @@ int wasm_executionctx_stdin_set(const char *executionctx_id,
 /**
  * Run the given Wasm execution context
  *
- * Returns a string with the stdout from the Wasm module if execution was succesfuly.
- * Otherwise, trace the error and returns a string explaining the error.
+ * In case of error, the reason is printed to stderr and returns -1.
+ * Otherwise, it returns 0.
+ *
+ * Parameters:
+ *
+ * - `executionctx_id`: Wasm execution context ID. It must have been previously created.
+ * - `_buffer`: It's an out-only parameter that represents a C `const char**`. Empty when called the function.
+ *   On output, it points to the Wasm execution context output.
+ * - `_len`: It's an out-only parameter that represents a C `unsigned long int*`. On output, it contains the buffer length.
  *
  * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
  * So `executionctx_id` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
  * In addition, `executionctx_id` must contain valid ASCII chars that can be converted into UTF-8 encoding.
  *
- * Finally, the returned C string's containing the Wasm module stdout is owneed by Rust.
+ * The returning buffer is can contain more than one NULL terminator ('\0) character (ie. binary files as .png images).
+ *
+ * Finally, the returned C-string `_buffer` containing the Wasm module stdout is owned by Rust.
  * So, in order to avoid leaking memory, C world must invoke `wasm_return_const_char_ownership()`
  * when the Wasm module stdout is not needed anymore.
  *
@@ -272,7 +281,9 @@ int wasm_executionctx_stdin_set(const char *executionctx_id,
  * wasm_return_const_char_ownership(module_output);
  * ```
  */
-const char *wasm_executionctx_run(const char *executionctx_id);
+int wasm_executionctx_run(const char *executionctx_id,
+                          const char **_buffer,
+                          unsigned long *_len);
 
 /**
  * Returns raw pointer's ownership

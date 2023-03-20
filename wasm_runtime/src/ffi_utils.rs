@@ -80,6 +80,13 @@ pub fn const_c_char_buffer_to_vec(buffer: *const c_uchar, size: usize) -> Vec<u8
 // Converts a Vec<u8> into a null-terminated C `const char*`
 // 
 // See more information at: https://doc.rust-lang.org/std/ffi/struct.CString.html#method.from_vec_unchecked
+// 
+// NOTE: As a reminder, C strings use the NULL terminator convention ('\0' character).
+// The Vec<u8> input buffer might contain more than one NULL terminator in the middle that we must honor since they might 
+// be part of a binary content (ie.: a .png file). That is why we use `from_vec_unchecked()` to ensure all bytes are part
+// of the new CString.
+// To work in C with the returning `const char* buffer`, make sure you also get the Vec<u8> size and DO NOT use C NULL-terminated 
+// related functions such as `printf` (which will truncate the output), and use size-based functions like `fwrite()` instead.
 pub fn vec_u8_to_const_c_char(buffer: Vec<u8>) -> *const c_char {
     let safe_cstring = unsafe { CString::from_vec_unchecked(buffer) };
 
