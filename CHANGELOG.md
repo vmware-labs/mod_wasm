@@ -4,24 +4,25 @@
 
 -
 
-## 0.11.0 (2023/03/06)
+## 0.11.0 (2023/03/20)
 
-- In this version, now Wasm modules can return any output type via stdout (convertible to UTF-8 or not).
-- Also added some minor improvements for building scripts and error management.
+- In this version, Wasm modules can now return any output type via stdout, including binaries with non UTF-8 bytes sequences or `\0` NULL terminators in the middle.
+- Also added some minor improvements for error management and building scripts.
 
 ### `mod_wasm.so`
+- Support for the new `wasm_executionctx_run()` signature in the wasm_runtime C-API.
 - Better error management when invoking `ap_scan_script_header_err_strs()`.
 - Some improvements in `build.sh` per [#36](https://github.com/vmware-labs/mod_wasm/issues/36).
 
 ### `libwasm_runtime.so`
-- Now the `stdout` result is modelled as a `Vec<u8>` instead of a `String`:
+- Now the Wasm module `stdout` is modelled as a `Vec<u8>` instead of a `String`:
   - This prevents an exception when a module emits a non UTF-8 output.
+- New signature for `wasm_executionctx_run()` in the C-API now requires buffer and length pointers:
+  - This allows NULL terminators (`\0`) in the middle of the output to be managed by C without truncating the string (ie.: requires `fwrite()` instead of `fprintf()`, etc.).
 - Better `clean_all` target in Makefile.
 - Dependencies:
   - Bump version dependencies:
-    - `wasmtime` to `6.0.0`.
-    - `anyhow` to `1.0.69`.
-    - `once_cell` to `1.17.1`.
+    - `anyhow` to `1.0.70`.
   - Updated `cargo.lock` dependencies via `cargo update`.
 
 ### `httpd-mod-wasm` demo container
@@ -29,6 +30,22 @@
 - Adding `/php-hello-slim` demo.
 - Adding `WasmEnv TMPDIR /tmp` directive to all PHP-related demos.
 - Adding stubs for Drupal and Drupal-Zero demos (still WIP).
+
+
+## 0.10.3 (2023/03/08)
+
+This is a security update to bump Wasmtime to 6.0.1 given the two CVE published (one critical) and addressed in:
+ - [GHSA-ff4p-7xrq-q5r8 (CVE-2023-26489)](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-ff4p-7xrq-q5r8)
+ - [GHSA-xm67-587q-r2vw (CVE-2023-27477)](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-xm67-587q-r2vw)
+
+
+### `libwasm_runtime.so`
+- Dependencies:
+  - Bump version dependencies:
+    - `wasmtime` to `6.0.1`.
+    - `anyhow` to `1.0.69`.
+    - `once_cell` to `1.17.1`.
+  - Updated `cargo.lock` dependencies via `cargo update`.
 
 
 ## 0.10.2 (2023/01/09)
