@@ -373,7 +373,7 @@ pub extern "C" fn wasm_executionctx_stdin_set(executionctx_id: *const c_char, bu
 /// Parameters:
 ///
 /// - `executionctx_id`: Wasm execution context ID. It must have been previously created.
-/// - `_buffer`: It's an out-only parameter that represents a C `const char**`. Empty when called the function.
+/// - `_buffer`: It's an out-only parameter that represents a C `const char**`. Empty when calling the function.
 ///   On output, it points to the Wasm execution context output.
 /// - `_len`: It's an out-only parameter that represents a C `unsigned long int*`. On output, it contains the buffer length.
 ///
