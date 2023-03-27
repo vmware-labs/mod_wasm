@@ -381,9 +381,9 @@ pub extern "C" fn wasm_executionctx_stdin_set(executionctx_id: *const c_char, bu
 /// So `executionctx_id` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
 /// In addition, `executionctx_id` must contain valid ASCII chars that can be converted into UTF-8 encoding.
 /// 
-/// The returned buffer can contain more than one NULL terminator ('\0) character (ie. binary files as .png images).
+/// The returned `_buffer` can contain more than one NULL terminator ('\0) character (ie. binary files as .png images).
 /// 
-/// Finally, the returned C-string `_buffer` containing the Wasm module stdout is owned by Rust.
+/// Finally, the memory returned in `_buffer` containing the Wasm module stdout is owned by Rust.
 /// So, in order to avoid leaking memory, C world must invoke `wasm_return_const_char_ownership()`
 /// when the Wasm module stdout is not needed anymore.
 ///
