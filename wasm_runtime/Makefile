@@ -22,5 +22,7 @@ clean:
 	rm -rf target/release/libwasm_runtime.*
 
 clean_all: clean
-	rm -rf wasm_runtime.h
-
+	cargo clean
+	cargo clean --release
+	rm -rf include/wasm_runtime.h
+	rm -rf include/version.h

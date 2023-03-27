@@ -7,12 +7,12 @@
 //!
 //! This file contains the API functions for the C language
 
-use std::ffi::{c_int, c_char, c_uchar};
+use std::ffi::{c_int, c_char, c_uchar, c_ulong};
 
 use crate::module::WasmModule;
 use crate::config::WasmConfig;
 use crate::execution_ctx::WasmExecutionCtx;
-use crate::ffi_utils::{const_c_char_buffer_to_vec, const_c_char_to_str, deallocate_cstring, str_to_c_char};
+use crate::ffi_utils::*;
 
 
 /// Load a Wasm Module from disk.
@@ -241,7 +241,7 @@ pub extern "C" fn wasm_config_mapdir_add(config_id: *const c_char, map: *const c
 /// So `config_id` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
 /// In addition, `config_id` must contain valid ASCII chars that can be converted into UTF-8 encoding.
 /// 
-/// Finally, the execution context itself and the returned C string's containing the execution contex are owneed by Rust.
+/// Finally, the execution context itself and the returned C string's containing the execution contex are owned by Rust.
 /// So, in order to avoid leaking memory, C world must invoke `wasm_executionctx_deallocate()` and `wasm_return_const_char_ownership()`
 /// when the execution context and its ID are not needed anymore.
 /// 
@@ -367,14 +367,23 @@ pub extern "C" fn wasm_executionctx_stdin_set(executionctx_id: *const c_char, bu
 
 /// Run the given Wasm execution context
 ///
-/// Returns a string with the stdout from the Wasm module if execution was succesfuly.
-/// Otherwise, trace the error and returns a string explaining the error.
+/// In case of error, the reason is printed to stderr and returns -1.
+/// Otherwise, it returns 0.
+/// 
+/// Parameters:
+///
+/// - `executionctx_id`: Wasm execution context ID. It must have been previously created.
+/// - `_buffer`: It's an out-only parameter that represents a C `const char**`. Empty when calling the function.
+///   On output, it points to the Wasm execution context output.
+/// - `_len`: It's an out-only parameter that represents a C `unsigned long int*`. On output, it contains the buffer length.
 ///
 /// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
 /// So `executionctx_id` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
 /// In addition, `executionctx_id` must contain valid ASCII chars that can be converted into UTF-8 encoding.
 /// 
-/// Finally, the returned C string's containing the Wasm module stdout is owneed by Rust.
+/// The returned `_buffer` can contain more than one NULL terminator ('\0) character (ie. binary files as .png images).
+/// 
+/// Finally, the memory returned in `_buffer` containing the Wasm module stdout is owned by Rust.
 /// So, in order to avoid leaking memory, C world must invoke `wasm_return_const_char_ownership()`
 /// when the Wasm module stdout is not needed anymore.
 ///
@@ -388,19 +397,33 @@ pub extern "C" fn wasm_executionctx_stdin_set(executionctx_id: *const c_char, bu
 /// wasm_return_const_char_ownership(module_output);
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_executionctx_run(executionctx_id: *const c_char) -> *const c_char {
+pub extern "C" fn wasm_executionctx_run(executionctx_id: *const c_char, _buffer: &mut *const c_char, _len: &mut c_ulong) -> c_int {
     let executionctx_id_str = const_c_char_to_str(executionctx_id);
 
-    let result = match WasmExecutionCtx::run(executionctx_id_str) {
-        Ok(output) => output,
+    let result: c_int = match WasmExecutionCtx::run(executionctx_id_str) {
+        Ok(output) => {
+            // 1) extract output length and try casting into `c_ulong` since it might not fit
+            *_len = match c_ulong::try_from(output.len()) {
+                Ok(l) => l,
+                Err(e) => {
+                    let error_msg = format!("ERROR! C-API: Couldn't cast Wasm module's output length ({}) into a C `unsigned long int` type! {:?}", output.len(), e);
+                    eprintln!("{}", error_msg); 
+                    return -1; // we end function execution here and ignore the output buffer
+                }
+            };
+            
+            // 2) extract output
+            *_buffer = vec_u8_to_const_c_char(output);
+            0
+        }
         Err(e) => {
-            let error_msg = format!("ERROR: C-API: Can't run Wasm execution context \'{}\'! {:?}", executionctx_id_str, e);
+            let error_msg = format!("ERROR! C-API: Can't run Wasm execution context \'{}\'! {:?}", executionctx_id_str, e);
             eprintln!("{}", error_msg);
-            error_msg
+            -1
         }
     };
 
-    str_to_c_char(&result)
+    result
 }
 
 

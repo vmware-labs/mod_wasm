@@ -27,9 +27,10 @@ SCRIPT_DIR=$( cd -- "$(dirname -- "$0")" &> /dev/null && pwd )
 MOD_WASM_DIR=${MOD_WASM_DIR:-$(realpath "${SCRIPT_DIR}/modules/wasm")}
 WASM_RUNTIME_PATH=${WASM_RUNTIME_PATH:-$(realpath "${SCRIPT_DIR}/../wasm_runtime")}
 DIST_DIR=${DIST_DIR:-$(realpath "${SCRIPT_DIR}/../dist")}
-if [ -z ${HTTPD_DIR+x} ]
+if [ -z ${HTTPD_DIR} ]
 then
     HTTPD_DIR=$(realpath ../httpd)
+    echo "\$HTTPD_DIR not defined! Using by default: $HTTPD_DIR"
 fi
 ARCH=$(uname -m)
 
@@ -52,6 +53,7 @@ cd ${MOD_WASM_DIR}
 
 /usr/share/apr-1.0/build/libtool --verbose --mode=compile ${ARCH}-linux-gnu-gcc \
      -I${HTTPD_DIR}/include \
+     -I${HTTPD_DIR}/dist/include \
      $(pkg-config --cflags apr-1 apr-util-1) \
      -I${WASM_RUNTIME_PATH}/include \
      -shared \

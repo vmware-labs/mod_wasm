@@ -260,6 +260,7 @@ static int content_handler(request_rec *r)
     /* creates a new Wasm execution context */
     const char* exec_ctx_id = wasm_executionctx_create_from_config(dcfg->loc);
 
+    int ret = 0;
     if (dcfg->bWasmEnableCGI) {
       /* On CGI mode, we set the request headers as environment variables with an HTTP_ prefix. */
       ap_add_common_vars(r);
@@ -270,7 +271,7 @@ static int content_handler(request_rec *r)
       apr_off_t body_size = 0;
       const char* body_buffer = NULL;
 
-      int ret = read_http_request_body(r, &body_buffer, &body_size);
+      ret = read_http_request_body(r, &body_buffer, &body_size);
       if ( ret != OK ) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
             "content_handler() - ERROR! Couldn't read HTTP Request Body!");
@@ -282,8 +283,15 @@ static int content_handler(request_rec *r)
                 "content_handler() - ERROR! Couldn't set HTTP Request Body as stdin!");
       }
     }
-    /* run Wasm module */
-    const char* module_response = wasm_executionctx_run(exec_ctx_id);
+
+    /* run Wasm execution context */
+    size_t len = 0;
+    const char* module_response = NULL;
+    ret = wasm_executionctx_run(exec_ctx_id, &module_response, &len);
+    if ( ret != OK ) {
+        ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
+            "content_handler() - ERROR! Couldn't run Wasm execution context '%s'!", exec_ctx_id);
+    }
 
     if (dcfg->bWasmEnableCGI) {
       /*
@@ -291,9 +299,10 @@ static int content_handler(request_rec *r)
        * them; write the response from the module as our own response;
        * which has the headers already stripped from it.
        */
+      char buffer[MAX_STRING_LEN] = {'\0'};
       const char *termch;
       int termarg;
-      int ret = ap_scan_script_header_err_strs(r, NULL, &termch, &termarg, module_response, NULL);
+      ret = ap_scan_script_header_err_strs(r, buffer, &termch, &termarg, module_response, NULL);
       /*
        * ap_scan_script_header_err_strs can return either:
        *   - HTTP_OK: success
@@ -304,26 +313,42 @@ static int content_handler(request_rec *r)
        * than what is needed, map all responses to a 500 error.
        */
 
-      if (ret != OK && ret != HTTP_OK) {
+      if (ret != OK && ret != HTTP_OK)
+      {
+        if (buffer != NULL)
+            ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r, "ERROR! Invalid script response. On header #%i, found character '%s': %s", termarg, termch, buffer);
+
         if (r->content_type == NULL)
             ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
-                "content_handler() - ERROR! In WasmEnableCGI mode, HTTP headers are expected (i.e.: \"Content-type: text/html\n\n\")");
+                "ERROR! Couldn't find mandatory 'Content-type' HTTP header (i.e.: \"Content-type: text/html\n\n\")");
 
-        wasm_return_const_char_ownership(module_response);
         return HTTP_INTERNAL_SERVER_ERROR;
       }
       if (termch != NULL) {
-        ap_rprintf(r, "%s", termch);
+        /*
+         * After parsing the response headers in the Wasm module output with
+         * `ap_scan_script_header_err_strs()`, the `termch` variable points to the
+         * last parsed character. Now we need to write the remaining body into the request,
+         * but we don't know its length, and thus it has to be calculated.
+         * 
+         * Since `termch` points to the latest char in the headers, and `module_response` points to
+         * the begining of the response array, we can calculate the headers length using a simple 
+         * pointer arithmetic operation: `headers_len = termch - module_response`.
+         * 
+         * Finally, the body length is therefore the total array length minus the headers length:
+         * `body_len = len - headers_len = len - (termch - module_response)`.
+         */
+        ap_rwrite(termch, len - (termch - module_response), r);        
       }
     } else if (module_response != NULL) {
-      ap_rprintf(r, "%s", module_response);
+      ap_rwrite(module_response, len, r);   
     }
 
     /* return module response ownership to avoid leaking memory */
     wasm_return_const_char_ownership(module_response);
 
     /* deallocate execution context and return id ownership to avoid leaking memory */
-    int ret = wasm_executionctx_deallocate(exec_ctx_id);
+    ret = wasm_executionctx_deallocate(exec_ctx_id);
     if ( ret != OK )
         ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
             "content_handler() - ERROR! Couldn't deallocate Wasm execution context: '%s'", exec_ctx_id);

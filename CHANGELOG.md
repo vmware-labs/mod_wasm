@@ -4,6 +4,35 @@
 
 -
 
+## 0.11.0 (2023/03/21)
+
+- In this version, Wasm modules can now return any output type via stdout, including binaries with non UTF-8 bytes sequences or `\0` NULL terminators in the middle.
+- Also added some minor improvements for error management and building scripts.
+
+### `mod_wasm.so`
+- Support for the new `wasm_executionctx_run()` signature in the wasm_runtime C-API.
+- Better error management when invoking `ap_scan_script_header_err_strs()`.
+- Some improvements in `build.sh` per [#36](https://github.com/vmware-labs/mod_wasm/issues/36).
+
+### `libwasm_runtime.so`
+- Now the Wasm module `stdout` is modelled as a `Vec<u8>` instead of a `String`:
+  - This prevents an exception when a module emits a non UTF-8 output.
+- New signature for `wasm_executionctx_run()` in the C-API now requires buffer and length pointers:
+  - This allows NULL terminators (`\0`) in the middle of the output to be managed by C without truncating the string (ie.: requires `fwrite()` instead of `fprintf()`, etc.).
+- Better `clean_all` target in Makefile.
+- Dependencies:
+  - Bump version dependencies:
+    - `wasmtime` to `7.0.0`.
+    - `anyhow` to `1.0.70`.
+  - Updated `cargo.lock` dependencies via `cargo update`.
+
+### `httpd-mod-wasm` demo container
+- Enabling `mod_rewrite`.
+- Adding `/php-hello-slim` demo.
+- Adding `WasmEnv TMPDIR /tmp` directive to all PHP-related demos.
+- Adding stubs for Drupal and Drupal-Zero demos (still WIP).
+
+
 ## 0.10.3 (2023/03/08)
 
 This is a security update to bump Wasmtime to 6.0.1 given the two CVE published (one critical) and addressed in:
@@ -30,7 +59,6 @@ This is a security update to bump Wasmtime to 6.0.1 given the two CVE published 
     - `anyhow` to `1.0.66`.
     - `once_cell` to `1.17.0`.
   - Updated `cargo.lock` dependencies via `cargo update`.
-
 
 ## 0.10.1 (2022/12/12)
 

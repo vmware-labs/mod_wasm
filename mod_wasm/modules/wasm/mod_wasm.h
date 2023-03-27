@@ -14,5 +14,5 @@
  * limitations under the License.
  */
 #define MOD_WASM_VERSION_MAJOR 0
-#define MOD_WASM_VERSION_MINOR 10
-#define MOD_WASM_VERSION_PATCH 2
+#define MOD_WASM_VERSION_MINOR 11
+#define MOD_WASM_VERSION_PATCH 0
