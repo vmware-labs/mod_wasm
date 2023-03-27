@@ -4,7 +4,7 @@
 
 -
 
-## 0.11.0 (2023/03/21)
+## 0.11.0 (2023/03/27)
 
 - In this version, Wasm modules can now return any output type via stdout, including binaries with non UTF-8 bytes sequences or `\0` NULL terminators in the middle.
 - Also added some minor improvements for error management and building scripts.
