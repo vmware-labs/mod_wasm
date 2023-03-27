@@ -327,11 +327,16 @@ static int content_handler(request_rec *r)
       if (termch != NULL) {
         /*
          * After parsing the response headers in the Wasm module output with
-         * #ap_scan_script_header_err_strs, the `termch` variable points to the
-         * last parsed character.
-         *
-         * To return the response body, we start from that character and calculate
-         * the remaining length in the response buffer.
+         * `ap_scan_script_header_err_strs()`, the `termch` variable points to the
+         * last parsed character. Now we need to write the remaining body into the request,
+         * but we don't know its length, and thus it has to be calculated.
+         * 
+         * Since `termch` points to the latest char in the headers, and `module_response` points to
+         * the begining of the response array, we can calculate the headers length using a simple 
+         * pointer arithmetic operation: `headers_len = termch - module_response`.
+         * 
+         * Finally, the body length is therefore the total array length minus the headers length:
+         * `body_len = len - headers_len = len - (termch - module_response)`.
          */
         ap_rwrite(termch, len - (termch - module_response), r);        
       }
