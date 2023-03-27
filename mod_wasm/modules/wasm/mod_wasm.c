@@ -325,6 +325,14 @@ static int content_handler(request_rec *r)
         return HTTP_INTERNAL_SERVER_ERROR;
       }
       if (termch != NULL) {
+        /*
+         * After parsing the response headers in the Wasm module output with
+         * #ap_scan_script_header_err_strs, the `termch` variable points to the
+         * last parsed character.
+         *
+         * To return the response body, we start from that character and calculate
+         * the remaining length in the response buffer.
+         */
         ap_rwrite(termch, len - (termch - module_response), r);        
       }
     } else if (module_response != NULL) {
