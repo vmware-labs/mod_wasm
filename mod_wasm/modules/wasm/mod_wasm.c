@@ -320,7 +320,7 @@ static int content_handler(request_rec *r)
 
         if (r->content_type == NULL)
             ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
-                "ERROR! Couldn't identify mandatory 'Content-type' HTTP header (i.e.: \"Content-type: text/html\n\n\")");
+                "ERROR! Couldn't find mandatory 'Content-type' HTTP header (i.e.: \"Content-type: text/html\n\n\")");
 
         return HTTP_INTERNAL_SERVER_ERROR;
       }
