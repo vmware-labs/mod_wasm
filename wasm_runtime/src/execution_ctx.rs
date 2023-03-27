@@ -154,7 +154,7 @@ impl WasmExecutionCtx {
     /// Run the given Execution Context 
     ///
     /// It checks for wrong `executionctx_id`.
-    /// Returns Result<String, String>, with the contents of stdout.
+    /// Returns Result<Vec<u8>, String>, with the contents of stdout.
     /// In case something goes wrong (including invalid `conexecutionctx_id`), it returns a String explaing the error.
     /// 
     pub fn run(executionctx_id: &str) -> Result<Vec<u8>, String> {
