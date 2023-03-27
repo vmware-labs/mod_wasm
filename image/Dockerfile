@@ -10,7 +10,7 @@ ARG IMAGE_REPOSITORY=docker.io
 ################################################################################
 # [`wasm_runtime.so` Builder]
 ################################################################################
-FROM $IMAGE_REPOSITORY/library/rust:1.67.1-slim as builder-wasm_runtime.so
+FROM $IMAGE_REPOSITORY/library/rust:1.68.1-slim as builder-wasm_runtime.so
 ARG WASM_RUNTIME_PATH=/usr/src/wasm_runtime
 RUN apt-get update && apt-get install make
 WORKDIR $WASM_RUNTIME_PATH
