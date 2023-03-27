@@ -299,7 +299,7 @@ static int content_handler(request_rec *r)
        * them; write the response from the module as our own response;
        * which has the headers already stripped from it.
        */
-      char *buffer = 0;
+      char buffer[MAX_STRING_LEN] = {'\0'};
       const char *termch;
       int termarg;
       ret = ap_scan_script_header_err_strs(r, buffer, &termch, &termarg, module_response, NULL);
@@ -315,7 +315,7 @@ static int content_handler(request_rec *r)
 
       if (ret != OK && ret != HTTP_OK)
       {
-        if (buffer != 0)
+        if (buffer != NULL)
             ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r, "ERROR! Invalid script response. On header #%i, found character '%s': %s", termarg, termch, buffer);
 
         if (r->content_type == NULL)
