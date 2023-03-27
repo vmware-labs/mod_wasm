@@ -406,9 +406,9 @@ pub extern "C" fn wasm_executionctx_run(executionctx_id: *const c_char, _buffer:
             *_len = match c_ulong::try_from(output.len()) {
                 Ok(l) => l,
                 Err(e) => {
-                    let error_msg = format!("ERROR! C-API: Couldn't cast Wasm module's output length into a C `unsigned long int` type! \'{}\' {:?}", output.len(), e);
+                    let error_msg = format!("ERROR! C-API: Couldn't cast Wasm module's output length ({}) into a C `unsigned long int` type! {:?}", output.len(), e);
                     eprintln!("{}", error_msg); 
-                    0
+                    return -1; // we end function execution here and ignore the output buffer
                 }
             };
             

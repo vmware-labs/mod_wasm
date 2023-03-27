@@ -257,7 +257,7 @@ int wasm_executionctx_stdin_set(const char *executionctx_id,
  * Parameters:
  *
  * - `executionctx_id`: Wasm execution context ID. It must have been previously created.
- * - `_buffer`: It's an out-only parameter that represents a C `const char**`. Empty when called the function.
+ * - `_buffer`: It's an out-only parameter that represents a C `const char**`. Empty when calling the function.
  *   On output, it points to the Wasm execution context output.
  * - `_len`: It's an out-only parameter that represents a C `unsigned long int*`. On output, it contains the buffer length.
  *
@@ -265,9 +265,9 @@ int wasm_executionctx_stdin_set(const char *executionctx_id,
  * So `executionctx_id` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
  * In addition, `executionctx_id` must contain valid ASCII chars that can be converted into UTF-8 encoding.
  *
- * The returning buffer is can contain more than one NULL terminator ('\0) character (ie. binary files as .png images).
+ * The returned `_buffer` can contain more than one NULL terminator ('\0) character (ie. binary files as .png images).
  *
- * Finally, the returned C-string `_buffer` containing the Wasm module stdout is owned by Rust.
+ * Finally, the memory returned in `_buffer` containing the Wasm module stdout is owned by Rust.
  * So, in order to avoid leaking memory, C world must invoke `wasm_return_const_char_ownership()`
  * when the Wasm module stdout is not needed anymore.
  *
