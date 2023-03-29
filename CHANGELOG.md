@@ -4,6 +4,14 @@
 
 -
 
+## 0.11.1 (2023/03/30)
+
+- Fixes [#40](https://github.com/vmware-labs/mod_wasm/issues/40), where a new thread could not create a new Wasm execution context while another thread was runnig a Wasm module. This was only mesurable if the execution of the Wasm module was long enough in time or it took longer than expected (i.e.: I/O issues, infinite loop, etc.). Note that CPU-limited Wasm executions are not implemented yet (see [#9](https://github.com/vmware-labs/mod_wasm/issues/9)).
+
+### `libwasm_runtime.so`
+- Internal refactoring of `execution_ctx.rs` to address [#40](https://github.com/vmware-labs/mod_wasm/issues/40).
+- Updated `cargo.lock` dependencies via `cargo update`.
+
 ## 0.11.0 (2023/03/27)
 
 - In this version, Wasm modules can now return any output type via stdout, including binaries with non UTF-8 bytes sequences or `\0` NULL terminators in the middle.
