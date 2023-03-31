@@ -37,10 +37,6 @@ impl WasmExecutionCtx {
     /// Or in case of invalid `config_id`, it returns a String explaing the error.
     /// 
     pub fn create_from_config(config_id: &str) -> Result<String, String> {
-
-        // get write access to the WasmExecutionCtx HashMap
-        let mut executionctxs = WASM_RUNTIME_EXECUTIONCTXS.write()
-            .expect("ERROR! Poisoned RwLock WASM_RUNTIME_EXECUTIONCTXS on write()");
         
         // get read access to the WasmConfig HashMap
         let configs = WASM_RUNTIME_CONFIGS.read()
@@ -71,10 +67,7 @@ impl WasmExecutionCtx {
             wasi_stdout:  Arc::new(RwLock::new(Vec::new())),
         };
 
-        // insert created WasmExecutionCtx object into the HashMap
-        executionctxs.insert(wasm_executionctx.id.clone(), wasm_executionctx);
-
-        Ok(hex_id)
+        Self::try_insert(wasm_executionctx)
     }
     
 
@@ -84,17 +77,10 @@ impl WasmExecutionCtx {
     /// Returns Result<(), String>, so that in case of error the String will contain the reason.
     /// 
     pub fn deallocate(executionctx_id: &str) -> Result<(), String> {
-
-        // get write access to the WasmExecutionCtx HashMap
-        let mut executionctxs = WASM_RUNTIME_EXECUTIONCTXS.write()
-            .expect("ERROR! Poisoned RwLock WASM_RUNTIME_EXECUTIONCTXS on write()");
-
-        match executionctxs.remove(executionctx_id) {
-            Some(_) => Ok(()),
-            None => {
-                let error_msg = format!("Wasm execution context \'{}\' to deallocate not found!", executionctx_id);
-                Err(error_msg)
-            }
+        // extracts the Execution Context and it is automatically dropped
+        match Self::extract(executionctx_id) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e)
         }
     }
 
@@ -159,24 +145,28 @@ impl WasmExecutionCtx {
     /// 
     pub fn run(executionctx_id: &str) -> Result<Vec<u8>, String> {
 
-        // get read access to the WasmExecutionCtx HashMap
-        let executionctxs = WASM_RUNTIME_EXECUTIONCTXS.read()
-            .expect("ERROR! Poisoned RwLock WASM_RUNTIME_EXECUTIONCTXS on read()");
-
-        // get the given WasmExecutionCtx object
-        let wasm_executionctx = match executionctxs.get(executionctx_id) {
-            Some(exectx) => exectx,
-            None => {
-                let error_msg = format!("Wasm execution context \'{}\' not created previously!", executionctx_id);
+        // extract Wasm execution context
+        let wasm_executionctx = match Self::extract(executionctx_id) {
+            Ok(exectx) => exectx,
+            Err(e) => {
+                let error_msg = format!("Can't run Wasm execution context \'{}\'! {}", executionctx_id, e);
                 return Err(error_msg); 
             }
         };
         
-        // invoke "_start" function for the given Wasm execution context
-        wasm_engine::invoke_wasm_function(wasm_executionctx, "_start")?;
+        // invoke default "_start" function for the given Wasm execution context
+        wasm_engine::invoke_wasm_function(&wasm_executionctx, "_start")?;
 
         // read stdout from the Wasm execution context and return it
-        Ok(Self::read_stdout(wasm_executionctx))
+        let wasm_module_stdout = Self::read_stdout(&wasm_executionctx);
+
+        match Self::try_insert(wasm_executionctx) {
+            Ok(_) => Ok(wasm_module_stdout),
+            Err(e) => {
+                let error_msg = format!("Can't insert back Wasm execution context \'{}\' after execution! {}", executionctx_id, e);
+                return Err(error_msg); 
+            }
+        }
     }
 
     // Helper function to generate random hex IDs for the given length
@@ -206,6 +196,51 @@ impl WasmExecutionCtx {
             .expect("ERROR! Poisoned RwLock stdout_buf on read()");
 
         stdout_buf.clone()
+    }
+
+    // Helper function to insert a Wasm execution context from the HashMap
+    //  
+    // It checks for duplicated `executionctx_id`.
+    // Returns Result<String, String>, with the inserted Wasm execution context id,
+    // otherswise, in case of error the String will contain the reason.
+    //
+    fn try_insert(wasm_executionctx: WasmExecutionCtx) -> Result<String, String> {
+        let executionctx_id = wasm_executionctx.id.clone();
+
+        // get write access to the WasmExecutionCtx HashMap
+        let mut executionctxs = WASM_RUNTIME_EXECUTIONCTXS.write()
+            .expect("ERROR! Poisoned RwLock WASM_RUNTIME_EXECUTIONCTXS on write()");
+
+        // check for existing `executionctx_id`
+        match executionctxs.get(&wasm_executionctx.id) {
+            Some(existing_ectx) => {
+                let error_msg = format!("Wasm execution context \'{}\' already exist!", existing_ectx.id);
+                Err(error_msg)
+            },
+            None => { // insert for non-existing `executionctx_id`
+                executionctxs.insert(wasm_executionctx.id.clone(), wasm_executionctx);
+                Ok(executionctx_id)
+            }
+        }
+    }
+
+    // Helper function to extract a Wasm execution context from the HashMap
+    //  
+    // It checks for wrong `executionctx_id`.
+    // Returns Result<(), String>, so that in case of error the String will contain the reason.
+    //
+    fn extract(executionctx_id: &str) -> Result<WasmExecutionCtx, String> {
+        // get write access to the WasmExecutionCtx HashMap
+        let mut executionctxs = WASM_RUNTIME_EXECUTIONCTXS.write()
+        .expect("ERROR! Poisoned RwLock WASM_RUNTIME_EXECUTIONCTXS on write()");
+
+        match executionctxs.remove(executionctx_id) {
+            Some(ectx) => Ok(ectx),
+            None => {
+                let error_msg = format!("Wasm execution context \'{}\' not found!", executionctx_id);
+                Err(error_msg)
+            }
+        }
     }
 }
 
