@@ -4,7 +4,7 @@
 
 -
 
-## 0.11.1 (2023/03/30)
+## 0.11.1 (2023/03/31)
 
 - Fixes [#40](https://github.com/vmware-labs/mod_wasm/issues/40), where a new thread could not create a new Wasm execution context while another thread was running a Wasm module. This was only measurable if the execution of the Wasm module was long enough in time or if it took longer than expected (i.e.: I/O issues, infinite loop, etc.). Note that CPU-limited Wasm executions are not implemented yet (see [#9](https://github.com/vmware-labs/mod_wasm/issues/9)).
 
