@@ -4,6 +4,20 @@
 
 -
 
+## 0.11.2 (2023/05/02)
+
+This is a security update to bump Wasmtime to 8.0.1 given the CVE published (low severity) and addressed in:
+ - [GHSA-ch89-5g45-qwc7 (CVE-2023-30624)](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-ch89-5g45-qwc7)
+
+
+### `libwasm_runtime.so`
+- Dependencies:
+  - Bump version dependencies:
+    - `wasmtime` to `8.0.1`.
+    - `anyhow` to `1.0.71`.
+  - Updated `cargo.lock` dependencies via `cargo update`.
+
+
 ## 0.11.1 (2023/03/31)
 
 - Fixes [#40](https://github.com/vmware-labs/mod_wasm/issues/40), where a new thread could not create a new Wasm execution context while another thread was running a Wasm module. This was only measurable if the execution of the Wasm module was long enough in time or if it took longer than expected (i.e.: I/O issues, infinite loop, etc.). Note that CPU-limited Wasm executions are not implemented yet (see [#9](https://github.com/vmware-labs/mod_wasm/issues/9)).
