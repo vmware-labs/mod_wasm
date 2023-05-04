@@ -24,6 +24,8 @@ docker run -p 8080:8080 ghcr.io/vmware-labs/httpd-mod-wasm:latest
 
 | Demo                   | Wasm Module  | URL                               |
 | ---------------------- | ------------ | --------------------------------- |
+| Drupal                 | [PHP 8.2.0](https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F8.2.0%2B20230418-d75a618/php-cgi-8.2.0.wasm) | [http://localhost:8080/drupal](http://localhost:8080/drupal) |
+| Drupal (from setup)    | [PHP 8.2.0](https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F8.2.0%2B20230418-d75a618/php-cgi-8.2.0.wasm) | [http://localhost:8080/drupal-10-zero](http://localhost:8080/drupal-10-zero) |
 | WordPress              | [PHP 7.3.33](https://github.com/vmware-labs/webassembly-language-runtimes/releases/tag/php%2F7.3.33%2B20221124-2159d1c) | [http://localhost:8080/wordpress](http://localhost:8080/wordpress) |
 | HTTP Request Viewer    | [Python 3.11](https://github.com/tiran/cpython-wasm-test/releases/tag/v3.11.0) | [http://localhost:8080/http-request-viewer](http://localhost:8080/http-request-viewer) |
 
