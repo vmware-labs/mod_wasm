@@ -10,15 +10,14 @@ ARG IMAGE_REPOSITORY=docker.io
 ################################################################################
 # [`wasm_runtime.so` Builder]
 ################################################################################
-FROM $IMAGE_REPOSITORY/library/rust:1.68.1-slim as builder-wasm_runtime.so
+FROM $IMAGE_REPOSITORY/library/rust:1.68 as builder-wasm_runtime.so
 ARG WASM_RUNTIME_PATH=/usr/src/wasm_runtime
 RUN apt-get update && apt-get install make
 WORKDIR $WASM_RUNTIME_PATH
 COPY ./wasm_runtime ./
-ENV CARGO_UNSTABLE_SPARSE_REGISTRY=true
-RUN rustup update nightly
-RUN cargo +nightly -Z sparse-registry install cbindgen
-RUN make clean_all
+RUN rustup update
+RUN cargo install cbindgen
+RUN make clean
 RUN make all
 
 
@@ -54,12 +53,12 @@ ENV PHP_7_4_32_SHA1 a8bdc8aeb5aff73c2ad8fc5a494e718850814702
 RUN wget -P /tmp https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F7.4.32%2B20221124-2159d1c/php-cgi-7.4.32.speed-optimized.wasm \
     && echo $PHP_7_4_32_SHA1 php-cgi-7.4.32.speed-optimized.wasm | sha1sum -c -
 
-ENV PHP_8_2_0_SHA2 837dcb1e571b800553b38ff46e53d46c7dad985e448a457c16bd879c3430eb7a
-RUN wget -P /tmp https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F8.2.0%2B20230217-0ce5fde/php-cgi-8.2.0.wasm \
+ENV PHP_8_2_0_SHA2 68c96239a9b8095f21dd80af1714e5f270e4e08ef516821d90290da72d829a0e
+RUN wget -P /tmp https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F8.2.0%2B20230418-d75a618/php-cgi-8.2.0.wasm \
     && echo $PHP_8_2_0_SHA2 php-cgi-8.2.0.wasm | sha256sum -c -
 
-ENV PHP_8_2_0_SLIM_SHA2 95dda702360d8b6de8aab60fa344faa06d690a3eb7678b0e34c3f88a30c23923
-RUN wget -P /tmp https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F8.2.0%2B20230217-0ce5fde/php-cgi-8.2.0-slim.wasm \
+ENV PHP_8_2_0_SLIM_SHA2 9994842f3df891e77813f3fa1db1fd3630de20191ce4df6a65d5d4aa2c54c5c0
+RUN wget -P /tmp https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F8.2.0%2B20230418-d75a618/php-cgi-8.2.0-slim.wasm \
     && echo $PHP_8_2_0_SLIM_SHA2 php-cgi-8.2.0-slim.wasm | sha256sum -c -
 
 # Python
@@ -80,12 +79,19 @@ RUN wget -P /tmp https://wordpress.org/wordpress-6.0.2.tar.gz \
     && echo $WORDPRESS_SHA1 wordpress-6.0.2.tar.gz | sha1sum -c -
 RUN tar -xzf /tmp/wordpress-6.0.2.tar.gz 
 
-# Drupal
-ENV DRUPAL_SHA1 4632633de1cdfbb78e0af9eb32cf8819fce62007
-RUN wget -P /tmp https://ftp.drupal.org/files/projects/drupal-10.0.4.tar.gz \
-    && echo $DRUPAL_SHA1 drupal-10.0.4.tar.gz | sha1sum -c -
-RUN tar -xzf /tmp/drupal-10.0.4.tar.gz 
-RUN mv /tmp/drupal-10.0.4    /tmp/drupal 
+# Drupal 9
+ENV DRUPAL_9_SHA1 e3cbf50ff86913654c54c10ebaca8084cfd5a155
+RUN wget -P /tmp https://ftp.drupal.org/files/projects/drupal-9.5.9.tar.gz \
+    && echo $DRUPAL_9_SHA1 drupal-9.5.9.tar.gz | sha1sum -c -
+RUN tar -xzf /tmp/drupal-9.5.9.tar.gz
+RUN mv /tmp/drupal-9.5.9 /tmp/drupal-9
+
+# Drupal 10
+ENV DRUPAL_10_SHA1 0c7573c2a5d1651e14fb35355999cadda2104f26
+RUN wget -P /tmp https://ftp.drupal.org/files/projects/drupal-10.0.9.tar.gz \
+    && echo $DRUPAL_10_SHA1 drupal-10.0.9.tar.gz | sha1sum -c -
+RUN tar -xzf /tmp/drupal-10.0.9.tar.gz 
+RUN mv /tmp/drupal-10.0.9 /tmp/drupal-10 
 
 
 ################################################################################
@@ -93,6 +99,7 @@ RUN mv /tmp/drupal-10.0.4    /tmp/drupal
 ################################################################################
 FROM $IMAGE_REPOSITORY/library/httpd:2.4 as builder-final
 LABEL org.opencontainers.image.source https://github.com/vmware-labs/mod_wasm
+RUN apt-get update && apt-get install php7.4-cli php7.4-gd php7.4-xml composer -y
 ARG WASM_RUNTIME_PATH=/usr/src/wasm_runtime
 ARG MOD_WASM_PATH=/usr/src/mod_wasm
 ARG DIST_DIR=$MOD_WASM_PATH/dist
@@ -120,13 +127,20 @@ COPY ./examples/wasm_modules/php-scripts/wordpress-patch/ /usr/local/apache2/htd
 RUN chmod -R go+w /usr/local/apache2/htdocs/wordpress/wp-content/database
 ## Drupal
 RUN mkdir -p /usr/local/apache2/htdocs/drupal
-COPY --from=builder-demos /tmp/drupal /usr/local/apache2/htdocs/drupal
-COPY ./examples/wasm_modules/php-scripts/drupal-patch/ /usr/local/apache2/htdocs/drupal
+COPY --from=builder-demos /tmp/drupal-10 /usr/local/apache2/htdocs/drupal
+COPY ./examples/wasm_modules/php-scripts/drupal-setup/ /usr/local/apache2/htdocs/drupal
 RUN mkdir -p /usr/local/apache2/htdocs/drupal/sites/default/files
 RUN chmod -R go+w /usr/local/apache2/htdocs/drupal/sites/default/files
-## Drupal-zero
-RUN mkdir -p /usr/local/apache2/htdocs/drupal-zero
-COPY --from=builder-demos /tmp/drupal /usr/local/apache2/htdocs/drupal-zero
-COPY ./examples/wasm_modules/php-scripts/drupal-zero-patch/ /usr/local/apache2/htdocs/drupal-zero
-RUN mkdir -p /usr/local/apache2/htdocs/drupal-zero/sites/default/files
-RUN chmod -R go+w /usr/local/apache2/htdocs/drupal-zero/sites/default/files
+## Drupal 9 Zero (install)
+RUN mkdir -p /usr/local/apache2/htdocs/drupal-9-zero
+COPY --from=builder-demos /tmp/drupal-9 /usr/local/apache2/htdocs/drupal-9-zero
+COPY ./examples/wasm_modules/php-scripts/drupal-9-zero-setup/ /usr/local/apache2/htdocs/drupal-9-zero
+RUN mkdir -p /usr/local/apache2/htdocs/drupal-9-zero/sites/default/files
+RUN chmod -R go+w /usr/local/apache2/htdocs/drupal-9-zero/sites/default/files
+## Drupal 10 Zero (install)
+RUN mkdir -p /usr/local/apache2/htdocs/drupal-10-zero
+COPY --from=builder-demos /tmp/drupal-10 /usr/local/apache2/htdocs/drupal-10-zero
+COPY ./examples/wasm_modules/php-scripts/drupal-10-zero-setup/ /usr/local/apache2/htdocs/drupal-10-zero
+RUN mkdir -p /usr/local/apache2/htdocs/drupal-10-zero/sites/default/files
+RUN chmod -R go+w /usr/local/apache2/htdocs/drupal-10-zero/sites/default/files
+
