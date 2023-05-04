@@ -12,7 +12,9 @@ docker run -p 8080:8080 ghcr.io/vmware-labs/httpd-mod-wasm:latest
 
 | Demo                   | Wasm Module  | URL                               | Description |
 | ---------------------- | ------------ | --------------------------------- | ----------- |
-| WordPress              | [PHP 7.3.33](https://github.com/vmware-labs/webassembly-language-runtimes/releases/tag/php%2F7.3.33%2B20221124-2159d1c) | [http://localhost:8080/wordpress](http://localhost:8080/wordpress) | This is WordPress running on a Wasm build of the PHP interpreter. |
+| Drupal                 | [PHP 8.2.0](https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F8.2.0%2B20230418-d75a618/php-cgi-8.2.0.wasm) | [http://localhost:8080/drupal](http://localhost:8080/drupal) | This is a pre-initialized Drupal instance (user:admin, pass:admin). |
+| Drupal (from setup)    | [PHP 8.2.0](https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F8.2.0%2B20230418-d75a618/php-cgi-8.2.0.wasm) | [http://localhost:8080/drupal-10-zero](http://localhost:8080/drupal-10-zero) | This is an uninitialized Drupal instance. |
+| WordPress              | [PHP 7.3.33](https://github.com/vmware-labs/webassembly-language-runtimes/releases/tag/php%2F7.3.33%2B20221124-2159d1c) | [http://localhost:8080/wordpress](http://localhost:8080/wordpress) | This is pre-initialized WordPress instance. |
 | HTTP Request Viewer | [Python 3.11](https://github.com/tiran/cpython-wasm-test/releases/tag/v3.11.0) | [http://localhost:8080/http-request-viewer](http://localhost:8080/http-request-viewer) | A Python App showing WASI capabilities. Try providing a complex query with URL query parameters, headers and a body. |
 
 3. Other examples:
