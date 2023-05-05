@@ -31,6 +31,11 @@ impl WasmConfig {
     /// Returns Result<(), String>, so that in case of error the String will contain the reason.
     /// 
     pub fn create(config_id: &str) -> Result<(), String> {
+        // safety check for empty id
+        if config_id.len() == 0 {
+            let error_msg = format!("ERROR! Can't create WasmConfig for an empty config_id!");
+            return Err(error_msg);
+        }
                 
         // get write access to the WasmConfig HashMap
         let mut configs = WASM_RUNTIME_CONFIGS.write()
