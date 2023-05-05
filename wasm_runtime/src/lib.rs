@@ -13,4 +13,4 @@ mod execution_ctx;
 mod wasm_engine;
 mod wasi_ctx;
 mod ffi_utils;
-mod c_api;
+pub mod c_api;
