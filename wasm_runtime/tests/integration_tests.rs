@@ -21,7 +21,7 @@ fn wasm_config_create_general() {
     // setup
     common::setup();
     const CONFIG_ID: &'static str = "config_test_id";
-    let config_id = CString::new(CONFIG_ID).expect("FATAL! Can't convert &str into CString!").into_raw();
+    let config_id: *const c_char  = CString::new(CONFIG_ID).expect("FATAL! Can't convert &str into CString!").into_raw();
 
     // tests
     let create_result = c_api::wasm_config_create(config_id);
