@@ -4,6 +4,18 @@
 
 -
 
+## 0.11.3 (2023/05/08)
+
+This release fixes a regression issue introduced in 0.11.2 when opening directories on Windows. It doesn't affect other platforms.
+The issue is realated to Wasmtime 8.x series, so downgrading to `7.0.1`.
+
+### `libwasm_runtime.so`
+- Dependencies:
+  - Downgrading Wasmtime dependency:
+    - `wasmtime` from `8.0.1` to `7.0.1`.
+  - Updated `cargo.lock` dependencies via `cargo update`.
+  
+
 ## 0.11.2 (2023/05/02)
 
 This is a security update to bump Wasmtime to 8.0.1 given the CVE published (low severity) and addressed in:
