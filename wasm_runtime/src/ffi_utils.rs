@@ -160,26 +160,32 @@ mod tests {
     #[test]
     fn const_c_char_to_str_not_null_terminated() {
         // setup: non null-terminated C strings (more than one test, since we don't control rubbish in memory...)
-        const TESTING_WORDS_1: &'static [c_char] = &['h' as c_char, 'e' as c_char, 'l' as c_char, 'l' as c_char, 'o' as c_char, '!' as c_char];
-        const TESTING_WORDS_2: &'static [c_char] = &['h' as c_char, 'o' as c_char, 'l' as c_char, 'a' as c_char, '!' as c_char];
-        const TESTING_WORDS_3: &'static [c_char] = &['h' as c_char, 'i' as c_char, '!' as c_char];
+        const NULL_TERMINATED_1: &'static [c_char] = &['h' as c_char, 'e' as c_char, 'l' as c_char, 'l' as c_char, 'o' as c_char, '\0' as c_char];
+        const NULL_TERMINATED_2: &'static [c_char] = &['h' as c_char, 'i' as c_char, '!' as c_char, '\0' as c_char];
+        const NON_NULL_TERMINATED_1: &'static [c_char] = &['b' as c_char, 'y' as c_char, 'e' as c_char, '!' as c_char];
+        const NON_NULL_TERMINATED_2: &'static [c_char] = &['b' as c_char, 'y' as c_char, 'e' as c_char];
 
         // test
-        let testing_str_1 = const_c_char_to_str(TESTING_WORDS_1.as_ptr());
-        println!("testing_str_1: {}", testing_str_1);
-        println!("testing_str_1 len: {}", testing_str_1.len());
+        let null_terminated_1 = const_c_char_to_str(NULL_TERMINATED_1.as_ptr());
+        println!("null_terminated_1: {}", null_terminated_1);
+        println!("null_terminated_1 len: {}", null_terminated_1.len());
 
-        let testing_str_2 = const_c_char_to_str(TESTING_WORDS_2.as_ptr());
-        println!("testing_str_2: {}", testing_str_2);
-        println!("testing_str_2 len: {}", testing_str_2.len());
+        let null_terminated_2 = const_c_char_to_str(NULL_TERMINATED_2.as_ptr());
+        println!("null_terminated_2: {}", null_terminated_2);
+        println!("null_terminated_2 len: {}", null_terminated_2.len());
 
-        let testing_str_3 = const_c_char_to_str(TESTING_WORDS_3.as_ptr());
-        println!("testing_str_3: {}", testing_str_3);
-        println!("testing_str_3 len: {}", testing_str_3.len());
+        let non_null_terminated_1 = const_c_char_to_str(NON_NULL_TERMINATED_1.as_ptr());
+        println!("non_null_terminated_1: {}", non_null_terminated_1);
+        println!("non_null_terminated_1 len: {}", non_null_terminated_1.len());
+
+        let non_null_terminated_2 = const_c_char_to_str(NON_NULL_TERMINATED_2.as_ptr());
+        println!("non_null_terminated_2: {}", non_null_terminated_2);
+        println!("non_null_terminated_2 len: {}", non_null_terminated_2.len());
 
         // asserts
-        assert_ne!(TESTING_WORDS_1.len(), testing_str_1.len());
-        assert_ne!(TESTING_WORDS_2.len(), testing_str_2.len());
-        assert_ne!(TESTING_WORDS_3.len(), testing_str_3.len());
+        assert_eq!(NULL_TERMINATED_1.len(), null_terminated_1.len() + 1);
+        assert_ne!(NULL_TERMINATED_2.len(), null_terminated_2.len());
+        assert_ne!(NON_NULL_TERMINATED_1.len(), non_null_terminated_1.len());
+        assert_ne!(NON_NULL_TERMINATED_2.len(), non_null_terminated_2.len());
     }
 }
