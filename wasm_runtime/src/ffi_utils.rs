@@ -114,8 +114,7 @@ mod tests {
     fn const_c_char_to_str_unicode() {
         // setup
         const TESTING_WORDS: &str = "testing 1 2 3! àéïôü";
-        let c_string = CString::new(TESTING_WORDS).expect("FATAL! CString::new() failed!");
-        let const_c_char = c_string.into_raw();
+        let const_c_char: *const c_char = CString::new(TESTING_WORDS).expect("FATAL! CString::new() failed!").into_raw();
 
         // test
         let testing_str = const_c_char_to_str(const_c_char);
@@ -128,8 +127,8 @@ mod tests {
     #[test]
     fn const_c_char_to_str_null_or_empty() {
         // setup
-        let const_c_char_null: *const c_char = ptr::null();
-        let const_c_char_empty = CString::new("").expect("FATAL! CString::new() failed!").into_raw();
+        let const_c_char_null: *const c_char  = ptr::null();
+        let const_c_char_empty: *const c_char = CString::new("").expect("FATAL! CString::new() failed!").into_raw();
 
         // test
         let testing_str_null = const_c_char_to_str(const_c_char_null);
@@ -160,7 +159,7 @@ mod tests {
 
     #[test]
     fn const_c_char_to_str_not_null_terminated() {
-        // setup: non null-terminated C strings
+        // setup: non null-terminated C strings (more than one test, since we don't control rubbish in memory...)
         const TESTING_WORDS_1: &'static [c_char] = &['h' as c_char, 'e' as c_char, 'l' as c_char, 'l' as c_char, 'o' as c_char, '!' as c_char];
         const TESTING_WORDS_2: &'static [c_char] = &['h' as c_char, 'o' as c_char, 'l' as c_char, 'a' as c_char, '!' as c_char];
         const TESTING_WORDS_3: &'static [c_char] = &['h' as c_char, 'i' as c_char, '!' as c_char];
