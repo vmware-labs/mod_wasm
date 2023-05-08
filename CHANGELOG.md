@@ -7,7 +7,7 @@
 ## 0.11.3 (2023/05/08)
 
 This release fixes a regression issue introduced in 0.11.2 when opening directories on Windows. It doesn't affect other platforms.
-The issue is realated to Wasmtime 8.x series, so downgrading to `7.0.1`.
+The issue is realated to Wasmtime 8.0.1, so downgrading to `7.0.1`.
 
 ### `libwasm_runtime.so`
 - Dependencies:
