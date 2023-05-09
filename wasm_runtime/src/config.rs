@@ -33,8 +33,7 @@ impl WasmConfig {
     pub fn create(config_id: &str) -> Result<(), String> {
         // safety check for empty id
         if config_id.len() == 0 {
-            let error_msg = format!("ERROR! Can't create WasmConfig for an empty config_id!");
-            return Err(error_msg);
+            return Err("ERROR! Can't create WasmConfig for an empty config_id!".to_string());
         }
                 
         // get write access to the WasmConfig HashMap
