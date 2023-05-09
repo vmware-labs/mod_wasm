@@ -1,5 +1,5 @@
 //
-// Copyright 2022 VMware, Inc.
+// Copyright 2022-2023 VMware, Inc.
 // SPDX-License-Identifier: Apache-2.0
 //
 
@@ -31,6 +31,10 @@ impl WasmConfig {
     /// Returns Result<(), String>, so that in case of error the String will contain the reason.
     /// 
     pub fn create(config_id: &str) -> Result<(), String> {
+        // safety check for empty id
+        if config_id.len() == 0 {
+            return Err("ERROR! Can't create WasmConfig for an empty config_id!".to_string());
+        }
                 
         // get write access to the WasmConfig HashMap
         let mut configs = WASM_RUNTIME_CONFIGS.write()

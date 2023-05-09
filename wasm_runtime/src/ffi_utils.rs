@@ -1,5 +1,5 @@
 //
-// Copyright 2022 VMware, Inc.
+// Copyright 2022-2023 VMware, Inc.
 // SPDX-License-Identifier: Apache-2.0
 //
 
@@ -9,6 +9,7 @@
 //! This file contains functions needed for offering a C ABI compatible API from Rust.
 
 use std::ffi::{CString, CStr, c_char, c_uchar};
+use std::ptr;
 use std::slice;
 
 
@@ -17,6 +18,11 @@ use std::slice;
 //   1) From c_char to CStr
 //   2) From CStr to &str
 pub fn const_c_char_to_str(const_c_char: *const c_char) -> &'static str {
+    // safety check for raw NULL pointer
+    if const_c_char == ptr::null() {
+        return "";
+    }
+
     // unsafe conversion from C const char* to a safe CStr
     let safe_cstr = unsafe {
         CStr::from_ptr(const_c_char)
@@ -92,4 +98,82 @@ pub fn vec_u8_to_const_c_char(buffer: Vec<u8>) -> *const c_char {
 
     safe_cstring.into_raw()
 }
-    
+
+
+// ##########################################################################
+//                              Unit Tests
+// ##########################################################################
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+// Coverts a `const char*` from C into a safe Rust string literal `&str``
+// pub fn const_c_char_to_str(const_c_char: *const c_char) -> &'static str {
+
+    #[test]
+    fn const_c_char_to_str_unicode() {
+        // setup
+        const TESTING_WORDS: &str = "testing 1 2 3! àéïôü";
+        let const_c_char: *const c_char = CString::new(TESTING_WORDS).expect("FATAL! CString::new() failed!").into_raw();
+
+        // test
+        let testing_str = const_c_char_to_str(const_c_char);
+        println!("[TEST] testing_str: {}", testing_str);
+
+        // asserts
+        assert_eq!(TESTING_WORDS.len(), testing_str.len());
+    }
+
+    #[test]
+    fn const_c_char_to_str_null_or_empty() {
+        // setup
+        let const_c_char_null: *const c_char  = ptr::null();
+        let const_c_char_empty: *const c_char = CString::new("").expect("FATAL! CString::new() failed!").into_raw();
+
+        // test
+        let testing_str_null = const_c_char_to_str(const_c_char_null);
+        println!("[TEST] testing_str_null: {}", testing_str_null);
+
+        let testing_str_empty = const_c_char_to_str(const_c_char_empty);
+        println!("[TEST] testing_str_empty: {}", testing_str_empty);
+
+        // asserts
+        assert!(testing_str_null.is_empty());
+        assert!(testing_str_empty.is_empty());
+    }
+
+    #[test]
+    fn const_c_char_to_str_utf8_encoding_errors() {
+        // setup: inspiration from https://www.cl.cam.ac.uk/~mgk25/ucs/examples/UTF-8-test.txt
+        #[allow(overflowing_literals)]
+        const TESTING_WORDS: &'static [c_char] = &[0xC3, 0x28, 0]; // null-terminated
+
+        // test
+        let testing_str = const_c_char_to_str(TESTING_WORDS.as_ptr());
+        println!("testing_str: {}", testing_str);
+
+        // asserts
+        assert!(testing_str.is_empty());
+        assert_ne!(TESTING_WORDS.len(), testing_str.len());
+    }
+
+    #[test]
+    fn const_c_char_to_str_not_null_terminated() {
+        // setup: non null-terminated C strings ('*' simulates at least one rubbish byte in memory...)
+        const NULL_TERMINATED_1: &'static [c_char] = &['h' as c_char, 'e' as c_char, 'l' as c_char, 'l' as c_char, 'o' as c_char, '\0' as c_char];
+        const NON_NULL_TERMINATED_1: &'static [c_char] = &['b' as c_char, 'y' as c_char, 'e' as c_char, '!' as c_char, '*' as c_char];
+
+        // test
+        let null_terminated_1 = const_c_char_to_str(NULL_TERMINATED_1.as_ptr());
+        println!("null_terminated_1: {}", null_terminated_1);
+        println!("null_terminated_1 len: {}", null_terminated_1.len());
+
+        let non_null_terminated_1 = const_c_char_to_str(NON_NULL_TERMINATED_1.as_ptr());
+        println!("non_null_terminated_1: {}", non_null_terminated_1);
+        println!("non_null_terminated_1 len: {}", non_null_terminated_1.len());
+
+        // asserts
+        assert_eq!(NULL_TERMINATED_1.len() - 1, null_terminated_1.len());
+        assert_ne!(NON_NULL_TERMINATED_1.len() - 1, non_null_terminated_1.len());
+    }
+}

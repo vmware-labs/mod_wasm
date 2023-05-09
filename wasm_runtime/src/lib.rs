@@ -1,5 +1,5 @@
 //
-// Copyright 2022 VMware, Inc.
+// Copyright 2022-2023 VMware, Inc.
 // SPDX-License-Identifier: Apache-2.0
 //
 
@@ -13,4 +13,4 @@ mod execution_ctx;
 mod wasm_engine;
 mod wasi_ctx;
 mod ffi_utils;
-mod c_api;
+pub mod c_api;
