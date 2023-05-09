@@ -262,26 +262,26 @@ static int content_handler(request_rec *r)
 
     int ret = 0;
     if (dcfg->bWasmEnableCGI) {
-      /* On CGI mode, we set the request headers as environment variables with an HTTP_ prefix. */
-      ap_add_common_vars(r);
-      ap_add_cgi_vars(r);
-      apr_table_do(_wasm_executionctx_env_add, (void*)exec_ctx_id, r->subprocess_env, NULL);
+        /* On CGI mode, we set the request headers as environment variables with an HTTP_ prefix. */
+        ap_add_common_vars(r);
+        ap_add_cgi_vars(r);
+        apr_table_do(_wasm_executionctx_env_add, (void*)exec_ctx_id, r->subprocess_env, NULL);
 
-      /* read HTTP Request body and set it as stdin for the Wasm module */
-      apr_off_t body_size = 0;
-      const char* body_buffer = NULL;
+        /* read HTTP Request body and set it as stdin for the Wasm module */
+        apr_off_t body_size = 0;
+        const char* body_buffer = NULL;
 
-      ret = read_http_request_body(r, &body_buffer, &body_size);
-      if ( ret != OK ) {
-        ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
-            "content_handler() - ERROR! Couldn't read HTTP Request Body!");
-      }
-      else { /* read_http_request_body() was successfull */
-        ret = wasm_executionctx_stdin_set(exec_ctx_id, body_buffer, body_size);
-        if ( ret != OK )
+        ret = read_http_request_body(r, &body_buffer, &body_size);
+        if ( ret != OK ) {
             ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
-                "content_handler() - ERROR! Couldn't set HTTP Request Body as stdin!");
-      }
+            "content_handler() - ERROR! Couldn't read HTTP Request Body!");
+        }
+        else { /* read_http_request_body() was successfull */
+            ret = wasm_executionctx_stdin_set(exec_ctx_id, body_buffer, body_size);
+            if ( ret != OK )
+                ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
+                    "content_handler() - ERROR! Couldn't set HTTP Request Body as stdin!");
+        }
     }
 
     /* run Wasm execution context */
@@ -294,54 +294,55 @@ static int content_handler(request_rec *r)
     }
 
     if (dcfg->bWasmEnableCGI) {
-      /*
-       * Retrieve the CGI variables and feed our own response with
-       * them; write the response from the module as our own response;
-       * which has the headers already stripped from it.
-       */
-      char buffer[MAX_STRING_LEN] = {'\0'};
-      const char *termch;
-      int termarg;
-      ret = ap_scan_script_header_err_strs(r, buffer, &termch, &termarg, module_response, NULL);
-      /*
-       * ap_scan_script_header_err_strs can return either:
-       *   - HTTP_OK: success
-       *   - HTTP_INTERNAL_SERVER_ERROR: failure
-       *   - HTTP_NOT_MODIFIED or HTTP_PRECONDITION_FAILED: script
-       *     response does not meet request's conditions
-       * In order to not give the external consumer more information
-       * than what is needed, map all responses to a 500 error.
-       */
-
-      if (ret != OK && ret != HTTP_OK)
-      {
-        if (buffer != NULL)
-            ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r, "ERROR! Invalid script response. On header #%i, found character '%s': %s", termarg, termch, buffer);
-
-        if (r->content_type == NULL)
-            ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
-                "ERROR! Couldn't find mandatory 'Content-type' HTTP header (i.e.: \"Content-type: text/html\n\n\")");
-
-        return HTTP_INTERNAL_SERVER_ERROR;
-      }
-      if (termch != NULL) {
         /*
-         * After parsing the response headers in the Wasm module output with
-         * `ap_scan_script_header_err_strs()`, the `termch` variable points to the
-         * last parsed character. Now we need to write the remaining body into the request,
-         * but we don't know its length, and thus it has to be calculated.
-         * 
-         * Since `termch` points to the latest char in the headers, and `module_response` points to
-         * the begining of the response array, we can calculate the headers length using a simple 
-         * pointer arithmetic operation: `headers_len = termch - module_response`.
-         * 
-         * Finally, the body length is therefore the total array length minus the headers length:
-         * `body_len = len - headers_len = len - (termch - module_response)`.
-         */
-        ap_rwrite(termch, len - (termch - module_response), r);        
-      }
-    } else if (module_response != NULL) {
-      ap_rwrite(module_response, len, r);   
+        * Retrieve the CGI variables and feed our own response with
+        * them; write the response from the module as our own response;
+        * which has the headers already stripped from it.
+        */
+        char buffer[MAX_STRING_LEN] = {'\0'};
+        const char *termch;
+        int termarg;
+        ret = ap_scan_script_header_err_strs(r, buffer, &termch, &termarg, module_response, NULL);
+        /*
+        * ap_scan_script_header_err_strs can return either:
+        *   - HTTP_OK: success
+        *   - HTTP_INTERNAL_SERVER_ERROR: failure
+        *   - HTTP_NOT_MODIFIED or HTTP_PRECONDITION_FAILED: script
+        *     response does not meet request's conditions
+        * In order to not give the external consumer more information
+        * than what is needed, map all responses to a 500 error.
+        */
+
+        if (ret != OK && ret != HTTP_OK)
+        {
+            if (buffer != NULL)
+                ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r, "ERROR! Invalid script response. On header #%i, found character '%s': %s", termarg, termch, buffer);
+
+            if (r->content_type == NULL)
+                ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
+                    "ERROR! Couldn't find mandatory 'Content-type' HTTP header (i.e.: \"Content-type: text/html\n\n\")");
+
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+        if (termch != NULL) {
+            /*
+            * After parsing the response headers in the Wasm module output with
+            * `ap_scan_script_header_err_strs()`, the `termch` variable points to the
+            * last parsed character. Now we need to write the remaining body into the request,
+            * but we don't know its length, and thus it has to be calculated.
+            * 
+            * Since `termch` points to the latest char in the headers, and `module_response` points to
+            * the begining of the response array, we can calculate the headers length using a simple 
+            * pointer arithmetic operation: `headers_len = termch - module_response`.
+            * 
+            * Finally, the body length is therefore the total array length minus the headers length:
+            * `body_len = len - headers_len = len - (termch - module_response)`.
+            */
+            ap_rwrite(termch, len - (termch - module_response), r);        
+        }
+    }
+    else if (module_response != NULL) {
+        ap_rwrite(module_response, len, r);   
     }
 
     /* return module response ownership to avoid leaking memory */
