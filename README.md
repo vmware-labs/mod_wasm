@@ -1,5 +1,8 @@
 # mod_wasm
 
+![Test passing](https://github.com/vmware-labs/mod_wasm/actions/workflows/test-wasm_runtime.yml/badge.svg?branch=main)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/vmware-labs/mod_wasm/blob/main/LICENSE.md)
+
 **mod_wasm** is an [**Apache Server** (httpd)](https://httpd.apache.org/) extension module able to run and serve [WebAssembly](https://webassembly.org/) binaries as endpoints.
 
 The first version ([v0.1.0](https://github.com/vmware-labs/mod_wasm/blob/main/CHANGELOG.md#010-20221004)) was unveiled at the ApacheCon North America on Oct 3rd, 2022 (see the [slides](https://apachecon.com/acna2022/slides/01_Gonz%c3%a1lez_mod-wasm_Bringing_WebAssembly.pdf)). In addition, a full-detailed article was published at VMware's [Wasm Labs](https://wasmlabs.dev/articles/apache-mod-wasm/) page. 
