@@ -1,0 +1,46 @@
+################################################################################
+# Container image for ease of testing Archive_Tar vulnerabilty
+# and how it is mitigated under WebAssembly
+# More info:
+#   * https://www.drupal.org/sa-core-2020-013
+#   * https://nvd.nist.gov/vuln/detail/CVE-2020-28949 
+################################################################################
+ARG IMAGE_REPOSITORY=docker.io
+
+FROM $IMAGE_REPOSITORY/library/ubuntu:22.04
+RUN apt-get update && apt-get install wget curl unzip python3 software-properties-common -y
+
+# PHP 8.2
+RUN add-apt-repository ppa:ondrej/php
+RUN apt update
+RUN apt install php8.2-cli php-pear -y
+
+# Archive_Tar Exploit 
+WORKDIR /tmp
+RUN wget -P /tmp https://github.com/pear/Archive_Tar/files/5551831/exploit.zip
+RUN unzip exploit.zip -d /exploit
+
+# Wasmtime
+WORKDIR /tmp
+RUN curl https://wasmtime.dev/install.sh -sSf | bash
+RUN /root/.wasmtime/bin/wasmtime --version
+
+# PHP.Wasm
+WORKDIR /exploit
+ENV PHP_8_2_0_SHA2 68c96239a9b8095f21dd80af1714e5f270e4e08ef516821d90290da72d829a0e
+RUN wget -P /exploit https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F8.2.0%2B20230418-d75a618/php-cgi-8.2.0.wasm \
+    && echo $PHP_8_2_0_SHA2 php-cgi-8.2.0.wasm | sha256sum -c -
+RUN /root/.wasmtime/bin/wasmtime php-cgi-8.2.0.wasm -- --version
+
+# Fine-tunning the exploit
+WORKDIR /exploit/file_poc
+RUN cp steps.sh steps.sh.ORIGINAL
+RUN sed -i "s/python/python3/g" steps.sh
+RUN cp ../Archive/Tar.php .
+RUN sed -i "s/..\/Archive\/Tar.php/Tar.php/g" vulnerable.php
+RUN sed -i "/^<?php/a \ \ set_include_path(get_include_path() . PATH_SEPARATOR . \$pear_path);" vulnerable.php
+RUN sed -i "/^<?php/a \ \ \$pear_path = \'\/usr\/share\/php\';" vulnerable.php
+
+# Creating the `wasm_steps.sh`
+RUN cp steps.sh wasm_steps.sh
+RUN sed -i "s/php /\/root\/.wasmtime\/bin\/wasmtime --mapdir \/::\$PWD --dir \/usr\/share\/php ..\/php-cgi-8.2.0.wasm -- -f /g" wasm_steps.sh
