@@ -27,10 +27,10 @@ RUN /root/.wasmtime/bin/wasmtime --version
 
 # PHP.Wasm
 WORKDIR /exploit
-ENV PHP_8_2_0_SHA2 68c96239a9b8095f21dd80af1714e5f270e4e08ef516821d90290da72d829a0e
-RUN wget -P /exploit https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F8.2.0%2B20230418-d75a618/php-cgi-8.2.0.wasm \
-    && echo $PHP_8_2_0_SHA2 php-cgi-8.2.0.wasm | sha256sum -c -
-RUN /root/.wasmtime/bin/wasmtime php-cgi-8.2.0.wasm -- --version
+ENV PHP_8_2_0_SLIM_SHA2 9994842f3df891e77813f3fa1db1fd3630de20191ce4df6a65d5d4aa2c54c5c0
+RUN wget -P /exploit https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/php%2F8.2.0%2B20230418-d75a618/php-cgi-8.2.0-slim.wasm \
+    && echo $PHP_8_2_0_SLIM_SHA2 php-cgi-8.2.0-slim.wasm | sha256sum -c -    
+RUN /root/.wasmtime/bin/wasmtime php-cgi-8.2.0-slim.wasm -- --version
 
 # Fine-tunning the exploit
 WORKDIR /exploit/file_poc
@@ -43,4 +43,4 @@ RUN sed -i "/^<?php/a \ \ \$pear_path = \'\/usr\/share\/php\';" vulnerable.php
 
 # Creating the `wasm_steps.sh`
 RUN cp steps.sh wasm_steps.sh
-RUN sed -i "s/php /\/root\/.wasmtime\/bin\/wasmtime --mapdir \/::\$PWD --dir \/usr\/share\/php ..\/php-cgi-8.2.0.wasm -- -f /g" wasm_steps.sh
+RUN sed -i "s/php /\/root\/.wasmtime\/bin\/wasmtime --mapdir \/::\$PWD --dir \/usr\/share\/php ..\/php-cgi-8.2.0-slim.wasm -- -f /g" wasm_steps.sh
