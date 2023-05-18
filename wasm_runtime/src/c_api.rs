@@ -7,12 +7,13 @@
 //!
 //! This file contains the API functions for the C language
 
-use std::ffi::{c_int, c_char, c_uchar, c_ulong};
+use std::ffi::{c_char, c_int, c_uchar, c_ulong, c_void};
 
-use crate::module::WasmModule;
-use crate::config::WasmConfig;
+use crate::apr::c_api as apr_api;
+use crate::config::{ModuleType, WasmConfig};
 use crate::execution_ctx::WasmExecutionCtx;
 use crate::ffi_utils::*;
+use crate::module::WasmModule;
 use std::ptr;
 
 /// Load a Wasm Module from disk.
@@ -99,7 +100,8 @@ pub extern "C" fn wasm_config_module_set(config_id: *const c_char, module_id: *c
     let config_id_str = const_c_char_to_str(config_id);
     let module_id_str = const_c_char_to_str(module_id);
 
-    match WasmConfig::set_wasm_module_for_config(config_id_str, module_id_str) {
+    match WasmConfig::set_wasm_module_for_config(config_id_str, module_id_str, ModuleType::ContentHandler)
+    {
         Ok(_) => 0,
         Err(e) => {
             eprintln!("ERROR! C-API: Couldn't set Wasm module \"{}\" for Wasm Config \"{}\": {}", module_id_str, config_id_str, e);
@@ -108,6 +110,25 @@ pub extern "C" fn wasm_config_module_set(config_id: *const c_char, module_id: *c
     }
 }
 
+#[no_mangle]
+pub extern "C" fn wasm_config_filter_set(
+    config_id: *const c_char,
+    module_id: *const c_char,
+) -> c_int {
+    let config_id_str = const_c_char_to_str(config_id);
+    let module_id_str = const_c_char_to_str(module_id);
+
+    match WasmConfig::set_wasm_module_for_config(config_id_str, module_id_str, ModuleType::Filter) {
+        Ok(_) => 0,
+        Err(e) => {
+            eprintln!(
+                "ERROR! C-API: Couldn't set Wasm module \"{}\" for Wasm Config \"{}\": {}",
+                module_id_str, config_id_str, e
+            );
+            -1
+        }
+    }
+}
 
 /// Add a WASI argument for the given Wasm config
 ///
@@ -286,9 +307,28 @@ pub extern "C" fn wasm_config_get_mapped_path(config_id: *const c_char, path: *c
 /// wasm_executionctx_deallocate(exec_ctx_id);
 /// wasm_return_const_char_ownership(exec_ctx_id);
 /// ```
+// TODO - investigate, using get_header_cb: Option<GetHeaderCb>, set_header_cb: Option<SetHeaderCb>, delete_header_cb: Option<DeleteHeaderCb>
+// will generate some undefined structs like Option_GetHeaderCb in C instead of the function pointers, so we copy-paste them here
 #[no_mangle]
-pub extern "C" fn wasm_executionctx_create_from_config(config_id: *const c_char) -> *const c_char {
+pub extern "C" fn wasm_executionctx_create_from_config(
+    config_id: *const c_char,
+    get_header_cb: Option<
+        unsafe extern "C" fn(headers: *mut apr_api::Headers, key: *const c_char) -> *const c_char,
+    >,
+    set_header_cb: Option<
+        unsafe extern "C" fn(
+            headers: *mut apr_api::Headers,
+            key: *const c_char,
+            value: *const c_char,
+        ) -> c_void,
+    >,
+    delete_header_cb: Option<
+        unsafe extern "C" fn(headers: *mut apr_api::Headers, key: *const c_char) -> c_void,
+    >,
+) -> *const c_char {
     let config_id_str = const_c_char_to_str(config_id);
+
+    apr_api::set_apr_callbacks(config_id_str, get_header_cb, set_header_cb, delete_header_cb);
 
     let result = match WasmExecutionCtx::create_from_config(config_id_str) {
         Ok(s) => s,
@@ -457,6 +497,20 @@ pub extern "C" fn wasm_executionctx_run(executionctx_id: *const c_char, _buffer:
     result
 }
 
+#[no_mangle]
+pub extern "C" fn wasm_executionctx_call(
+    executionctx_id: *const c_char,
+    function_name: *const c_char,
+    arg: *mut apr_api::Headers,
+) -> c_int {
+    let executionctx_id_str = const_c_char_to_str(executionctx_id);
+    let function_name_str = const_c_char_to_str(function_name);
+
+    match WasmExecutionCtx::call(executionctx_id_str, function_name_str, arg as u64) {
+        Ok(_) => 0,
+        Err(_) => -1,
+    }
+}
 
 /// Returns raw pointer's ownership
 ///

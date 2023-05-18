@@ -14,3 +14,4 @@ mod wasm_engine;
 mod wasi_ctx;
 mod ffi_utils;
 pub mod c_api;
+mod apr;

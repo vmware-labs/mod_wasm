@@ -8,6 +8,10 @@
 #include <stdlib.h>
 #include "version.h"
 
+typedef struct Headers {
+  uint8_t _data[0];
+} Headers;
+
 /**
  * Load a Wasm Module from disk.
  *
@@ -71,6 +75,8 @@ int wasm_config_create(const char *config_id);
  */
 int wasm_config_module_set(const char *config_id,
                            const char *module_id);
+
+int wasm_config_filter_set(const char *config_id, const char *module_id);
 
 /**
  * Add a WASI argument for the given Wasm config
@@ -200,7 +206,10 @@ const char *wasm_config_get_mapped_path(const char *config_id,
  * wasm_return_const_char_ownership(exec_ctx_id);
  * ```
  */
-const char *wasm_executionctx_create_from_config(const char *config_id);
+const char *wasm_executionctx_create_from_config(const char *config_id,
+                                                 const char *(*get_header_cb)(struct Headers *headers, const char *key),
+                                                 void (*set_header_cb)(struct Headers *headers, const char *key, const char *value),
+                                                 void (*delete_header_cb)(struct Headers *headers, const char *key));
 
 /**
  * Deallocates the given Wasm execution context
@@ -303,6 +312,10 @@ int wasm_executionctx_stdin_set(const char *executionctx_id,
 int wasm_executionctx_run(const char *executionctx_id,
                           const char **_buffer,
                           unsigned long *_len);
+
+int wasm_executionctx_call(const char *executionctx_id,
+                           const char *function_name,
+                           struct Headers *arg);
 
 /**
  * Returns raw pointer's ownership

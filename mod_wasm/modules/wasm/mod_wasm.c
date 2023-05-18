@@ -264,6 +264,43 @@ static void map_cgi_filenames(char *config_id, request_rec *r) {
   }
 }
 
+static const char* get_header_cb(struct Headers *headers, const char *key) {
+    return apr_table_get((apr_table_t*)headers, key);
+}
+
+static void set_header_cb(struct Headers *headers, const char *key, const char *value) {
+    return apr_table_set((apr_table_t*)headers, key, value);
+}
+
+static void delete_header_cb(struct Headers *headers, const char *key) {
+    return apr_table_unset((apr_table_t*)headers, key);
+}
+
+static int filter_handler(request_rec *r)
+{
+    /* decline if we're being called inside a subrequest */
+    if (r->main || r->prev)
+        return DECLINED;
+
+    /* get specific configuration for the given directory/location */
+    x_cfg *dcfg = ap_get_module_config(r->per_dir_config, &wasm_module);
+
+    /* creates a new Wasm execution context */
+    const char *filter_ctx_id = wasm_executionctx_create_from_config(dcfg->loc, get_header_cb, set_header_cb, delete_header_cb);
+
+    wasm_executionctx_call(filter_ctx_id, "handle_request_headers", (struct Headers*)r->headers_in);
+
+    /* deallocate execution context and return id ownership to avoid leaking memory */
+    int ret = wasm_executionctx_deallocate(filter_ctx_id);
+    if (ret != OK)
+        ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
+                      "content_handler() - ERROR! Couldn't deallocate Wasm execution context: '%s'", filter_ctx_id);
+
+    wasm_return_const_char_ownership(filter_ctx_id);
+
+    return OK;
+}
+
 /*
  * Content handler
  */
@@ -286,7 +323,7 @@ static int content_handler(request_rec *r)
     x_cfg *dcfg = ap_get_module_config(r->per_dir_config, &wasm_module);
 
     /* creates a new Wasm execution context */
-    const char* exec_ctx_id = wasm_executionctx_create_from_config(dcfg->loc);
+    const char* exec_ctx_id = wasm_executionctx_create_from_config(dcfg->loc, get_header_cb, set_header_cb, delete_header_cb);
 
     int ret = 0;
     if (dcfg->bWasmEnableCGI) {
@@ -425,10 +462,15 @@ static int content_handler(request_rec *r)
  */
 static void register_hooks(apr_pool_t *p)
 {
+    // http://www.apachetutor.org/dev/request
+
+    ap_hook_fixups(filter_handler, NULL, NULL, APR_HOOK_FIRST);
+
     ap_hook_handler(content_handler, NULL, NULL, APR_HOOK_MIDDLE);
 }
 
 #define WASM_DIRECTIVE_WASMMODULE           "WasmModule"
+#define WASM_DIRECTIVE_WASMFILTER           "WasmFilter"
 #define WASM_DIRECTIVE_WASMARG              "WasmArg"
 #define WASM_DIRECTIVE_WASMENV              "WasmEnv"
 #define WASM_DIRECTIVE_WASMDIR              "WasmDir"
@@ -447,7 +489,7 @@ static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, cons
         ap_log_error(APLOG_MARK, APLOG_ERR, ret, NULL,
             "wasm_directive_WasmModule() - ERROR! Couldn't load Wasm Module '%s'!", word1);
 
-    /* Wasm config is implictly created for the current location and using the loaded module */
+    /* Wasm config is implicitly created for the current location and using the loaded module */
     ret = wasm_config_module_set(cfg->loc, word1);
     if ( ret != OK )
         ap_log_error(APLOG_MARK, APLOG_ERR, ret, NULL,
@@ -456,10 +498,30 @@ static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, cons
     return NULL;
 }
 
+static const char *wasm_directive_WasmFilter(cmd_parms *cmd, void *mconfig, const char *word1)
+{
+    x_cfg *cfg = (x_cfg *)mconfig;
+    int ret;
+
+    /* Wasm module is loaded and cached */
+    ret = wasm_module_load(word1);
+    if (ret != OK)
+        ap_log_error(APLOG_MARK, APLOG_ERR, ret, NULL,
+                     "wasm_directive_WasmFilter() - ERROR! Couldn't load Wasm Filter '%s'!", word1);
+
+    /* Wasm config is implicitly created for the current location and using the loaded module */
+    ret = wasm_config_filter_set(cfg->loc, word1);
+    if (ret != OK)
+        ap_log_error(APLOG_MARK, APLOG_ERR, ret, NULL,
+                     "wasm_directive_WasmFilter() - ERROR! Couldn't set Wasm Filter '%s' to Wasm config '%s'!", word1, cfg->loc);
+
+    return NULL;
+}
+
 static const char *wasm_directive_WasmArg(cmd_parms *cmd, void *mconfig, const char *word1)
 {
     x_cfg *cfg = (x_cfg *) mconfig;
-    
+
     int ret = wasm_config_arg_add(cfg->loc, word1);
     if ( ret != OK )
         ap_log_error(APLOG_MARK, APLOG_ERR, ret, NULL,
@@ -529,6 +591,13 @@ static const command_rec directives[] =
         NULL,                            /* argument to include in call */
         OR_OPTIONS,                      /* where available */
         "Load a Wasm Module from disk"   /* directive description */
+    ),
+    AP_INIT_TAKE1(
+        WASM_DIRECTIVE_WASMFILTER,       /* directive name */
+        wasm_directive_WasmFilter,       /* config action routine */
+        NULL,                            /* argument to include in call */
+        OR_OPTIONS,                      /* where available */
+        "Load a Wasm Filter from disk"   /* directive description */
     ),
     AP_INIT_TAKE1(
         WASM_DIRECTIVE_WASMARG,
