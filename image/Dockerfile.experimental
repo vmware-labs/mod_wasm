@@ -1,0 +1,62 @@
+################################################################################
+# Container image build for experimental use cases
+#
+# This container image provides Apache2, mod_wasm and a default
+# configuration that makes easy to execute custom WebAssembly modules.
+################################################################################
+ARG IMAGE_REPOSITORY=docker.io
+
+
+################################################################################
+# [`wasm_runtime.so` Builder]
+################################################################################
+FROM $IMAGE_REPOSITORY/library/rust:1.68 as builder-wasm_runtime.so
+ARG WASM_RUNTIME_PATH=/usr/src/wasm_runtime
+RUN apt-get update && apt-get install make
+WORKDIR $WASM_RUNTIME_PATH
+COPY ./wasm_runtime ./
+RUN rustup update
+RUN cargo install cbindgen
+RUN make clean
+RUN make all
+
+
+################################################################################
+# [`mod_wasm.so` Builder]
+################################################################################
+FROM $IMAGE_REPOSITORY/library/httpd:2.4 as builder-mod_wasm.so
+ARG WASM_RUNTIME_PATH=/usr/src/wasm_runtime
+ARG MOD_WASM_PATH=/usr/src/mod_wasm
+ARG DIST_DIR=$MOD_WASM_PATH/dist
+RUN apt-get update && apt-get install apache2-dev build-essential pkg-config libtool libapr1-dev libaprutil1-dev make gcc libtool-bin libxml2-dev libpcre2-dev subversion pkg-config -y
+WORKDIR $MOD_WASM_PATH
+COPY ./mod_wasm $MOD_WASM_PATH
+COPY ./dist $DIST_DIR
+COPY --from=builder-wasm_runtime.so $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so
+COPY --from=builder-wasm_runtime.so $WASM_RUNTIME_PATH/include/ $WASM_RUNTIME_PATH/include/
+RUN mkdir -p $MOD_WASM_PATH/dist/conf $DIST_DIR/modules
+RUN HTTPD_DIR=/usr/local/apache2 ./build.sh
+
+
+################################################################################
+# [Runtimes and Demos Builder]
+################################################################################
+FROM $IMAGE_REPOSITORY/library/debian:bullseye-slim as builder-demos
+RUN apt-get update && apt-get install wget unzip -y
+WORKDIR /tmp
+
+
+
+################################################################################
+# [Final Container Image] Distribute wasm_runtime, mod_wasm and demos
+################################################################################
+FROM $IMAGE_REPOSITORY/library/httpd:2.4 as builder-final
+LABEL org.opencontainers.image.source https://github.com/vmware-labs/mod_wasm
+ARG WASM_RUNTIME_PATH=/usr/src/wasm_runtime
+ARG MOD_WASM_PATH=/usr/src/mod_wasm
+ARG DIST_DIR=$MOD_WASM_PATH/dist
+COPY --from=builder-wasm_runtime.so $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so /usr/lib
+COPY --from=builder-mod_wasm.so $DIST_DIR/modules /usr/local/apache2/modules
+COPY --from=builder-mod_wasm.so $DIST_DIR/conf/httpd.conf /usr/local/apache2/conf/
+COPY ./examples/wasm_modules/ /usr/local/apache2/wasm_modules/
+
