@@ -58,5 +58,6 @@ ARG DIST_DIR=$MOD_WASM_PATH/dist
 COPY --from=builder-wasm_runtime.so $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so /usr/lib
 COPY --from=builder-mod_wasm.so $DIST_DIR/modules /usr/local/apache2/modules
 COPY --from=builder-mod_wasm.so $DIST_DIR/conf/httpd.conf /usr/local/apache2/conf/
+COPY --from=builder-mod_wasm.so $MOD_WASM_PATH/examples/conf/httpd-experimental.conf /usr/local/apache2/conf/httpd.conf
 COPY ./examples/wasm_modules/ /usr/local/apache2/wasm_modules/
 
