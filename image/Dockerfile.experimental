@@ -10,16 +10,25 @@ ARG IMAGE_REPOSITORY=docker.io
 ################################################################################
 # [`wasm_runtime.so` Builder]
 ################################################################################
-FROM $IMAGE_REPOSITORY/library/rust:1.68 as builder-wasm_runtime.so
+FROM $IMAGE_REPOSITORY/library/rust:1.68 as builder-rust
 ARG WASM_RUNTIME_PATH=/usr/src/wasm_runtime
-RUN apt-get update && apt-get install make
+RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && \
+    apt-get install make
 WORKDIR $WASM_RUNTIME_PATH
 COPY ./wasm_runtime ./
 RUN rustup update
 RUN cargo install cbindgen
 RUN make clean
 RUN make all
-
+WORKDIR /usr/src/wasm-examples
+COPY ./examples/rust-src/ ./
+RUN rustup target add wasm32-wasi
+RUN mkdir ./rust-wasm
+RUN cd edit_headers && cargo build --target wasm32-wasi --release && cp target/wasm32-wasi/release/edit_headers.wasm ../rust-wasm/
+RUN cd hello_wasm && cargo build --target wasm32-wasi --release && cp target/wasm32-wasi/release/hello_wasm.wasm ../rust-wasm/
+RUN cd list_dir && cargo build --target wasm32-wasi --release && cp target/wasm32-wasi/release/list_dir.wasm ../rust-wasm/
 
 ################################################################################
 # [`mod_wasm.so` Builder]
@@ -28,12 +37,17 @@ FROM $IMAGE_REPOSITORY/library/httpd:2.4 as builder-mod_wasm.so
 ARG WASM_RUNTIME_PATH=/usr/src/wasm_runtime
 ARG MOD_WASM_PATH=/usr/src/mod_wasm
 ARG DIST_DIR=$MOD_WASM_PATH/dist
-RUN apt-get update && apt-get install apache2-dev build-essential pkg-config libtool libapr1-dev libaprutil1-dev make gcc libtool-bin libxml2-dev libpcre2-dev subversion pkg-config -y
+RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && \
+    apt-get --no-install-recommends install \
+        apache2-dev build-essential pkg-config libtool libapr1-dev libaprutil1-dev \
+        make gcc libtool-bin libxml2-dev libpcre2-dev subversion pkg-config -y
 WORKDIR $MOD_WASM_PATH
 COPY ./mod_wasm $MOD_WASM_PATH
 COPY ./dist $DIST_DIR
-COPY --from=builder-wasm_runtime.so $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so
-COPY --from=builder-wasm_runtime.so $WASM_RUNTIME_PATH/include/ $WASM_RUNTIME_PATH/include/
+COPY --from=builder-rust $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so
+COPY --from=builder-rust $WASM_RUNTIME_PATH/include/ $WASM_RUNTIME_PATH/include/
 RUN mkdir -p $MOD_WASM_PATH/dist/conf $DIST_DIR/modules
 RUN HTTPD_DIR=/usr/local/apache2 ./build.sh
 
@@ -46,9 +60,18 @@ LABEL org.opencontainers.image.source https://github.com/vmware-labs/mod_wasm
 ARG WASM_RUNTIME_PATH=/usr/src/wasm_runtime
 ARG MOD_WASM_PATH=/usr/src/mod_wasm
 ARG DIST_DIR=$MOD_WASM_PATH/dist
-COPY --from=builder-wasm_runtime.so $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so /usr/lib
+COPY --from=builder-rust $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so /usr/lib
 COPY --from=builder-mod_wasm.so $DIST_DIR/modules /usr/local/apache2/modules
 COPY --from=builder-mod_wasm.so $DIST_DIR/conf/httpd.conf /usr/local/apache2/conf/
 COPY ./examples/conf/httpd-experimental.conf /usr/local/apache2/conf/httpd.conf
 COPY ./examples/wasm_modules/ /usr/local/apache2/wasm_modules/
-
+COPY --from=builder-rust /usr/src/wasm-examples/rust-wasm/ /usr/local/apache2/wasm_modules/rust-wasm/
+RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt update && \
+    apt-get --no-install-recommends install \
+        php-cgi \
+        procps \
+        curl -y
+COPY ./examples/filter-examples/headers-filter/php-sample /usr/local/apache2/headers-filter/php-sample
+COPY ./examples/filter-examples/headers-filter/run_me.sh /usr/local/apache2/headers-filter/run_me.sh
