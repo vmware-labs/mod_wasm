@@ -9,7 +9,7 @@
 //! This file contains functions needed for offering a C ABI compatible API from Rust.
 
 use std::ffi::{CString, CStr, c_char, c_uchar};
-use std::ptr;
+use std::ptr::{self};
 use std::slice;
 
 
@@ -39,6 +39,25 @@ pub fn const_c_char_to_str(const_c_char: *const c_char) -> &'static str {
 
     str_literal
 }
+
+
+// including trailing `\0'
+// To-Do: Not sure about &'static [u8] as the best option
+pub fn const_c_char_to_bytes(const_c_char: *const c_char) -> &'static [u8] {
+    // safety check for raw NULL pointer
+    if const_c_char == ptr::null() {
+        return &[];
+    }
+
+    // unsafe conversion from C const char* to a safe CStr
+    let safe_cstr = unsafe {
+        CStr::from_ptr(const_c_char)
+    };
+
+    // convert to a bytes slice &[u8] including the trailing `\0` byte
+    safe_cstr.to_bytes_with_nul()
+}
+
 
 // Coverts a Rust String slice into a null-terminated C `const char*`
 // Two steps:
