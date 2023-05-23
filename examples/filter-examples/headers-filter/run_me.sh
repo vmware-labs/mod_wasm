@@ -3,28 +3,38 @@
 step_no=1
 step() {
     sleep 2
-    echo -e "\n\n=======================================================================\n"
-    echo -e "Step ${step_no} '$@':\n"
-    echo -e "=======================================================================\n"
+    echo -e "\n\n"
+    echo -e "\e[33m======================================================================="
+    echo -e "\e[33m   Step ${step_no} '$@':"
+    echo -e "\e[33m======================================================================="
     step_no=$(expr 1 + ${step_no})
 }
 
+explain() {
+    echo -e "\e[36m$@"
+}
+
 execute() {
-    echo -e " \$ " "$@" "\n"
+    echo -e "\e[32m-----------------------------------------------------------------------"
+    echo -e "\e[32m\$" "$@"
+    echo -e "\e[32m-----------------------------------------------------------------------"
+    echo -e "\e[37m"
     "$@"
-    echo -e "-----------------------------------------------------------------------\n"
+    echo -e "\e[32m-----------------------------------------------------------------------"
+    echo -e "\n"
 }
 
 step "Same PHP script, which prints headers is configured to serve at two locations:"
-echo "Alias /sample-mod-headers /usr/local/apache2/headers-filter/php-sample"
-echo "Alias /sample-mod-wasm /usr/local/apache2/headers-filter/php-sample"
-echo
+explain "Alias /sample-mod-headers /usr/local/apache2/headers-filter/php-sample"
+explain "Alias /sample-mod-wasm /usr/local/apache2/headers-filter/php-sample"
+explain
 
 execute curl localhost:8080/sample-mod-headers/index.php
 execute curl localhost:8080/sample-mod-wasm/index.php
 
 step "Modifying 'target' header based on value of 'operation' header with mod_headers"
-echo "httpd.conf:"
+explain "[httpd.conf]"
+explain
 cat <<EOF
 <Location /sample-mod-headers>
     SetEnvIf Operation "^add$" OPERATION_add
@@ -44,7 +54,8 @@ execute curl localhost:8080/sample-mod-headers/index.php --no-progress-meter -H 
 
 
 step "Modifying 'target' header based on value of 'operation' header with mod_wasm and edit_headers.wasm"
-echo "httpd.conf:"
+explain "[httpd.conf]"
+explain
 cat <<EOF
 <IfModule wasm_module>
     <Location /sample-mod-wasm>
@@ -53,7 +64,8 @@ cat <<EOF
 </IfModule>
 EOF
 
-echo "Rust source:"
+explain "Rust source:"
+explain
 cat <<EOF
 fn handle_operation_header(headers_handle: u64) {
     if let Some(op) = apr::get_header(headers_handle, "operation") {
@@ -71,7 +83,8 @@ EOF
 
 step "Evaluating a header's value with mod_wasm and edit_headers.wasm. Can't do with mod_headers"
 
-echo "Rust source:"
+explain "Rust source:"
+explain
 cat <<EOF
 fn handle_eval_header(headers_handle: u64) {
     if let Some(eval_me) = apr::get_header(headers_handle, "evaluate-me") {
@@ -89,7 +102,8 @@ execute curl localhost:8080/sample-mod-wasm/index.php --no-progress-meter -H "ev
 
 step "Hash a header's value with mod_wasm and edit_headers.wasm. Can't do with mod_headers"
 
-echo "Rust source:"
+explain "Rust source:"
+explain
 cat <<EOF
 fn handle_hash_header(headers_handle: u64) {
     if let Some(hash_me) = apr::get_header(headers_handle, "hash-me") {
@@ -105,7 +119,8 @@ execute curl localhost:8080/sample-mod-wasm/index.php --no-progress-meter -H "ha
 
 step "Failures in mod_wasm and edit_headers.wasm don't affect Apache's stability. Can't do with a traditional module"
 
-echo "Rust source:"
+explain "Rust source:"
+explain
 cat <<EOF
 fn handle_failure_header(headers_handle: u64) {
     if let Some(fail_me) = apr::get_header(headers_handle, "fail-me") {
@@ -128,9 +143,8 @@ test -f /usr/local/apache2/logs/error_log && execute tail -n 4 /usr/local/apache
 execute curl localhost:8080/sample-mod-wasm/index.php --no-progress-meter -H "fail-me:filesystem-access"
 test -f /usr/local/apache2/logs/error_log && execute tail -n 4 /usr/local/apache2/logs/error_log
 
-echo "Apache is still up even with the fatal failures in the Wasm code:"
-echo "ps -eo comm,etime,user | grep root | grep httpd"
+explain "Apache is still up even with the fatal failures in the Wasm code:"
+explain "ps -eo comm,etime,user | grep root | grep httpd"
 ps -eo comm,etime,user | grep root | grep httpd
 
-
-echo -e "\n\n ^^^^^^^^^ Scroll back through the above output. It is self descriptive! ^^^^^^^^^^\n"
+explain -e "\n\n ^^^^^^^^^ Scroll back through the above output. It is self descriptive! ^^^^^^^^^^\n"
