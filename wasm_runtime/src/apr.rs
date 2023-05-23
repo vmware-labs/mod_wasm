@@ -106,11 +106,11 @@ pub mod c_api {
 }
 
 pub mod wasm_host {
-    use std::ffi::CStr;
+    use std::ffi::{CStr, c_char};
     use wasi_common::WasiCtx;
     use wasmtime::{Caller, Linker};
 
-    fn get_header_impl(config_id: String, header_ptr: u64, key: *const u8) -> Option<String> {
+    fn get_header_impl(config_id: String, header_ptr: u64, key: *const c_char) -> Option<String> {
         let apr_interfaces = crate::apr::APR_INTERFACES
             .read()
             .expect("ERROR! Poisoned RwLock APR_INTERFACES on read()");
@@ -121,13 +121,13 @@ pub mod wasm_host {
         };
 
         unsafe {
-            let key_str = CStr::from_ptr(key as *const i8);
+            let key_str = CStr::from_ptr(key);
 
             apr.get_header(header_ptr, key_str.to_str().unwrap())
         }
     }
 
-    fn set_header_impl(config_id: String, header_ptr: u64, key: *const u8, value: *const u8) {
+    fn set_header_impl(config_id: String, header_ptr: u64, key: *const c_char, value: *const c_char) {
         let apr_interfaces = crate::apr::APR_INTERFACES
             .read()
             .expect("ERROR! Poisoned RwLock APR_INTERFACES on read()");
@@ -138,8 +138,8 @@ pub mod wasm_host {
         };
 
         unsafe {
-            let key_str = CStr::from_ptr(key as *const i8);
-            let value_ptr = CStr::from_ptr(value as *const i8);
+            let key_str = CStr::from_ptr(key);
+            let value_ptr = CStr::from_ptr(value);
 
             apr.set_header(
                 header_ptr,
@@ -149,7 +149,7 @@ pub mod wasm_host {
         }
     }
 
-    fn delete_header_impl(config_id: String, header_ptr: u64, key: *const u8) {
+    fn delete_header_impl(config_id: String, header_ptr: u64, key: *const c_char) {
         let apr_interfaces = crate::apr::APR_INTERFACES
             .read()
             .expect("ERROR! Poisoned RwLock APR_INTERFACES on read()");
@@ -160,7 +160,7 @@ pub mod wasm_host {
         };
 
         unsafe {
-            let key_str = CStr::from_ptr(key as *const i8);
+            let key_str = CStr::from_ptr(key);
 
             apr.delete_header(header_ptr, key_str.to_str().unwrap());
         }
@@ -176,7 +176,7 @@ pub mod wasm_host {
 
                 let ptr_native = unsafe { memory.data_ptr(&caller).offset(key as isize) };
 
-                let value = get_header_impl(config_id_get_header.clone(), headers, ptr_native);
+                let value = get_header_impl(config_id_get_header.clone(), headers, ptr_native as *const c_char);
 
                 match value {
                     Some(v) => {
@@ -213,8 +213,8 @@ pub mod wasm_host {
                 set_header_impl(
                     config_id_set_header.clone(),
                     headers,
-                    key_native,
-                    value_native,
+                    key_native as *const c_char,
+                    value_native as *const c_char,
                 );
             },
         ).ok();
@@ -227,7 +227,7 @@ pub mod wasm_host {
                 let memory = caller.get_export("memory").unwrap().into_memory().unwrap();
 
                 let key_native = unsafe { memory.data_ptr(&caller).offset(key as isize) };
-                delete_header_impl(config_id_delete_header.clone(), headers, key_native);
+                delete_header_impl(config_id_delete_header.clone(), headers, key_native as *const c_char);
             },
         ).ok();
     }
