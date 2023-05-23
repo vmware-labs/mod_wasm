@@ -1,4 +1,5 @@
 use std::ffi::{c_void, CStr, CString};
+use std::ptr;
 
 pub mod imports {
     use std::ffi::c_char;
@@ -27,19 +28,23 @@ pub mod mem_ops {
     }
 }
 
-// TODO - return Option<String> by constructing with String::from_raw_parts to
-// get ownership and skip the copy and deallocate
-pub fn get_header(headers_handle: u64, key: &str) -> String {
+pub fn get_header(headers_handle: u64, key: &str) -> Option<String> {
     let key = CString::new(key).expect("Create CString for {key}");
 
-    let op_ptr =
-        unsafe { CStr::from_ptr(imports::get_header(headers_handle, key.as_ptr()) as *const i8) };
+    let op_result = unsafe { imports::get_header(headers_handle, key.as_ptr()) };
+    if op_result == ptr::null() {
+        return None;
+    }
 
+    let op_ptr = unsafe { CStr::from_ptr(op_result as *const i8) };
+
+    // TODO - construct with String::from_raw_parts to get ownership and skip the copy and deallocate.
+    // Note! - doing this properly may require modification of the ABI.
     let result = op_ptr.to_str().expect("UTF-8 string").to_string();
 
     mem_ops::deallocate(op_ptr.as_ptr() as *mut c_void, result.len());
 
-    result
+    Some(result)
 }
 
 pub fn set_header(headers_handle: u64, key: &str, value: &str) {
