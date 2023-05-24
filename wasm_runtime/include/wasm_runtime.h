@@ -156,6 +156,8 @@ int wasm_config_mapdir_add(const char *config_id,
                            const char *map,
                            const char *dir);
 
+const char *wasm_config_get_mapped_path(const char *config_id, const char *path);
+
 /**
  * Creates a new Wasm Execution Context for the given Wasm Config identifier.
  *

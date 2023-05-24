@@ -11,9 +11,9 @@ use crate::module::WASM_RUNTIME_MODULES;
 
 use std::collections::HashMap;
 use std::sync::RwLock;
-
+use std::path::{Path, PathBuf};
 use once_cell::sync::Lazy;
-
+use path_clean::clean;
 
 pub struct WasmConfig {
     pub id:           String,
@@ -210,7 +210,42 @@ impl WasmConfig {
         wasm_config.wasi_mapdirs.push((wasi_map.to_string(), wasi_dir.to_string()));
         Ok(())
     }
+    // Returns a version of path with all slashes converted to forward
+    fn path_to_unix_slashes(path: &Path) -> String {
+        path.to_string_lossy().into_owned().replace("\\", "/")
+    }
+    fn find_longest_map(mapdirs: &[(String, String)], path: &str) -> Option<String> {
+        let cleaned_path = clean(Self::path_to_unix_slashes(Path::new(path)));
+        let mut ordered = mapdirs.to_vec();
+        ordered.sort_by_key(|(_, from)| Path::new(from).components().count());
+        let longest_map = ordered
+            .iter()
+            .rev()
+            .find(|(_, from)| cleaned_path.starts_with(from))
+            .and_then(|(to, from)| match cleaned_path.strip_prefix(from) {
+                Ok(tail) => Some(PathBuf::from(to).join(tail)),
+                Err(_) => None,
+            });
 
+        longest_map.map(|p| Self::path_to_unix_slashes(clean(p).as_path()))
+    }
+
+    pub fn get_mapped_path(config_id: &str, path: &str) -> Option<String> {
+        let configs = match WASM_RUNTIME_CONFIGS.read() {
+            Ok(c) => c,
+            Err(_) => {
+                return None;
+            }
+        };
+
+        let wasm_config = match configs.get(config_id) {
+            Some(c) => c,
+            None => {
+                return None;
+            }
+        };
+        Self::find_longest_map(&wasm_config.wasi_mapdirs, path)
+    }
 }
 
 

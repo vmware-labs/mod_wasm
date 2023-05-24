@@ -24,4 +24,5 @@ wasi-cap-std-sync = "7.0.1"
 anyhow = "1.0.71"
 once_cell = "1.17.1"
 rand = "0.8.5"
+path-clean = "1.0.1"
 

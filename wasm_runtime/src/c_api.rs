@@ -13,7 +13,7 @@ use crate::module::WasmModule;
 use crate::config::WasmConfig;
 use crate::execution_ctx::WasmExecutionCtx;
 use crate::ffi_utils::*;
-
+use std::ptr;
 
 /// Load a Wasm Module from disk.
 ///
@@ -229,6 +229,21 @@ pub extern "C" fn wasm_config_mapdir_add(config_id: *const c_char, map: *const c
             -1
         }
     }  
+}
+
+#[no_mangle]
+pub extern "C" fn wasm_config_get_mapped_path(config_id: *const c_char, path: *const c_char) -> *const c_char {
+    let config_id_str = const_c_char_to_str(config_id);
+    let path_str       = const_c_char_to_str(path);
+
+    match WasmConfig::get_mapped_path(config_id_str, path_str) {
+        Some(str) => {
+              str_to_c_char(&str)
+        },
+        None => {
+                 ptr::null()
+        }
+    }
 }
 
 

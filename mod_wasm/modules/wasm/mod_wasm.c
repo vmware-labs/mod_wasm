@@ -76,6 +76,7 @@ typedef struct x_cfg {
 #define CONFIG_MODE_DIRECTORY 2
 #define CONFIG_MODE_COMBO 3                                  /* Shouldn't ever happen. */
     int bWasmEnableCGI;                                      /* Boolean: whether this module interfaces as if it was a CGI script */
+    int bWasmMapCGIFileNames;
     char *trace;                                             /* Pointer to trace string. */
     char *loc;                                               /* Location to which this record applies. */
 } x_cfg;
@@ -124,6 +125,7 @@ static void *create_dir_config(apr_pool_t *p, char *context)
      * Now fill in the defaults.  If there are any `parent' configuration
      * records, they'll get merged as part of a separate callback.
      */
+    cfg->bWasmMapCGIFileNames = 0;
     cfg->bWasmEnableCGI = 0;
     cfg->cmode = CONFIG_MODE_DIRECTORY;
     /*
@@ -158,6 +160,7 @@ static void *create_server_config(apr_pool_t *p, server_rec *s)
      * in an empty record.
      */
     cfg = (x_cfg *) apr_pcalloc(p, sizeof(x_cfg));
+    cfg->bWasmMapCGIFileNames = 0;
     cfg->bWasmEnableCGI = 0;
     cfg->cmode = CONFIG_MODE_SERVER;
     /*
@@ -235,6 +238,29 @@ static int read_http_request_body(request_rec *r, const char **rbuf, apr_off_t *
     return rc;
 }
 
+/*
+ * Modify the SCRIPT_FILENAME variable based on the WasmMapDirs
+ */
+void map_cgi_filenames(char *config_id, request_rec *r) {
+  const char* script_filename = apr_table_get(r->subprocess_env, "SCRIPT_FILENAME");
+  if (script_filename && *script_filename) {
+    ap_log_rerror(APLOG_MARK, APLOG_TRACE8, 0, r,
+                  "content_handler() - DEBUG Looking for remapped value for %s", script_filename);
+    const char* mapped_path = wasm_config_get_mapped_path(config_id, script_filename);
+    if (mapped_path != NULL) {
+      ap_log_rerror(APLOG_MARK, APLOG_DEBUG, 0, r,
+                    "content_handler() - INFO Found remap %s => %s: Updating SCRIPT_FILENAME", script_filename, mapped_path);
+      apr_table_set(r->subprocess_env, "SCRIPT_FILENAME", apr_pstrdup(r->pool, mapped_path));
+      wasm_return_const_char_ownership(mapped_path);
+    } else {
+      ap_log_rerror(APLOG_MARK, APLOG_TRACE8, 0, r,
+                    "content_handler() - DEBUG Could not find any mapping for %s", script_filename);
+    }
+  } else {
+    ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, r,
+                  "content_handler() - ERROR! Cannot find SCRIPT_FILENAME entry");
+  }
+}
 
 /*
  * Content handler
@@ -265,6 +291,10 @@ static int content_handler(request_rec *r)
         /* On CGI mode, we set the request headers as environment variables with an HTTP_ prefix. */
         ap_add_common_vars(r);
         ap_add_cgi_vars(r);
+        if (dcfg->bWasmMapCGIFileNames) {
+          map_cgi_filenames(dcfg->loc, r);
+        }
+
         apr_table_do(_wasm_executionctx_env_add, (void*)exec_ctx_id, r->subprocess_env, NULL);
 
         /* read HTTP Request body and set it as stdin for the Wasm module */
@@ -396,12 +426,13 @@ static void register_hooks(apr_pool_t *p)
     ap_hook_handler(content_handler, NULL, NULL, APR_HOOK_MIDDLE);
 }
 
-#define WASM_DIRECTIVE_WASMMODULE     "WasmModule"
-#define WASM_DIRECTIVE_WASMARG        "WasmArg"
-#define WASM_DIRECTIVE_WASMENV        "WasmEnv"
-#define WASM_DIRECTIVE_WASMDIR        "WasmDir"
-#define WASM_DIRECTIVE_WASMMAPDIR     "WasmMapDir"
-#define WASM_DIRECTIVE_WASMENABLECGI  "WasmEnableCGI"
+#define WASM_DIRECTIVE_WASMMODULE           "WasmModule"
+#define WASM_DIRECTIVE_WASMARG              "WasmArg"
+#define WASM_DIRECTIVE_WASMENV              "WasmEnv"
+#define WASM_DIRECTIVE_WASMDIR              "WasmDir"
+#define WASM_DIRECTIVE_WASMMAPDIR           "WasmMapDir"
+#define WASM_DIRECTIVE_WASMENABLECGI        "WasmEnableCGI"
+#define WASM_DIRECTIVE_WASMMAPCGIFILENAMES  "WasmMapCGIFileNames"
 
 static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, const char *word1)
 {
@@ -478,6 +509,13 @@ static const char *wasm_directive_WasmEnableCGI(cmd_parms *cmd, void *mconfig, i
     return NULL;
 }
 
+static const char *wasm_directive_WasmMapCGIFileNames(cmd_parms *cmd, void *mconfig, int arg)
+{
+    x_cfg *cfg = (x_cfg *) mconfig;
+    cfg->bWasmMapCGIFileNames = arg;
+    return NULL;
+}
+
 /*
  * List of directives specific to our module.
  */
@@ -524,6 +562,13 @@ static const command_rec directives[] =
         NULL,
         OR_OPTIONS,
         "Whether this WebAssembly module behaves as a CGI"
+    ),
+    AP_INIT_FLAG(
+        WASM_DIRECTIVE_WASMMAPCGIFILENAMES,
+        wasm_directive_WasmMapCGIFileNames,
+        NULL,
+        OR_OPTIONS,
+        "Whether SCRIPT_FILENAME should be mapped based on WasmMapDir mounts when running as a CGI"
     ),
     {NULL}
 };
