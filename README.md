@@ -86,6 +86,7 @@ To setup and manage WebAssembly binaries and their [WASI](https://wasi.dev/) con
 | `WasmArg <arg>`                | Set an argument to be passed to the Wasm module context. |
 | `WasmEnv <env> <value>`        | Set an environment variable to be passed to the Wasm module context. |
 | `WasmEnableCGI {On\|Off}`      | Enable/Disable CGI emulation mode. Default is `Off`. |
+| `WasmMapCGIFileNames {On\|Off}`| Enable/Disable mapping SCRIPT_FILENAME based on WasmMapDirs when WasmEnableCGI is enabled. Default is `Off`. |
 
 
 ### Workflow

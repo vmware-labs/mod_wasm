@@ -76,7 +76,7 @@ typedef struct x_cfg {
 #define CONFIG_MODE_DIRECTORY 2
 #define CONFIG_MODE_COMBO 3                                  /* Shouldn't ever happen. */
     int bWasmEnableCGI;                                      /* Boolean: whether this module interfaces as if it was a CGI script */
-    int bWasmMapCGIFileNames;
+    int bWasmMapCGIFileNames;                                /* Boolean: whether this module will adjust SCRIPT_FILENAME when enabling WasmEnableCGI according to mapped files */
     char *trace;                                             /* Pointer to trace string. */
     char *loc;                                               /* Location to which this record applies. */
 } x_cfg;
@@ -125,8 +125,8 @@ static void *create_dir_config(apr_pool_t *p, char *context)
      * Now fill in the defaults.  If there are any `parent' configuration
      * records, they'll get merged as part of a separate callback.
      */
-    cfg->bWasmMapCGIFileNames = 0;
     cfg->bWasmEnableCGI = 0;
+    cfg->bWasmMapCGIFileNames = 0;
     cfg->cmode = CONFIG_MODE_DIRECTORY;
     /*
      * Finally, add our trace to the callback list.
@@ -160,8 +160,8 @@ static void *create_server_config(apr_pool_t *p, server_rec *s)
      * in an empty record.
      */
     cfg = (x_cfg *) apr_pcalloc(p, sizeof(x_cfg));
-    cfg->bWasmMapCGIFileNames = 0;
     cfg->bWasmEnableCGI = 0;
+    cfg->bWasmMapCGIFileNames = 0;
     cfg->cmode = CONFIG_MODE_SERVER;
     /*
      * Note that we were called in the trace list.
@@ -241,24 +241,26 @@ static int read_http_request_body(request_rec *r, const char **rbuf, apr_off_t *
 /*
  * Modify the SCRIPT_FILENAME variable based on the WasmMapDirs
  */
-void map_cgi_filenames(char *config_id, request_rec *r) {
+static void map_cgi_filenames(char *config_id, request_rec *r) {
   const char* script_filename = apr_table_get(r->subprocess_env, "SCRIPT_FILENAME");
-  if (script_filename && *script_filename) {
-    ap_log_rerror(APLOG_MARK, APLOG_TRACE8, 0, r,
-                  "content_handler() - DEBUG Looking for remapped value for %s", script_filename);
+  if (script_filename != NULL && *script_filename) {
+    ap_log_rerror(APLOG_MARK, APLOG_TRACE1, 0, r,
+                  "map_cgi_filenames() - TRACE Looking for remapped value for %s", script_filename);
     const char* mapped_path = wasm_config_get_mapped_path(config_id, script_filename);
     if (mapped_path != NULL) {
       ap_log_rerror(APLOG_MARK, APLOG_DEBUG, 0, r,
-                    "content_handler() - INFO Found remap %s => %s: Updating SCRIPT_FILENAME", script_filename, mapped_path);
+                    "map_cgi_filenames() - DEBUG Found remap %s => %s: Updating SCRIPT_FILENAME", script_filename, mapped_path);
       apr_table_set(r->subprocess_env, "SCRIPT_FILENAME", apr_pstrdup(r->pool, mapped_path));
       wasm_return_const_char_ownership(mapped_path);
-    } else {
-      ap_log_rerror(APLOG_MARK, APLOG_TRACE8, 0, r,
-                    "content_handler() - DEBUG Could not find any mapping for %s", script_filename);
     }
-  } else {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, r,
-                  "content_handler() - ERROR! Cannot find SCRIPT_FILENAME entry");
+    else {
+      ap_log_rerror(APLOG_MARK, APLOG_TRACE1, 0, r,
+                    "map_cgi_filenames() - TRACE Could not find any mapping for %s", script_filename);
+    }
+  }
+  else {
+    ap_log_rerror(APLOG_MARK, APLOG_WARNING, 0, r,
+                  "map_cgi_filenames() - WARNING! Cannot find SCRIPT_FILENAME entry");
   }
 }
 
