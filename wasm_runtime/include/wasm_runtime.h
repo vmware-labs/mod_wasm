@@ -162,8 +162,8 @@ int wasm_config_mapdir_add(const char *config_id,
  * In case no path is found, it returns null
  *
  * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
- * So `config_id` and `dir` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
- * In addition, `config_id` and `dir` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+ * So `config_id` and `path` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ * In addition, `config_id` and `path` must contain valid ASCII chars that can be converted into UTF-8 encoding.
  *
  * # Examples (C Code)
  *

@@ -257,8 +257,7 @@ pub extern "C" fn wasm_config_get_mapped_path(config_id: *const c_char, path: *c
             }
         }
         Err(e) => {
-            let error_msg = format!("ERROR! C-API: Got error while finding mapped path for \'{}\'! {:?}", path_str, e);
-            eprintln!("{}", error_msg);
+            eprintln!("ERROR! C-API: Got error while finding mapped path for \'{}\'! {:?}", path_str, e);
         }
     };
     ptr::null()
