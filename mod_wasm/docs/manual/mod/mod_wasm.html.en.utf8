@@ -69,6 +69,7 @@
 <li><img alt="" src="../images/down.gif" /> <a href="#wasmdir">WasmDir</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#wasmenablecgi">WasmEnableCGI</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#wasmenv">WasmEnv</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#wasmmapcgifilenames">WasmMapCGIFileNames</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#wasmmapdir">WasmMapDir</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#wasmmodule">WasmModule</a></li>
 </ul>
@@ -199,13 +200,14 @@ WasmDir /var/www/htdocs/my-site</pre>
 </table>
             <p>            
                 <code class="directive">WasmEnableCGI</code> allows <code class="module"><a href="../mod/mod_wasm.html">mod_wasm</a></code> to connect the HTTP requests with the Wasm module in a CGI-like way:
-                <ul>
-                    <li>HTTP headers from the request are passed to the Wasm module as environmental variables.</li>
-                    <li>HTTP request body is passed to the Wasm module as <em>stdin</em>.</li>
-                    <li>URL query parameters are passed as <code>QUERY_STRING</code> environmental variable.</li>
-                    <li>Output from the Wasm module (<em>stdout</em>) will be parsed and headers such as <code>Content-Type:</code> will be
-                    incorporated into the response headers.</li>
-                </ul>
+            </p>
+            <ul>
+                <li>HTTP headers from the request are passed to the Wasm module as environmental variables.</li>
+                <li>HTTP request body is passed to the Wasm module as <em>stdin</em>.</li>
+                <li>URL query parameters are passed as <code>QUERY_STRING</code> environmental variable.</li>
+                <li>Output from the Wasm module (<em>stdout</em>) will be parsed and headers such as <code>Content-Type:</code> will be incorporated into the response headers.</li>
+            </ul>
+            <p>
                 Default value is <em>Off</em>.
             </p>
             <div class="example"><h3>Example</h3><pre class="prettyprint lang-config">WasmEnableCGI On</pre>
@@ -234,6 +236,32 @@ WasmDir /var/www/htdocs/my-site</pre>
             <div class="example"><h3>Example</h3><pre class="prettyprint lang-config">WasmEnv WEBAPP_SCRIPTS /my-site/scripts
 WasmEnv WEBAPP_DEBUG false</pre>
 </div>
+        
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WasmMapCGIFileNames" id="WasmMapCGIFileNames">WasmMapCGIFileNames</a> <a name="wasmmapcgifilenames" id="wasmmapcgifilenames">Directive</a> <a title="Permanent link" href="#wasmmapcgifilenames" class="permalink">&para;</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Enable/Disable mapping <code>SCRIPT_FILENAME</code> based on <code>WasmMapDir</code> instances when <code class="directive">WasmEnableCGI</code> is enabled.</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WasmMapCGIFileNames <em>On|Off</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>Experimental</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_wasm</td></tr>
+</table>
+            <p>            
+                <code class="directive">WasmMapCGIFileNames</code> requests <code class="module"><a href="../mod/mod_wasm.html">mod_wasm</a></code> to map `SCRIPT_FILENAME` based on the mapped dirs.
+                Default value is <em>Off</em>.
+            </p>
+            <div class="example"><h3>Example</h3><pre class="prettyprint lang-config">WasmEnableCGI On
+WasmMapCGIFileNames On
+WasmMapDir /app C:/myapp/htdocs</pre>
+</div>
+            <p>
+            In the example, `SCRIPT_FILENAME` will store `/app/index.php` instead of the host path `C:/myapp/htdocs/index.php`.
+            </p><p>
+            Without this setting, we would also need to provide a `WasmDir` granting access to `C:/myapp/htdocs` as the Wasm module would be trying to access it (or setting `WasmMapDir C:/myapp/htdocs C:/myapp/htdocs`).
+            </p><p>
+            In addition, this allows working with a normalized version of the paths, without having to deal with Unix-like or Windows-like filenames.
+            </p>
         
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>

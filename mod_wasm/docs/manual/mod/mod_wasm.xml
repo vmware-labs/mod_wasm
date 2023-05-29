@@ -272,13 +272,14 @@ WasmEnv WEBAPP_DEBUG false
         <usage>
             <p>            
                 <directive>WasmEnableCGI</directive> allows <module>mod_wasm</module> to connect the HTTP requests with the Wasm module in a CGI-like way:
-                <ul>
-                    <li>HTTP headers from the request are passed to the Wasm module as environmental variables.</li>
-                    <li>HTTP request body is passed to the Wasm module as <em>stdin</em>.</li>
-                    <li>URL query parameters are passed as <code>QUERY_STRING</code> environmental variable.</li>
-                    <li>Output from the Wasm module (<em>stdout</em>) will be parsed and headers such as <code>Content-Type:</code> will be
-                    incorporated into the response headers.</li>
-                </ul>
+            </p>
+            <ul>
+                <li>HTTP headers from the request are passed to the Wasm module as environmental variables.</li>
+                <li>HTTP request body is passed to the Wasm module as <em>stdin</em>.</li>
+                <li>URL query parameters are passed as <code>QUERY_STRING</code> environmental variable.</li>
+                <li>Output from the Wasm module (<em>stdout</em>) will be parsed and headers such as <code>Content-Type:</code> will be incorporated into the response headers.</li>
+            </ul>
+            <p>
                 Default value is <em>Off</em>.
             </p>
             <example><title>Example</title>
@@ -290,6 +291,36 @@ WasmEnableCGI On
                 HTTP request headers are prefixed with '<code>HTTP_</code>', uppercased, and hyphens '<code>-</code>' are substituted by underscores '<code>_</code>' when transformed into environmental variables.
             </p><p>
                 As an example, a header like <code>x-custom-header: value</code> will be transformed into an <code>HTTP_X_CUSTOM_HEADER=value</code> environmental variable.
+            </p>
+        </usage>
+    </directivesynopsis>
+
+    <!-- ************************** WasmMapCGIFileNames ************************* -->
+    <directivesynopsis>
+        <name>WasmMapCGIFileNames</name>
+        <description>Enable/Disable mapping <code>SCRIPT_FILENAME</code> based on <code>WasmMapDir</code> instances when <directive>WasmEnableCGI</directive> is enabled.</description>
+        <syntax>WasmMapCGIFileNames <em>On|Off</em></syntax>
+        <contextlist>
+            <context>server config</context>
+        </contextlist>
+        <usage>
+            <p>            
+                <directive>WasmMapCGIFileNames</directive> requests <module>mod_wasm</module> to map `SCRIPT_FILENAME` based on the mapped dirs.
+                Default value is <em>Off</em>.
+            </p>
+            <example><title>Example</title>
+                <highlight language="config">
+WasmEnableCGI On
+WasmMapCGIFileNames On
+WasmMapDir /app C:/myapp/htdocs
+                </highlight>
+            </example>
+            <p>
+            In the example, `SCRIPT_FILENAME` will store `/app/index.php` instead of the host path `C:/myapp/htdocs/index.php`.
+            </p><p>
+            Without this setting, we would also need to provide a `WasmDir` granting access to `C:/myapp/htdocs` as the Wasm module would be trying to access it (or setting `WasmMapDir C:/myapp/htdocs C:/myapp/htdocs`).
+            </p><p>
+            In addition, this allows working with a normalized version of the paths, without having to deal with Unix-like or Windows-like filenames.
             </p>
         </usage>
     </directivesynopsis>
