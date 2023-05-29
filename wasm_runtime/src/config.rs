@@ -11,9 +11,10 @@ use crate::module::WASM_RUNTIME_MODULES;
 
 use std::collections::HashMap;
 use std::sync::RwLock;
-
+use std::path::{Path, PathBuf};
 use once_cell::sync::Lazy;
-
+use path_clean::clean;
+use path_slash::PathBufExt as _;
 
 pub struct WasmConfig {
     pub id:           String,
@@ -211,8 +212,40 @@ impl WasmConfig {
         Ok(())
     }
 
-}
+    pub fn get_mapped_path(config_id: &str, path: &str) -> Result<Option<String>, String> {
+        let configs = WASM_RUNTIME_CONFIGS
+            .read()
+            .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIGS on read()");
 
+        let wasm_config = match configs.get(config_id) {
+            Some(c) => c,
+            None => {
+                let error_msg = format!("Wasm config \'{}\' not created previously!", config_id);
+                return Err(error_msg);
+            }
+        };
+        Ok(Self::find_longest_map(&wasm_config.wasi_mapdirs, path))
+    }
+
+    fn normalize_path(path: &str) -> String {
+        return clean(path).to_slash_lossy().to_string()
+    }
+
+    fn find_longest_map(mapdirs: &[(String, String)], path: &str) -> Option<String> {
+        let cleaned_path = PathBuf::from(Self::normalize_path(&path));
+
+        let longest_map = mapdirs
+        .iter()
+        .filter(|(_, from)| cleaned_path.starts_with(from))
+        .max_by_key(|(_, from)| Path::new(from).components().count())
+        .and_then(|(to, from)| match cleaned_path.strip_prefix(from) {
+            Ok(tail) =>  Some(format!("{}/{}", to, tail.to_string_lossy())),
+            Err(_) => None,
+        });
+
+        longest_map.map(|p| Self::normalize_path(&p))
+    }
+}
 
 // The following static variable is used to achieve a global, mutable and thread-safe shareable state.
 // For that given purpose, it uses [Once Cell](https://crates.io/crates/once_cell).

@@ -13,7 +13,7 @@ use crate::module::WasmModule;
 use crate::config::WasmConfig;
 use crate::execution_ctx::WasmExecutionCtx;
 use crate::ffi_utils::*;
-
+use std::ptr;
 
 /// Load a Wasm Module from disk.
 ///
@@ -231,6 +231,37 @@ pub extern "C" fn wasm_config_mapdir_add(config_id: *const c_char, map: *const c
     }  
 }
 
+/// Returns a mapped version of the provided path, based on the current mapdirs
+///
+/// In case no path is found, it returns null
+///
+/// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+/// So `config_id` and `path` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+/// In addition, `config_id` and `path` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+///
+/// # Examples (C Code)
+///
+/// ```
+/// wasm_config_get_mapped_path("config_id", "/usr/local/apache2");
+/// wasm_config_get_mapped_path("config_id", "c:/app/apache2/htdocs/info.php");
+/// ```
+#[no_mangle]
+pub extern "C" fn wasm_config_get_mapped_path(config_id: *const c_char, path: *const c_char) -> *const c_char {
+    let config_id_str = const_c_char_to_str(config_id);
+    let path_str      = const_c_char_to_str(path);
+
+    match WasmConfig::get_mapped_path(config_id_str, path_str) {
+        Ok(r) => {
+            if let Some(result) = r {
+                return str_to_c_char(&result);
+            }
+        }
+        Err(e) => {
+            eprintln!("ERROR! C-API: Got error while finding mapped path for \'{}\'! {:?}", path_str, e);
+        }
+    };
+    ptr::null()
+}
 
 /// Creates a new Wasm Execution Context for the given Wasm Config identifier.
 ///

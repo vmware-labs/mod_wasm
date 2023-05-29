@@ -157,6 +157,25 @@ int wasm_config_mapdir_add(const char *config_id,
                            const char *dir);
 
 /**
+ * Returns a mapped version of the provided path, based on the current mapdirs
+ *
+ * In case no path is found, it returns null
+ *
+ * Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+ * So `config_id` and `path` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+ * In addition, `config_id` and `path` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+ *
+ * # Examples (C Code)
+ *
+ * ```
+ * wasm_config_get_mapped_path("config_id", "/usr/local/apache2");
+ * wasm_config_get_mapped_path("config_id", "c:/app/apache2/htdocs/info.php");
+ * ```
+ */
+const char *wasm_config_get_mapped_path(const char *config_id,
+                                        const char *path);
+
+/**
  * Creates a new Wasm Execution Context for the given Wasm Config identifier.
  *
  * Returns a C string (const *char) with the new generated Wasm Execution Context ID.
