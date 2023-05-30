@@ -2,7 +2,22 @@
 
 ## Unreleased
 
--
+## 0.12.0 (2023/06/30)
+
+This version introduces a new Apache directive: `WasmMapCGIFileNames`.
+It enables/disables the mapping of `SCRIPT_FILENAME` based on the different `WasmMapDir` instances when `WasmEnableCGI` is enabled.
+
+In addition, it normalizes filename paths for both Windows and Linux styes.
+
+```apache
+WasmEnableCGI On
+WasmMapCGIFileNames On
+WasmMapDir /app C:/myapp/htdocs
+```
+
+In the example, `SCRIPT_FILENAME` will store `/app/index.php` instead of the host path `C:/myapp/htdocs/index.php`.
+Without this setting, we would also need to provide a `WasmDir` granting access to `C:/myapp/htdocs` as the Wasm module would be trying to access it (or setting `WasmMapDir C:/myapp/htdocs C:/myapp/htdocs`).
+            
 
 ## 0.11.3 (2023/05/08)
 
