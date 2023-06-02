@@ -8,13 +8,13 @@
 // Struct to store the Wasm Execution Context
 
 use std::collections::HashMap;
-use std::sync::{Arc,RwLock};
+use std::sync::{Arc, RwLock};
 
-use rand::Rng;
-use once_cell::sync::Lazy;
 use anyhow::Result;
+use once_cell::sync::Lazy;
+use rand::Rng;
 
-use crate::config::WASM_RUNTIME_CONFIGS;
+use crate::config::{WASM_RUNTIME_CONFIGS, ModuleType};
 use crate::wasm_engine;
 
 
@@ -22,6 +22,7 @@ pub struct WasmExecutionCtx {
     pub id:           String,
     pub config_id:    String,
     pub module_id:    String,
+    pub filter_id:    String, // TODO - option
     pub wasi_args:    Vec<String>,
     pub wasi_envs:    Vec<(String, String)>,
     pub wasi_dirs:    Vec<String>,
@@ -59,6 +60,7 @@ impl WasmExecutionCtx {
             id:           hex_id.clone(),
             config_id:    wasm_config.id.clone(),
             module_id:    wasm_config.module_id.clone(),
+            filter_id:    wasm_config.filter_id.clone(),
             wasi_args:    wasm_config.wasi_args.clone(),
             wasi_envs:    wasm_config.wasi_envs.clone(),
             wasi_dirs:    wasm_config.wasi_dirs.clone(),
@@ -167,6 +169,35 @@ impl WasmExecutionCtx {
                 return Err(error_msg); 
             }
         }
+    }
+
+    pub fn call(executionctx_id: &str, function_name: &str, arg: u64) -> Result<i32, String> {
+
+        // extract Wasm execution context
+        let wasm_executionctx: WasmExecutionCtx = match Self::extract(executionctx_id) {
+            Ok(exectx) => exectx,
+            Err(e) => {
+                let error_msg = format!(
+                    "Can't run Wasm execution context \'{}\'! {}",
+                    executionctx_id, e
+                );
+                return Err(error_msg);
+            }
+        };
+
+        wasm_engine::invoke_wasm_plugin_function(&wasm_executionctx, &ModuleType::Filter, function_name, arg)?;
+
+        match Self::try_insert(wasm_executionctx) {
+            Ok(_) => Ok(0),
+            Err(e) => {
+                let error_msg = format!(
+                    "Can't insert back Wasm execution context \'{}\' after execution! {}",
+                    executionctx_id, e
+                );
+                return Err(error_msg);
+            }
+        }
+
     }
 
     // Helper function to generate random hex IDs for the given length

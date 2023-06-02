@@ -19,13 +19,20 @@ use path_slash::PathBufExt as _;
 pub struct WasmConfig {
     pub id:           String,
     pub module_id:    String,
+    pub filter_id:    String,
     pub wasi_args:    Vec<String>,
     pub wasi_envs:    Vec<(String, String)>,
     pub wasi_dirs:    Vec<String>,
     pub wasi_mapdirs: Vec<(String, String)>,
 }
 
+pub enum ModuleType {
+    Filter,
+    ContentHandler
+}
+
 impl WasmConfig {
+
     /// Create a new Wasm configuration (`WasmConfig`) and store it into the corresponding `HashMap`
     ///
     /// It checks for duplicated `config_id`.
@@ -36,7 +43,7 @@ impl WasmConfig {
         if config_id.len() == 0 {
             return Err("ERROR! Can't create WasmConfig for an empty config_id!".to_string());
         }
-                
+
         // get write access to the WasmConfig HashMap
         let mut configs = WASM_RUNTIME_CONFIGS.write()
             .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIGS on write()");
@@ -55,6 +62,7 @@ impl WasmConfig {
         let wasm_config = WasmConfig {
             id:           config_id.to_string(),
             module_id:    String::new(),
+            filter_id:    String::new(),
             wasi_args:    Vec::new(),
             wasi_envs:    Vec::new(),
             wasi_dirs:    Vec::new(),
@@ -73,8 +81,8 @@ impl WasmConfig {
     /// It checks for wrong `config_id` and non-loaded Wasm Modules
     /// Returns Result<(), String>, so that in case of error the String will contain the reason.
     /// 
-    pub fn set_wasm_module_for_config(config_id: &str, module_id: &str) -> Result<(), String> {
-        
+    pub fn set_wasm_module_for_config(config_id: &str, module_id: &str, mod_type: ModuleType) -> Result<(), String> {
+
         // get write access to the WasmConfig HashMap
         let mut configs = WASM_RUNTIME_CONFIGS.write()
             .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIGS on write()");
@@ -104,7 +112,10 @@ impl WasmConfig {
         };
 
         // setting module in Wasm config
-        wasm_config.module_id = wasm_module_id.to_string();
+        match mod_type {
+            ModuleType::ContentHandler => wasm_config.module_id = wasm_module_id.to_string(),
+            ModuleType::Filter => wasm_config.filter_id = wasm_module_id.to_string()
+        }
 
         Ok(())
     }

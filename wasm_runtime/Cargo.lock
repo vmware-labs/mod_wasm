@@ -1337,7 +1337,7 @@ dependencies = [
 
 [[package]]
 name = "wasm_runtime"
-version = "0.12.0"
+version = "0.12.0-experimental"
 dependencies = [
  "anyhow",
  "once_cell",

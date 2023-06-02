@@ -8,8 +8,11 @@ mod_wasm/.libs
 .DS_Store
 
 # IDEs working files
-*/.vscode
+.vscode
 
 # sym link to httpd directory
 httpd
+
+# Rust builds
+target
 

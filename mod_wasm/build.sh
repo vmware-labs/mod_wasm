@@ -29,7 +29,7 @@ WASM_RUNTIME_PATH=${WASM_RUNTIME_PATH:-$(realpath "${SCRIPT_DIR}/../wasm_runtime
 DIST_DIR=${DIST_DIR:-$(realpath "${SCRIPT_DIR}/../dist")}
 if [ -z ${HTTPD_DIR} ]
 then
-    HTTPD_DIR=$(realpath ../httpd)
+    HTTPD_DIR=$(realpath ./httpd)
     echo "\$HTTPD_DIR not defined! Using by default: $HTTPD_DIR"
 fi
 ARCH=$(uname -m)
