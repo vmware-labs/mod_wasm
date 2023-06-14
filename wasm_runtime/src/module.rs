@@ -7,17 +7,25 @@
 //
 // Struct to store Wasm Module
 
-use std::path::PathBuf;
+use std::{path::PathBuf, collections::HashSet};
 use std::collections::HashMap;
 use std::sync::RwLock;
 
 use once_cell::sync::Lazy;
-use wasmtime::{Engine, Module};
+use wasmtime::{Engine, Module, ExternType};
+
+pub enum WasmModuleKind {
+    Regular,
+    ApacheModule,
+    ProxyWasm,
+}
 
 pub struct WasmModule {
     pub id:     String,
+    pub kind:   WasmModuleKind,
     pub engine: wasmtime::Engine,
     pub module: wasmtime::Module,
+    pub exported_functions: HashSet<String>,
 }
 
 impl WasmModule {
@@ -62,9 +70,14 @@ impl WasmModule {
             }
         };
         
+        // inspect the Wasm module
+        let (wasm_module_kind, wasm_module_exported_functions) = Self::inspect_wasm_module(&wasmtime_module);
+
         // build the WasmModule object
         let wasm_module = WasmModule {
             id: path.to_string(),
+            kind: wasm_module_kind,
+            exported_functions: wasm_module_exported_functions,
             engine: module_engine,
             module: wasmtime_module,
         };
@@ -73,6 +86,40 @@ impl WasmModule {
         modules.insert(path.to_string(), wasm_module);
 
         Ok(())
+    }
+
+    pub fn has_exported_function(&self, function_name: &str) -> bool {
+        println!("  has_exported_function '{}' ??", function_name);
+        self.exported_functions.contains(function_name)
+    }
+
+    // Inspect Wasm Module to collect Functions and determine is kind
+    fn inspect_wasm_module(module: &Module) -> (WasmModuleKind, HashSet<String>)
+    {
+        let mut kind = WasmModuleKind::Regular;
+        let mut exported_functions: HashSet<String> = HashSet::new();
+
+        let exports = module.exports();
+        for item in exports.into_iter() {
+            // TO-DO: more elegant with a closure
+            match item.ty() {
+                ExternType::Func(_) => {
+                    // insert function into set
+                    exported_functions.insert( item.name().to_string() );
+
+                    if item.name().starts_with("apache_abi_version_") {
+                        kind = WasmModuleKind::ApacheModule;
+                    }
+
+                    if item.name().starts_with("proxy_abi_version_") {
+                        kind = WasmModuleKind::ProxyWasm;
+                    }
+                }
+                _ => {} // ignore other ExterType
+            }
+        }
+
+        (kind, exported_functions)
     }
 }
 

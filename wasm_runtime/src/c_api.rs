@@ -13,6 +13,7 @@ use crate::module::WasmModule;
 use crate::config::WasmConfig;
 use crate::execution_ctx::WasmExecutionCtx;
 use crate::ffi_utils::*;
+use crate::apache_bindings::request_rec;
 use std::ptr;
 
 /// Load a Wasm Module from disk.
@@ -108,6 +109,19 @@ pub extern "C" fn wasm_config_module_set(config_id: *const c_char, module_id: *c
     }
 }
 
+#[no_mangle]
+pub extern "C" fn wasm_config_apache_module_add(config_id: *const c_char, apache_module_id: *const c_char) -> c_int {
+    let config_id_str = const_c_char_to_str(config_id);
+    let apache_module_id_str = const_c_char_to_str(apache_module_id);
+
+    match WasmConfig::add_apache_module_for_config(config_id_str, apache_module_id_str) {
+        Ok(_) => 0,
+        Err(e) => {
+            eprintln!("ERROR! C-API: Couldn't add Apache module \"{}\" for Wasm config \"{}\": {}", apache_module_id_str, config_id_str, e);
+            -1
+        }
+    }
+}
 
 /// Add a WASI argument for the given Wasm config
 ///
@@ -395,7 +409,6 @@ pub extern "C" fn wasm_executionctx_stdin_set(executionctx_id: *const c_char, bu
     } 
 }
 
-
 /// Run the given Wasm execution context
 ///
 /// In case of error, the reason is printed to stderr and returns -1.
@@ -421,17 +434,19 @@ pub extern "C" fn wasm_executionctx_stdin_set(executionctx_id: *const c_char, bu
 /// # Examples (C Code)
 ///
 /// ```
-/// const char* module_output = wasm_executionctx_run("12AB34DC");
+/// size_t len = 0;
+/// const char* module_response = NULL;
+/// ret = wasm_executionctx_run(exec_ctx_id, &module_response, &len);
 /// ...
-/// // do some work with `module_output`
+/// // do some work with `module_response`
 /// ...
-/// wasm_return_const_char_ownership(module_output);
+/// wasm_return_const_char_ownership(module_response);
 /// ```
 #[no_mangle]
-pub extern "C" fn wasm_executionctx_run(executionctx_id: *const c_char, _buffer: &mut *const c_char, _len: &mut c_ulong) -> c_int {
+pub extern "C" fn wasm_executionctx_run_wasm_module(executionctx_id: *const c_char, _buffer: &mut *const c_char, _len: &mut c_ulong) -> c_int {
     let executionctx_id_str = const_c_char_to_str(executionctx_id);
 
-    let result: c_int = match WasmExecutionCtx::run(executionctx_id_str) {
+    let result: c_int = match WasmExecutionCtx::run_wasm_module(executionctx_id_str) {
         Ok(output) => {
             // 1) extract output length and try casting into `c_ulong` since it might not fit
             *_len = match c_ulong::try_from(output.len()) {
@@ -448,8 +463,7 @@ pub extern "C" fn wasm_executionctx_run(executionctx_id: *const c_char, _buffer:
             0
         }
         Err(e) => {
-            let error_msg = format!("ERROR! C-API: Can't run Wasm execution context \'{}\'! {:?}", executionctx_id_str, e);
-            eprintln!("{}", error_msg);
+            eprintln!("ERROR! C-API: Couldn't run Wasm execution context \'{}\'! {:?}", executionctx_id_str, e);
             -1
         }
     };
@@ -457,6 +471,22 @@ pub extern "C" fn wasm_executionctx_run(executionctx_id: *const c_char, _buffer:
     result
 }
 
+#[no_mangle]
+pub extern "C" fn wasm_executionctx_run_wasm_function(executionctx_id: *const c_char, wasm_function: *const c_char, request: *mut request_rec) -> c_int {
+    let executionctx_id_str = const_c_char_to_str(executionctx_id);
+    let wasm_function_str = const_c_char_to_str(wasm_function);
+
+    let result: c_int = match WasmExecutionCtx::run_wasm_function(executionctx_id_str, wasm_function_str, request) {
+        Ok(_) => 0,
+        Err(e) => {
+            eprintln!("ERROR! C-API: Couldn't run Wasm execution context \'{}\' for Wasm function \'{}\'! {:?}",
+                executionctx_id_str, wasm_function_str, e);
+            -1
+        }
+    };
+
+    result
+}
 
 /// Returns raw pointer's ownership
 ///

@@ -265,9 +265,62 @@ static void map_cgi_filenames(char *config_id, request_rec *r) {
 }
 
 /*
- * Content handler
+ * generic hook handler
  */
-static int content_handler(request_rec *r)
+static int handle_generic_hook(request_rec *r, const char* wasm_function_id)
+{
+    /* get specific configuration for the given directory/location */
+    x_cfg *dcfg = ap_get_module_config(r->per_dir_config, &wasm_module);
+
+    /* creates a new Wasm execution context */
+    const char* exec_ctx_id = wasm_executionctx_create_from_config(dcfg->loc);
+
+    int ret = OK;
+    ret = wasm_executionctx_run_wasm_function(exec_ctx_id, wasm_function_id);
+    if ( ret != OK ) {
+        ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
+            "handle_generic_hook() - ERROR! Couldn't run Wasm execution context '%s' for Wasm function '%s'!", exec_ctx_id, wasm_function_id);
+    }
+
+    /* deallocate execution context and return id ownership to avoid leaking memory */
+    ret = wasm_executionctx_deallocate(exec_ctx_id);
+    if ( ret != OK )
+        ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
+            "handle_generic_hook() - ERROR! Couldn't deallocate Wasm execution context: '%s'", exec_ctx_id);
+
+    wasm_return_const_char_ownership(exec_ctx_id);
+
+    return ret;
+}
+
+/*
+ * Post read request hook
+ */
+static int hook_post_read_request(request_rec *r)
+{
+    return handle_generic_hook(r, "ap_hook_post_read_request");
+}
+
+/*
+ * Fixups hook
+ */
+static int hook_fixups(request_rec *r)
+{
+    return handle_generic_hook(r, "ap_hook_fixups");
+}
+
+/*
+ * Log transaction hook
+ */
+static int hook_log_transaction(request_rec *r)
+{
+    return handle_generic_hook(r, "ap_hook_log_transaction");
+}
+
+/*
+ * Content handler hook
+ */
+static int hook_content_handler(request_rec *r)
 {
     /* If it's not for us, get out as soon as possible. */
     if (strcmp(r->handler, "wasm-handler")) {
@@ -288,7 +341,7 @@ static int content_handler(request_rec *r)
     /* creates a new Wasm execution context */
     const char* exec_ctx_id = wasm_executionctx_create_from_config(dcfg->loc);
 
-    int ret = 0;
+    int ret = OK;
     if (dcfg->bWasmEnableCGI) {
         /* On CGI mode, we set the request headers as environment variables with an HTTP_ prefix. */
         ap_add_common_vars(r);
@@ -319,7 +372,7 @@ static int content_handler(request_rec *r)
     /* run Wasm execution context */
     size_t len = 0;
     const char* module_response = NULL;
-    ret = wasm_executionctx_run(exec_ctx_id, &module_response, &len);
+    ret = wasm_executionctx_run_wasm_module(exec_ctx_id, &module_response, &len);
     if ( ret != OK ) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
             "content_handler() - ERROR! Couldn't run Wasm execution context '%s'!", exec_ctx_id);
@@ -388,8 +441,9 @@ static int content_handler(request_rec *r)
 
     wasm_return_const_char_ownership(exec_ctx_id);
 
-    return OK;
+    return ret;
 }
+
 
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
@@ -425,10 +479,18 @@ static int content_handler(request_rec *r)
  */
 static void register_hooks(apr_pool_t *p)
 {
-    ap_hook_handler(content_handler, NULL, NULL, APR_HOOK_MIDDLE);
+    /* These hooks are challenging to support because they are called even before the HTTP request
+     * has been associated to a specific virtual host or location
+     * ap_hook_post_read_request(hook_post_read_request, NULL, NULL, APR_HOOK_MIDDLE);
+     */ 
+
+    ap_hook_fixups(hook_fixups, NULL, NULL, APR_HOOK_MIDDLE);
+    ap_hook_handler(hook_content_handler, NULL, NULL, APR_HOOK_MIDDLE);
+    ap_hook_log_transaction(hook_log_transaction, NULL, NULL, APR_HOOK_MIDDLE);
 }
 
 #define WASM_DIRECTIVE_WASMMODULE           "WasmModule"
+#define WASM_DIRECTIVE_WASMAPACHEMODULE     "WasmApacheModule"
 #define WASM_DIRECTIVE_WASMARG              "WasmArg"
 #define WASM_DIRECTIVE_WASMENV              "WasmEnv"
 #define WASM_DIRECTIVE_WASMDIR              "WasmDir"
@@ -452,6 +514,26 @@ static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, cons
     if ( ret != OK )
         ap_log_error(APLOG_MARK, APLOG_ERR, ret, NULL,
             "wasm_directive_WasmModule() - ERROR! Couldn't set Wasm Module '%s' to Wasm config '%s'!", word1, cfg->loc);
+
+    return NULL;
+}
+
+static const char *wasm_directive_WasmApacheModule(cmd_parms *cmd, void *mconfig, const char *word1)
+{
+    x_cfg *cfg = (x_cfg *) mconfig;
+    int ret;
+
+    /* Wasm Apache module is loaded and cached */
+    ret = wasm_module_load(word1);
+    if ( ret != OK )
+        ap_log_error(APLOG_MARK, APLOG_ERR, ret, NULL,
+            "wasm_directive_WasmApacheModule() - ERROR! Couldn't load Wasm Apache Module '%s'!", word1);
+
+    /* Wasm config is implictly created for the current location and the loaded Apache module is added */
+    ret = wasm_config_apache_module_add(cfg->loc, word1);
+    if ( ret != OK )
+        ap_log_error(APLOG_MARK, APLOG_ERR, ret, NULL,
+            "wasm_directive_WasmApacheModule() - ERROR! Couldn't add Wasm Apache Module '%s' to Wasm config '%s'!", word1, cfg->loc);
 
     return NULL;
 }
@@ -529,6 +611,13 @@ static const command_rec directives[] =
         NULL,                            /* argument to include in call */
         OR_OPTIONS,                      /* where available */
         "Load a Wasm Module from disk"   /* directive description */
+    ),
+    AP_INIT_TAKE1(
+        WASM_DIRECTIVE_WASMAPACHEMODULE,
+        wasm_directive_WasmApacheModule,
+        NULL,
+        OR_OPTIONS,
+        "Load a Wasm module and hook its exported funcitons"
     ),
     AP_INIT_TAKE1(
         WASM_DIRECTIVE_WASMARG,

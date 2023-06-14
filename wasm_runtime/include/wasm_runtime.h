@@ -72,6 +72,8 @@ int wasm_config_create(const char *config_id);
 int wasm_config_module_set(const char *config_id,
                            const char *module_id);
 
+int wasm_config_apache_module_add(const char *config_id, const char *apache_module_id);
+
 /**
  * Add a WASI argument for the given Wasm config
  *
@@ -293,16 +295,20 @@ int wasm_executionctx_stdin_set(const char *executionctx_id,
  * # Examples (C Code)
  *
  * ```
- * const char* module_output = wasm_executionctx_run("12AB34DC");
+ * size_t len = 0;
+ * const char* module_response = NULL;
+ * ret = wasm_executionctx_run(exec_ctx_id, &module_response, &len);
  * ...
- * // do some work with `module_output`
+ * // do some work with `module_response`
  * ...
- * wasm_return_const_char_ownership(module_output);
+ * wasm_return_const_char_ownership(module_response);
  * ```
  */
-int wasm_executionctx_run(const char *executionctx_id,
-                          const char **_buffer,
-                          unsigned long *_len);
+int wasm_executionctx_run_wasm_module(const char *executionctx_id,
+                                      const char **_buffer,
+                                      unsigned long *_len);
+
+int wasm_executionctx_run_wasm_function(const char *executionctx_id, const char *wasm_function);
 
 /**
  * Returns raw pointer's ownership

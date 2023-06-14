@@ -11,8 +11,10 @@
 use anyhow::Result;
 use wasi_common::WasiCtx;
 use wasmtime::{Store, Linker, Instance, TypedFunc};
+use wasmtime_wasi::WasiCtxBuilder;
 
-use crate::module::WASM_RUNTIME_MODULES;
+use crate::apache_bindings::request_rec;
+use crate::module::{WASM_RUNTIME_MODULES, WasmModule};
 use crate::execution_ctx::WasmExecutionCtx;
 use crate::wasi_ctx;
 
@@ -47,7 +49,7 @@ use crate::wasi_ctx;
 // 6) Obtain the function to invoke from the Instance and passing the Store.
 //    instance.get_typed_func::<(), (), _>(&mut *store, "_start")
 //
-pub fn invoke_wasm_function(wasm_executionctx: &WasmExecutionCtx, function_name: &str) -> Result<(),String> {
+pub fn run_wasm_module(wasm_executionctx: &WasmExecutionCtx) -> Result<(),String> {
 
     // get read access to the WasmExecutionCtx HashMap
     let modules = WASM_RUNTIME_MODULES.read()
@@ -94,6 +96,7 @@ pub fn invoke_wasm_function(wasm_executionctx: &WasmExecutionCtx, function_name:
     };
 
     // get typed function from instance
+    let function_name = "_start";
     let typed_function: TypedFunc<(), ()> = match instance.get_typed_func::<(), ()>(&mut store, function_name) {
         Ok(tp) => tp,
         Err(e) => {
@@ -114,3 +117,54 @@ pub fn invoke_wasm_function(wasm_executionctx: &WasmExecutionCtx, function_name:
     Ok(())
 }
 
+
+pub fn run_wasm_function(wasm_module: &WasmModule, function_name: &str, request: *mut request_rec) -> Result<(),String> {
+
+    // minimum WASI context
+    let wasi_ctx = WasiCtxBuilder::new()
+        .inherit_stdout()
+        .inherit_stderr()
+        .build();
+
+    // build Store
+    let mut store: Store<WasiCtx> = Store::new(&wasm_module.engine, wasi_ctx);
+
+    // build Linker (with WASI extensions)
+    let mut linker: Linker<WasiCtx> = Linker::new(&wasm_module.engine);
+    match wasmtime_wasi::add_to_linker(&mut linker, |cx| cx) {
+        Ok(_) => (),
+        Err(e) => {
+            let error_msg = format!("ERROR! Can't add WASI extensions to Wasmtime::Linker! {}", e);
+            return Err(error_msg);
+        }
+    };
+
+    // build Instance
+    let instance: Instance = match linker.instantiate(&mut store, &wasm_module.module) {
+        Ok(i) => i,
+        Err(e) => {
+            let error_msg = format!("ERROR! Can't instantiate module! {}", e);
+            return Err(error_msg);
+        }
+    };
+
+    // get typed function from instance
+    let typed_function: TypedFunc<(), ()> = match instance.get_typed_func::<(), ()>(&mut store, function_name) {
+        Ok(tp) => tp,
+        Err(e) => {
+            let error_msg = format!("ERROR! Can't get typed function '{}' from instance! {}", function_name, e);
+            return Err(error_msg);
+        }
+    };
+
+    // invoke function    
+    match typed_function.call(&mut store, (*request_rec)) {
+        Ok(r) => r,
+        Err(t) => {
+            let error_msg = format!("ERROR! Invocation of function '{}' failed! Wasm Trap returned! {:?}", function_name, t);
+            return Err(error_msg);
+        }
+    };
+
+    Ok(())
+}
