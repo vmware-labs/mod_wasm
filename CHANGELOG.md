@@ -2,12 +2,23 @@
 
 ## Unreleased
 
-## 0.12.0 (2023/06/30)
+## 0.12.1 (2023/07/03)
+
+This versions bumps Wasmtime to 10.0.1 to include [PR #6348](https://github.com/bytecodealliance/wasmtime/pull/6348) and other improvements such as preliminary support for [WASI preview 2](https://github.com/bytecodealliance/wasmtime/blob/main/RELEASES.md#1000).
+
+### `libwasm_runtime.so`
+- Dependencies:
+  - Upgrading Wasmtime dependency:
+    - `wasmtime` from `7.0.1` to `10.0.1`.
+    - `once_cell` to `1.18.0`.
+  - Updated `cargo.lock` dependencies via `cargo update`.
+
+## 0.12.0 (2023/05/30)
 
 This version introduces a new Apache directive: `WasmMapCGIFileNames`.
 It enables/disables the mapping of `SCRIPT_FILENAME` based on the different `WasmMapDir` instances when `WasmEnableCGI` is enabled.
 
-In addition, it normalizes filename paths for both Windows and Linux styes.
+In addition, it normalizes filename paths for both Windows and Linux styles.
 
 ```apache
 WasmEnableCGI On
