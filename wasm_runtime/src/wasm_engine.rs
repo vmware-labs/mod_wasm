@@ -158,7 +158,7 @@ pub fn run_wasm_function(wasm_module: &WasmModule, function_name: &str, request:
     };
 
     // invoke function    
-    match typed_function.call(&mut store, (*request_rec)) {
+    match typed_function.call(&mut store, /* (*request_rec)*/ () ) {
         Ok(r) => r,
         Err(t) => {
             let error_msg = format!("ERROR! Invocation of function '{}' failed! Wasm Trap returned! {:?}", function_name, t);

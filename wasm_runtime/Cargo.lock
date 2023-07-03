@@ -1456,6 +1456,7 @@ version = "0.12.0"
 dependencies = [
  "anyhow",
  "bindgen",
+ "cfg-if",
  "once_cell",
  "path-clean",
  "path-slash",

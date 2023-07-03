@@ -267,7 +267,7 @@ static void map_cgi_filenames(char *config_id, request_rec *r) {
 /*
  * generic hook handler
  */
-static int handle_generic_hook(request_rec *r, const char* wasm_function_id)
+static int handle_generic_hook(const char* wasm_function_id, request_rec *r)
 {
     /* get specific configuration for the given directory/location */
     x_cfg *dcfg = ap_get_module_config(r->per_dir_config, &wasm_module);
@@ -276,7 +276,7 @@ static int handle_generic_hook(request_rec *r, const char* wasm_function_id)
     const char* exec_ctx_id = wasm_executionctx_create_from_config(dcfg->loc);
 
     int ret = OK;
-    ret = wasm_executionctx_run_wasm_function(exec_ctx_id, wasm_function_id);
+    ret = wasm_executionctx_run_wasm_function(exec_ctx_id, wasm_function_id, r);
     if ( ret != OK ) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR, ret, r,
             "handle_generic_hook() - ERROR! Couldn't run Wasm execution context '%s' for Wasm function '%s'!", exec_ctx_id, wasm_function_id);
@@ -298,7 +298,7 @@ static int handle_generic_hook(request_rec *r, const char* wasm_function_id)
  */
 static int hook_post_read_request(request_rec *r)
 {
-    return handle_generic_hook(r, "ap_hook_post_read_request");
+    return handle_generic_hook("ap_hook_post_read_request", r);
 }
 
 /*
@@ -306,7 +306,7 @@ static int hook_post_read_request(request_rec *r)
  */
 static int hook_fixups(request_rec *r)
 {
-    return handle_generic_hook(r, "ap_hook_fixups");
+    return handle_generic_hook("ap_hook_fixups", r);
 }
 
 /*
@@ -314,7 +314,7 @@ static int hook_fixups(request_rec *r)
  */
 static int hook_log_transaction(request_rec *r)
 {
-    return handle_generic_hook(r, "ap_hook_log_transaction");
+    return handle_generic_hook("ap_hook_log_transaction", r);
 }
 
 /*

@@ -308,7 +308,9 @@ int wasm_executionctx_run_wasm_module(const char *executionctx_id,
                                       const char **_buffer,
                                       unsigned long *_len);
 
-int wasm_executionctx_run_wasm_function(const char *executionctx_id, const char *wasm_function);
+int wasm_executionctx_run_wasm_function(const char *executionctx_id,
+                                        const char *wasm_function,
+                                        request_rec *request);
 
 /**
  * Returns raw pointer's ownership
