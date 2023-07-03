@@ -14,8 +14,10 @@ use rand::Rng;
 use once_cell::sync::Lazy;
 use anyhow::Result;
 
+use crate::module::WASM_RUNTIME_MODULES;
 use crate::config::WASM_RUNTIME_CONFIGS;
 use crate::wasm_engine;
+use crate::apache_bindings::request_rec;
 
 
 pub struct WasmExecutionCtx {
@@ -28,6 +30,7 @@ pub struct WasmExecutionCtx {
     pub wasi_mapdirs: Vec<(String, String)>,
     pub wasi_stdin:   Vec<u8>,
     pub wasi_stdout:  Arc<RwLock<Vec<u8>>>,
+    pub apache_module_ids: Vec<String>,
 }
 
 impl WasmExecutionCtx {
@@ -65,6 +68,7 @@ impl WasmExecutionCtx {
             wasi_mapdirs: wasm_config.wasi_mapdirs.clone(),
             wasi_stdin:   Vec::new(),
             wasi_stdout:  Arc::new(RwLock::new(Vec::new())),
+            apache_module_ids: wasm_config.apache_module_ids.clone(),
         };
 
         Self::try_insert(wasm_executionctx)
@@ -143,7 +147,7 @@ impl WasmExecutionCtx {
     /// Returns Result<Vec<u8>, String>, with the contents of stdout.
     /// In case something goes wrong (including invalid `conexecutionctx_id`), it returns a String explaing the error.
     /// 
-    pub fn run(executionctx_id: &str) -> Result<Vec<u8>, String> {
+    pub fn run_wasm_module(executionctx_id: &str) -> Result<Vec<u8>, String> {
 
         // extract Wasm execution context
         let wasm_executionctx = match Self::extract(executionctx_id) {
@@ -154,14 +158,62 @@ impl WasmExecutionCtx {
             }
         };
         
-        // invoke default "_start" function for the given Wasm execution context
-        wasm_engine::invoke_wasm_function(&wasm_executionctx, "_start")?;
+        // invoke default "_start" function for the given Wasm execution context (only main WasmModule directive was defined)
+        if ! wasm_executionctx.module_id.is_empty() {
+            // TO-DO: check result
+            wasm_engine::run_wasm_module(&wasm_executionctx)?;
+        }
 
         // read stdout from the Wasm execution context and return it
         let wasm_module_stdout = Self::read_stdout(&wasm_executionctx);
 
         match Self::try_insert(wasm_executionctx) {
             Ok(_) => Ok(wasm_module_stdout),
+            Err(e) => {
+                let error_msg = format!("Can't insert back Wasm execution context \'{}\' after execution! {}", executionctx_id, e);
+                return Err(error_msg); 
+            }
+        }
+    }
+
+    pub fn run_wasm_function(executionctx_id: &str, wasm_function: &str, request: *mut request_rec) -> Result<(), String> {
+
+        // extract Wasm execution context
+        let wasm_executionctx = match Self::extract(executionctx_id) {
+            Ok(exectx) => exectx,
+            Err(e) => {
+                let error_msg = format!("Can't run Wasm execution context \'{}\'! {}", executionctx_id, e);
+                return Err(error_msg); 
+            }
+        };
+        
+        // invoke the given Wasm function for the given Wasm execution context
+        // TO-DO: check result
+
+        // TO-DO: This is to ad-hoc!!
+        for apache_wasm_module_id in wasm_executionctx.apache_module_ids.iter() {
+            // get read access to the WasmExecutionCtx HashMap
+            let modules = WASM_RUNTIME_MODULES.read()
+                    .expect("ERROR! Poisoned RwLock WASM_RUNTIME_MODULES on read()");
+
+            // get the Wasm module object referred into the execution context
+            let apache_wasm_module = match modules.get(apache_wasm_module_id) {
+                Some(w) => w,
+                None => {
+                    let error_msg = format!("ERROR! Apache Wasm Module \'{}\' referred by execution context \'{}\' not found!", wasm_executionctx.module_id, wasm_executionctx.id);
+                    return Err(error_msg); 
+                }
+            };
+
+            if apache_wasm_module.has_exported_function(wasm_function) {
+                // TO-DO: Check result
+                wasm_engine::run_wasm_function(apache_wasm_module, wasm_function, request)?;
+            }
+        }
+
+        // insert back the Wasm execution context
+        match Self::try_insert(wasm_executionctx) {
+            Ok(_) => Ok(()),
             Err(e) => {
                 let error_msg = format!("Can't insert back Wasm execution context \'{}\' after execution! {}", executionctx_id, e);
                 return Err(error_msg); 

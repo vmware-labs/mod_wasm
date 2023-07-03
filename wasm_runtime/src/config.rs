@@ -23,6 +23,7 @@ pub struct WasmConfig {
     pub wasi_envs:    Vec<(String, String)>,
     pub wasi_dirs:    Vec<String>,
     pub wasi_mapdirs: Vec<(String, String)>,
+    pub apache_module_ids: Vec<String>,
 }
 
 impl WasmConfig {
@@ -59,6 +60,7 @@ impl WasmConfig {
             wasi_envs:    Vec::new(),
             wasi_dirs:    Vec::new(),
             wasi_mapdirs: Vec::new(),
+            apache_module_ids: Vec::new(),
         };
 
         // insert created WasmConfig object into the HashMap
@@ -109,6 +111,26 @@ impl WasmConfig {
         Ok(())
     }
 
+    pub fn add_apache_module_for_config(config_id: &str, apache_module_id: &str) -> Result<(), String> {
+    
+        // get write access to the WasmConfig HashMap
+        let mut configs = WASM_RUNTIME_CONFIGS.write()
+            .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIGS on write()");
+
+        // check for existing config_id in the loaded configurations
+        let wasm_config = match configs.get_mut(config_id) {
+            Some(c) => c,
+            None => {
+                let error_msg = format!("Wasm config \'{}\' not created previously!", config_id);
+                return Err(error_msg); 
+            }
+        };
+
+        // add hook id into the WasmConfig object
+        wasm_config.apache_module_ids.push(apache_module_id.to_string());
+
+        Ok(())
+    }
 
     /// Add a new WASI Arg for an existing Wasm config
     ///
