@@ -1,6 +1,6 @@
 /* See doc at: https://github.com/eqrion/cbindgen/blob/master/docs.md#cbindgentoml
 
-/* Generated with cbindgen:0.24.3 */
+/* Generated with cbindgen:0.26.0 */
 
 #include <stdarg.h>
 #include <stdbool.h>
