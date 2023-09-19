@@ -77,7 +77,7 @@ RUN tar -xzf /tmp/2.13.0.tar.gz
 ENV WORDPRESS_SHA1 9348f0757c21504d085a6c866ccbb86573b39d6f
 RUN wget -P /tmp https://wordpress.org/wordpress-6.0.2.tar.gz \
     && echo $WORDPRESS_SHA1 wordpress-6.0.2.tar.gz | sha1sum -c -
-RUN tar -xzf /tmp/wordpress-6.0.2.tar.gz 
+RUN tar -xzf /tmp/wordpress-6.0.2.tar.gz
 
 # Drupal 9
 ENV DRUPAL_9_SHA1 e3cbf50ff86913654c54c10ebaca8084cfd5a155
@@ -90,8 +90,8 @@ RUN mv /tmp/drupal-9.5.9 /tmp/drupal-9
 ENV DRUPAL_10_SHA1 0c7573c2a5d1651e14fb35355999cadda2104f26
 RUN wget -P /tmp https://ftp.drupal.org/files/projects/drupal-10.0.9.tar.gz \
     && echo $DRUPAL_10_SHA1 drupal-10.0.9.tar.gz | sha1sum -c -
-RUN tar -xzf /tmp/drupal-10.0.9.tar.gz 
-RUN mv /tmp/drupal-10.0.9 /tmp/drupal-10 
+RUN tar -xzf /tmp/drupal-10.0.9.tar.gz
+RUN mv /tmp/drupal-10.0.9 /tmp/drupal-10
 
 
 ################################################################################
@@ -99,7 +99,7 @@ RUN mv /tmp/drupal-10.0.9 /tmp/drupal-10
 ################################################################################
 FROM $IMAGE_REPOSITORY/library/httpd:2.4 as builder-final
 LABEL org.opencontainers.image.source https://github.com/vmware-labs/mod_wasm
-RUN apt-get update && apt-get install php7.4-cli php7.4-gd php7.4-xml composer -y
+RUN apt-get update && apt-get install php-cli php-gd php-xml composer -y
 ARG WASM_RUNTIME_PATH=/usr/src/wasm_runtime
 ARG MOD_WASM_PATH=/usr/src/mod_wasm
 ARG DIST_DIR=$MOD_WASM_PATH/dist
@@ -143,4 +143,3 @@ COPY --from=builder-demos /tmp/drupal-10 /usr/local/apache2/htdocs/drupal-10-zer
 COPY ./examples/wasm_modules/php-scripts/drupal-10-zero-setup/ /usr/local/apache2/htdocs/drupal-10-zero
 RUN mkdir -p /usr/local/apache2/htdocs/drupal-10-zero/sites/default/files
 RUN chmod -R go+w /usr/local/apache2/htdocs/drupal-10-zero/sites/default/files
-
