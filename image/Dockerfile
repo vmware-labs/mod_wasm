@@ -35,7 +35,7 @@ COPY ./dist $DIST_DIR
 COPY --from=builder-wasm_runtime.so $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so $WASM_RUNTIME_PATH/target/release/libwasm_runtime.so
 COPY --from=builder-wasm_runtime.so $WASM_RUNTIME_PATH/include/ $WASM_RUNTIME_PATH/include/
 RUN mkdir -p $MOD_WASM_PATH/dist/conf $DIST_DIR/modules
-RUN HTTPD_DIR=/usr/local/apache2 ./build.sh
+RUN ./build.sh
 
 
 ################################################################################
