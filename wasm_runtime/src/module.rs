@@ -87,3 +87,36 @@ pub static WASM_RUNTIME_MODULES: Lazy<RwLock<HashMap<String, WasmModule>>> = Laz
     let data: HashMap<String, WasmModule> = HashMap::new();
     RwLock::new(data)
 });
+
+
+// ##########################################################################
+//                              Unit Tests
+// ##########################################################################
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_load_from_file_success() {
+        // setup exist
+        const PATH: &str = "../examples/wasm_modules/rust-wasm/hello_wasm.wasm";
+
+        // execute test of successful load
+        let res = WasmModule::load_from_file(PATH);
+
+        // test assertion
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_load_from_file_failure() {
+        // setup non-existent path
+        const PATH: &str = "../attempt/to/load/me.wasm";
+
+        // execute test of failed load
+        let res = WasmModule::load_from_file(PATH);
+
+        // test assertion
+        assert!(res.is_err());
+    }
+}
