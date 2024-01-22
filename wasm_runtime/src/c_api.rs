@@ -468,3 +468,174 @@ pub extern "C" fn wasm_executionctx_run(executionctx_id: *const c_char, _buffer:
 pub extern "C" fn wasm_return_const_char_ownership(ptr: *const c_char) {
     deallocate_cstring(ptr);
 }
+
+
+// ##########################################################################
+//                              Unit Tests
+// ##########################################################################
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ffi::CString;
+    use crate::config::WASM_RUNTIME_CONFIGS;
+
+    #[test]
+    fn wasm_module_load_existing_nonexisting() {
+        // setup
+        let wasm_path = CString::new("../examples/wasm_modules/rust-wasm/hello_wasm.wasm").unwrap();
+        let nonexistent_path = CString::new("../attempt/to/load/me.wasm").unwrap();
+
+        // test success
+        let mut val = wasm_module_load(wasm_path.as_ptr());
+        assert_eq!(val, 0);
+
+        // test failure
+        val = wasm_module_load(nonexistent_path.as_ptr());
+        assert_eq!(val, -1);
+    }
+
+    #[test]
+    fn wasm_config_create_success() {
+        // setup
+        let config_str = "Hello Wasm";
+        let config_id = CString::new(config_str).unwrap();
+
+        // test
+        let val = wasm_config_create(config_id.as_ptr());
+
+        // assert
+        assert_eq!(val, 0);
+        assert!(WASM_RUNTIME_CONFIGS.write().unwrap().contains_key(config_str));
+    }
+
+    #[test]
+    fn wasm_config_module_set_success() {
+        // setup
+        let config_str = "Hello Wasm";
+        let config_id = CString::new(config_str).unwrap();
+        let module_str = "../examples/wasm_modules/rust-wasm/hello_wasm.wasm";
+        let module_id = CString::new(module_str).unwrap();
+
+        wasm_module_load(module_id.as_ptr());
+        wasm_config_create(config_id.as_ptr());
+
+        // test
+        let val = wasm_config_module_set(config_id.as_ptr(), module_id.as_ptr());
+
+        // assert
+        assert_eq!(val, 0);
+        assert!(WASM_RUNTIME_CONFIGS.write().unwrap().contains_key(config_str));
+    }
+
+    #[test]
+    fn wasm_executionctx_create_from_config_success() {
+        // setup
+        let config_str = "Hello Wasm";
+        let config_id = CString::new(config_str).unwrap();
+
+        wasm_config_create(config_id.as_ptr());
+
+        // test
+        let exec_ctx_id = wasm_executionctx_create_from_config(config_id.as_ptr());
+        let exec_ctx_id_str = const_c_char_to_str(exec_ctx_id);
+
+        // assert
+        assert!(!exec_ctx_id_str.starts_with("ERROR! C-API:"));
+
+        //cleanup
+        wasm_executionctx_deallocate(exec_ctx_id);
+        wasm_return_const_char_ownership(exec_ctx_id);
+    }
+
+    #[test]
+    fn wasm_config_dir_add_success() {
+        //setup
+        let config_id = CString::new("test_config").unwrap();
+
+        wasm_config_create(config_id.as_ptr());
+        let dir = CString::new(".").unwrap();
+
+        // test
+        let val = wasm_config_dir_add(config_id.as_ptr(), dir.as_ptr());
+
+        // assert
+        assert_eq!(val, 0);
+    }
+
+    #[test]
+    fn wasm_config_dir_add_invalid_config_id() {
+        // setup
+        let config_id = CString::new("invalid_config").unwrap();
+        let dir = CString::new(".").unwrap();
+
+        // test
+        let val = wasm_config_dir_add(config_id.as_ptr(), dir.as_ptr());
+
+        // assert
+        assert_eq!(val, -1);
+    }
+
+    #[test]
+    fn wasm_wasm_executionctx_env_add_success() {
+        //  setup
+        let config_id = CString::new("12AB34DC").unwrap();
+        let env = CString::new("TMP").unwrap();
+        let value = CString::new("/tmp").unwrap();
+
+        wasm_config_create(config_id.as_ptr());
+        let executionctx_id = wasm_executionctx_create_from_config(config_id.as_ptr());
+
+        // test
+        let val = wasm_executionctx_env_add(executionctx_id, env.as_ptr(), value.as_ptr());
+
+        // assert
+        assert_eq!(val, 0);
+    }
+
+    #[test]
+    fn wasm_config_mapdir_add_success() {
+        // setup
+        let config_id = CString::new("test_config").unwrap();
+        wasm_config_create(config_id.as_ptr());
+
+        let map = CString::new("./").unwrap();
+        let dir = CString::new(".").unwrap();
+        
+        // test
+        let val = wasm_config_mapdir_add(config_id.as_ptr(), map.as_ptr(), dir.as_ptr());
+
+        // assert
+        assert_eq!(val, 0);
+    }
+
+    #[test]
+    fn wasm_config_get_mapped_path_existing_nonexisting() {
+        let config_id = CString::new("test_config").unwrap();
+        let map = CString::new("./").unwrap();
+        let dir = CString::new(".").unwrap();
+        wasm_config_create(config_id.as_ptr());
+
+        // test failure
+        let mut val = wasm_config_get_mapped_path(config_id.as_ptr(), map.as_ptr());
+        assert_eq!(val, std::ptr::null());
+
+        // test success
+        wasm_config_mapdir_add(config_id.as_ptr(), map.as_ptr(), dir.as_ptr());
+        val = wasm_config_get_mapped_path(config_id.as_ptr(), map.as_ptr());
+        assert_ne!(val, std::ptr::null());
+    }
+
+    #[test]
+    fn wasm_executionctx_stdin_set_success() {
+        let config_id = CString::new("test_config").unwrap();
+        let buffer = "fvfd.mvds.nvdsfnv,ds fv";
+
+        // test
+        wasm_config_create(config_id.as_ptr());
+        let exec_ctx_id = wasm_executionctx_create_from_config(config_id.as_ptr());
+        let val = wasm_executionctx_stdin_set(exec_ctx_id, buffer.as_ptr(), 50);
+
+        // assert
+        assert_eq!(val, 0);
+    }
+}
