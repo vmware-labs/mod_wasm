@@ -19,6 +19,7 @@ use path_slash::PathBufExt as _;
 pub struct WasmConfig {
     pub id:           String,
     pub module_id:    String,
+    pub entrypoint:   String,
     pub wasi_args:    Vec<String>,
     pub wasi_envs:    Vec<(String, String)>,
     pub wasi_dirs:    Vec<String>,
@@ -59,6 +60,7 @@ impl WasmConfig {
             wasi_envs:    Vec::new(),
             wasi_dirs:    Vec::new(),
             wasi_mapdirs: Vec::new(),
+            entrypoint:   "_start".to_string()   // defaults to "_start" 
         };
 
         // insert created WasmConfig object into the HashMap
@@ -209,6 +211,32 @@ impl WasmConfig {
 
         // add WASI MapDir into the WasmConfig object
         wasm_config.wasi_mapdirs.push((wasi_map.to_string(), wasi_dir.to_string()));
+        Ok(())
+    }
+
+    // Set the entrypoint for a loaded Wasm Module to an existing Wasm config
+    ///
+    /// It checks for wrong `config_id`
+    /// Returns Result<(), String>, so that in case of error the String will contain the reason.
+    /// 
+    pub fn set_entrypoint_for_config(config_id: &str, entrypoint: &str) -> Result<(), String> {
+
+        // get write access to the WasmConfig HashMap
+        let mut configs = WASM_RUNTIME_CONFIGS.write()
+            .expect("ERROR! Poisoned RwLock WASM_RUNTIME_CONFIGS on write()");
+
+        // check for existing config_id in the loaded configurations
+        let wasm_config = match configs.get_mut(config_id) {
+            Some(c) => c,
+            None => {
+                let error_msg = format!("Wasm config \'{}\' not found while setting entrypoint \'{}\'", config_id, entrypoint);
+                return Err(error_msg);
+            }
+        };
+
+        // setting module in Wasm config
+        wasm_config.entrypoint = entrypoint.to_string();
+
         Ok(())
     }
 

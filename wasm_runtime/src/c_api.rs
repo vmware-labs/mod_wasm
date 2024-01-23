@@ -396,6 +396,38 @@ pub extern "C" fn wasm_executionctx_stdin_set(executionctx_id: *const c_char, bu
 }
 
 
+/// Set the entrypoint for loaded Wasm Module to an existing Wasm Config.
+///
+/// Wasm config must have been previously created.
+///
+/// In case of error, the reason is printed to stderr and returns -1.
+/// Otherwise, it returns 0.
+/// 
+/// Due to String management differences between C and Rust, this function uses `unsafe {}` code.
+/// So `config_id` and `entrypoint` must be a valid pointer to a null-terminated C char array. Otherwise, code might panic.
+/// In addition, `config_id` and `entrypoint` must contain valid ASCII chars that can be converted into UTF-8 encoding.
+///
+/// # Examples (C Code)
+///
+/// ```
+/// wasm_config_entrypoint_set("Drupal", "_start");
+/// wasm_config_entrypoint_set("WordPress", "run");
+/// ```
+#[no_mangle]
+pub extern "C" fn wasm_config_entrypoint_set(config_id: *const c_char, entrypoint: *const c_char) -> c_int {
+    let config_id_str = const_c_char_to_str(config_id);
+    let entrypoint_str = const_c_char_to_str(entrypoint);
+
+    match WasmConfig::set_entrypoint_for_config(config_id_str, entrypoint_str) {
+        Ok(_) => 0,
+        Err(e) => {
+            eprintln!("ERROR! C-API: Couldn't set entrypoint for Wasm config \"{}\": {}", config_id_str, e);
+            -1
+        }
+    } 
+}
+
+
 /// Run the given Wasm execution context
 ///
 /// In case of error, the reason is printed to stderr and returns -1.
@@ -636,6 +668,19 @@ mod tests {
         let val = wasm_executionctx_stdin_set(exec_ctx_id, buffer.as_ptr(), 50);
 
         // assert
+        assert_eq!(val, 0);
+    }
+
+    #[test]
+    fn wasm_config_entrypoint_set_general() {
+        let config_id = CString::new("test_config").unwrap();
+
+        // test
+        wasm_config_create(config_id.as_ptr());
+        let entrypoint = CString::new("run").unwrap();
+        let val = wasm_config_entrypoint_set(config_id.as_ptr(), entrypoint.as_ptr());
+
+        // asserts
         assert_eq!(val, 0);
     }
 }

@@ -435,6 +435,7 @@ static void register_hooks(apr_pool_t *p)
 #define WASM_DIRECTIVE_WASMMAPDIR           "WasmMapDir"
 #define WASM_DIRECTIVE_WASMENABLECGI        "WasmEnableCGI"
 #define WASM_DIRECTIVE_WASMMAPCGIFILENAMES  "WasmMapCGIFileNames"
+#define WASM_DIRECTIVE_WASMENTRYPOINT       "WasmEntryPoint"
 
 static const char *wasm_directive_WasmModule(cmd_parms *cmd, void *mconfig, const char *word1)
 {
@@ -518,6 +519,17 @@ static const char *wasm_directive_WasmMapCGIFileNames(cmd_parms *cmd, void *mcon
     return NULL;
 }
 
+static const char *wasm_directive_WasmEntryPoint(cmd_parms *cmd, void *mconfig, const char *entrypoint)
+{
+    x_cfg *cfg = (x_cfg *) mconfig;
+    int ret = wasm_config_entrypoint_set(cfg->loc, entrypoint);
+    if ( ret != OK )
+        ap_log_error(APLOG_MARK, APLOG_ERR, ret, NULL,
+            "wasm_directive_WasmEntryPoint() - ERROR! Couldn't set entrypoint '%s' to Wasm config '%s'!", entrypoint, cfg->loc);
+
+    return NULL;
+}
+
 /*
  * List of directives specific to our module.
  */
@@ -542,7 +554,7 @@ static const command_rec directives[] =
         wasm_directive_WasmEnv,
         NULL,
         OR_OPTIONS,
-        "Set environtment variable for the Wasm Module"
+        "Set environment variable for the Wasm Module"
     ),
     AP_INIT_TAKE1(
         WASM_DIRECTIVE_WASMDIR,
@@ -571,6 +583,13 @@ static const command_rec directives[] =
         NULL,
         OR_OPTIONS,
         "Whether SCRIPT_FILENAME should be mapped based on WasmMapDir mounts when running as a CGI"
+    ),
+    AP_INIT_TAKE1(
+        WASM_DIRECTIVE_WASMENTRYPOINT,
+        wasm_directive_WasmEntryPoint,
+        NULL,
+        OR_OPTIONS,
+        "Set entrypoint for the Wasm Module"
     ),
     {NULL}
 };
