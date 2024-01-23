@@ -28,6 +28,7 @@ pub struct WasmExecutionCtx {
     pub wasi_mapdirs: Vec<(String, String)>,
     pub wasi_stdin:   Vec<u8>,
     pub wasi_stdout:  Arc<RwLock<Vec<u8>>>,
+    pub entrypoint:   String
 }
 
 impl WasmExecutionCtx {
@@ -65,6 +66,7 @@ impl WasmExecutionCtx {
             wasi_mapdirs: wasm_config.wasi_mapdirs.clone(),
             wasi_stdin:   Vec::new(),
             wasi_stdout:  Arc::new(RwLock::new(Vec::new())),
+            entrypoint:   wasm_config.entrypoint.clone()
         };
 
         Self::try_insert(wasm_executionctx)
@@ -154,8 +156,8 @@ impl WasmExecutionCtx {
             }
         };
         
-        // invoke default "_start" function for the given Wasm execution context
-        wasm_engine::invoke_wasm_function(&wasm_executionctx, "_start")?;
+        // invoke entrypoint for the given Wasm execution context (default is "_start")
+        wasm_engine::invoke_wasm_function(&wasm_executionctx, &wasm_executionctx.entrypoint)?;
 
         // read stdout from the Wasm execution context and return it
         let wasm_module_stdout = Self::read_stdout(&wasm_executionctx);
