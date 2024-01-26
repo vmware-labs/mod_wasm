@@ -12,7 +12,7 @@ use anyhow::Result;
 use wasi_common::WasiCtx;
 use wasmtime::{Store, Linker, Instance, TypedFunc};
 
-use crate::module::WASM_RUNTIME_MODULES;
+use crate::{module::WASM_RUNTIME_MODULES, ffi_utils};
 use crate::execution_ctx::WasmExecutionCtx;
 use crate::wasi_ctx;
 
@@ -84,6 +84,9 @@ pub fn invoke_wasm_function(wasm_executionctx: &WasmExecutionCtx, function_name:
         }
     };
 
+    // add host functions
+    register_host_functions(&mut linker);
+
     // build Instance
     let instance: Instance = match linker.instantiate(&mut store, &wasm_module.module) {
         Ok(i) => i,
@@ -114,3 +117,71 @@ pub fn invoke_wasm_function(wasm_executionctx: &WasmExecutionCtx, function_name:
     Ok(())
 }
 
+use std::ffi::{c_char};
+use wasmtime::Caller;
+
+// https://docs.wasmtime.dev/api/wasmtime/struct.Linker.html#method.func_wrap
+// https://docs.wasmtime.dev/api/wasmtime/struct.Func.html#method.wrap
+
+fn register_host_functions(linker: &mut Linker<WasiCtx>) {
+    // pub fn host_say_hello();
+    linker.func_wrap(
+        "host_functions_demo",
+        "say_hello",
+        || {
+            host_say_hello();
+        }
+    ).unwrap();
+
+    linker.func_wrap(
+        "host_functions_demo",
+        "negate_number",
+        |number: i32| -> i32 {
+            host_negate_number(number as isize) as i32
+        }
+    ).unwrap();
+
+    linker.func_wrap(
+        "host_functions_demo",
+        "upper_case",
+        |mut caller: Caller<'_, WasiCtx>, input_ptr: i32| -> i32 {
+            // get input parameter from input_ptr (need to read from linear memory)
+            let memory = caller.get_export("memory").unwrap().into_memory().unwrap();
+            let input_str = unsafe { memory.data_ptr(&caller).offset(input_ptr as isize) };
+
+            // execute the inner host function
+            let output = host_upper_case(input_str as *const c_char);
+            let output_bytes = ffi_utils::const_c_char_to_bytes(output);
+
+            // allocate and write the result into linear memory
+            let allocate_func = caller.get_export("allocate")
+                                                        .unwrap()
+                                                        .into_func()
+                                                        .unwrap()
+                                                        .typed::<i32, i32>(&caller)
+                                                        .unwrap();
+            let ptr = allocate_func.call(&mut caller, output_bytes.len() as i32).unwrap();
+            memory.write(&mut caller, ptr as usize, output_bytes).ok();
+
+            ptr as i32
+        },
+    ).ok();
+}
+
+
+fn host_say_hello() {
+    println!("[Host@stdout] Hello!");
+    eprintln!("[Host@stderr] Hello!");
+}
+
+fn host_negate_number(number: isize) -> isize { 
+    number * -1
+}
+
+fn host_upper_case(input: *const c_char) -> *const c_char {
+    let input_str = ffi_utils::const_c_char_to_str(input);
+    let output = input_str.to_uppercase();
+    let output_str = ffi_utils::str_to_c_char(output.as_str());
+
+    output_str
+}
