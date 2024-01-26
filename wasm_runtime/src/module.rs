@@ -109,9 +109,21 @@ mod tests {
     }
 
     #[test]
-    fn test_load_from_file_failure() {
+    fn test_load_from_file_failure_nonexistent() {
         // setup non-existent path
         const PATH: &str = "../attempt/to/load/me.wasm";
+
+        // execute test of failed load
+        let res = WasmModule::load_from_file(PATH);
+
+        // test assertion
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_load_from_file_failure_fakefile() {
+        // setup fake path
+        const PATH: &str = "../examples/wasm_modules/rust-wasm/fake.wasm";
 
         // execute test of failed load
         let res = WasmModule::load_from_file(PATH);
