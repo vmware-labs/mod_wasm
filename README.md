@@ -1,3 +1,9 @@
+<br/>
+
+## ⚠️ This project will be archived soon.
+
+<br/>
+
 # mod_wasm
 
 ![Test passing](https://github.com/vmware-labs/mod_wasm/actions/workflows/test-wasm_runtime.yml/badge.svg?branch=main)
